@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlay, faPause, faStop, faClock, faBookOpen, faCalendarCheck, faCircle, faCheckCircle, faPlayCircle, faRotateRight, faExpand, faCompress } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faPause, faStop, faClock, faBookOpen, faCalendarCheck, faCircle, faCheckCircle, faPlayCircle, faRotateRight, faExpand, faCompress, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StudyTimerContext } from './StudyTimerContext';
 
@@ -183,6 +183,13 @@ const StudyTimer = () => {
     setTime(0);
     setPausedTime(0);
     setPauseStartTime(null);
+  };
+
+  // Função para adicionar estudo manual (sem cronometragem)
+  const handleAddManualStudy = () => {
+    // Zerar o timer e abrir o formulário para edição manual
+    setTimer(prev => ({ ...prev, seconds: 0 }));
+    openForm();
   };
 
   // Função para alternar maximização
@@ -388,6 +395,22 @@ const StudyTimer = () => {
           }}
         >
           <FontAwesomeIcon icon={faRotateRight} />
+        </motion.div>
+
+        {/* Botão para adicionar estudo manual */}
+        <motion.div
+          whileHover={{ scale: 1.2 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={handleAddManualStudy}
+          title="Adicionar estudo manual (não cronometrado)"
+          style={{
+            color: '#28a745',
+            fontSize: isMaximized ? '3em' : '1.3em',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <FontAwesomeIcon icon={faPlus} />
         </motion.div>
       </div>
 

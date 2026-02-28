@@ -42,6 +42,13 @@ const StudySessionForm = () => {
     if (isFormOpen) fetchMaterias();
   }, [isFormOpen]);
 
+  // Atualizar tempoEdit sempre que o timer mudar ou o modal abrir
+  useEffect(() => {
+    if (isFormOpen) {
+      setTempoEdit(formatTime(timer.seconds));
+    }
+  }, [isFormOpen, timer.seconds]);
+
   if (!isFormOpen) return null;
 
   const handleSubmit = async (e) => {
@@ -199,6 +206,7 @@ const StudySessionForm = () => {
               ))}
             </select>
           </div>
+          {/* Opção de vincular ao ciclo oculta
           <div className="mb-3">
             <div className="form-check">
               <input
@@ -213,6 +221,7 @@ const StudySessionForm = () => {
               </label>
             </div>
           </div>
+          */}
           {saved && <div className="text-success mt-3">Sessão salva!</div>}
         </form>
       </Modal.Body>

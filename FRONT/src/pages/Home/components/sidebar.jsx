@@ -361,10 +361,12 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
             <span>Edital</span>
           </Link>
 
+          {/* Link para ciclo oculto 
           <Link to="/ciclo" className={`menu-item ${location.pathname === '/ciclo' ? 'active' : ''}`}>
             <FontAwesomeIcon icon={faSyncAlt} />
             <span>Ciclo</span>
           </Link>
+          */}
 
           {/* Dropdown Simulados */}
           <div 
