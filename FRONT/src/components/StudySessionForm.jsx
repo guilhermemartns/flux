@@ -57,6 +57,29 @@ const StudySessionForm = () => {
       const userId = userObj ? JSON.parse(userObj).id : '';
       const projetoId = localStorage.getItem('projetoSelecionado');
       const materiaObj = materias.find(m => m.nome === disciplina);
+      
+      // Validação de campos
+      if (!userId) {
+        alert('Erro: Usuário não autenticado. Faça login novamente.');
+        return;
+      }
+      if (!projetoId) {
+        alert('Erro: Projeto não selecionado. Selecione um projeto.');
+        return;
+      }
+      if (!disciplina) {
+        alert('Erro: Disciplina não selecionada.');
+        return;
+      }
+      if (!materiaObj) {
+        alert('Erro: Matéria não encontrada.');
+        return;
+      }
+      if (!categoria) {
+        alert('Erro: Categoria não selecionada.');
+        return;
+      }
+      
       let cicloId = null;
       if (vincularCiclo) {
         // Busca ciclo cadastrado
@@ -64,27 +87,41 @@ const StudySessionForm = () => {
         const ciclo = cicloRes.data && cicloRes.data.length > 0 ? cicloRes.data[cicloRes.data.length - 1] : null;
         cicloId = ciclo ? ciclo.id : null;
       }
-      if (userId && projetoId && materiaObj) {
-        await api.post('/estudo', {
-          userId,
-          projetoId,
-          materiaId: materiaObj.id,
-          tempo: tempoMinutos,
-          categoria: categoriaFinal,
-          disciplina,
-          dataSessao: dataSessao + 'T00:00:00.000Z',
-          cicloId: vincularCiclo && cicloId ? cicloId : undefined
-        });
-      }
+      
+      const payload = {
+        userId,
+        projetoId,
+        materiaId: materiaObj.id,
+        tempo: tempoMinutos,
+        categoria: categoriaFinal,
+        disciplina,
+        dataSessao: dataSessao + 'T00:00:00.000Z',
+        cicloId: cicloId || null
+      };
+      
+      console.log('[StudySessionForm] ====== DEBUG PAYLOAD ======');
+      console.log('[StudySessionForm] userId:', userId, '| tipo:', typeof userId);
+      console.log('[StudySessionForm] projetoId:', projetoId, '| tipo:', typeof projetoId);
+      console.log('[StudySessionForm] materiaId:', materiaObj.id, '| tipo:', typeof materiaObj.id);
+      console.log('[StudySessionForm] tempo:', tempoMinutos, '| tipo:', typeof tempoMinutos);
+      console.log('[StudySessionForm] categoria:', categoriaFinal, '| tipo:', typeof categoriaFinal);
+      console.log('[StudySessionForm] disciplina:', disciplina, '| tipo:', typeof disciplina);
+      console.log('[StudySessionForm] Payload completo:', payload);
+      console.log('[StudySessionForm] ====== FIM DEBUG ======');
+      
+      const response = await api.post('/estudo', payload);
+      console.log('[StudySessionForm] Resposta da API:', response.data);
+      
+      setSaved(true);
+      resetTimer();
+      setTimeout(() => {
+        setSaved(false);
+        closeForm();
+      }, 1500);
     } catch (err) {
-      // erro silencioso
+      console.error('[StudySessionForm] Erro ao salvar estudo:', err);
+      alert('Erro ao salvar estudo: ' + (err.response?.data?.error || err.message));
     }
-    setSaved(true);
-    resetTimer();
-    setTimeout(() => {
-      setSaved(false);
-      closeForm();
-    }, 1500);
   };
 
   return (

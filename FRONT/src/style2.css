@@ -621,7 +621,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .modal-content {
   background-color: var(--background) !important;
-  color: var(--text) !important;
+  color: #7d7d7d !important;
   border: 1px solid var(--border) !important;
 }
 
@@ -752,7 +752,6 @@ hr {
 .dropdown-content {
   overflow: hidden;
   margin-top: 0.2em;
-  color: #fd0202 !important;
 }
 
 .submenu-item {

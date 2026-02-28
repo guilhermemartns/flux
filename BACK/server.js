@@ -1654,8 +1654,31 @@ app.get('/ciclo-estudo', async (req, res) => {
 // POST /estudo - Salvar sessão de estudo
 app.post('/estudo', async (req, res) => {
   const { userId, projetoId, materiaId, tempo, categoria, disciplina, dataSessao, cicloId } = req.body;
+  
+  console.log('[POST /estudo] ====== Recebido ======');
+  console.log('[POST /estudo] userId:', userId, '| existe:', !!userId);
+  console.log('[POST /estudo] projetoId:', projetoId, '| existe:', !!projetoId);
+  console.log('[POST /estudo] materiaId:', materiaId, '| existe:', !!materiaId);
+  console.log('[POST /estudo] tempo:', tempo, '| existe:', !!tempo);
+  console.log('[POST /estudo] categoria:', categoria, '| existe:', !!categoria);
+  console.log('[POST /estudo] disciplina:', disciplina, '| existe:', !!disciplina);
+  console.log('[POST /estudo] dataSessao:', dataSessao);
+  console.log('[POST /estudo] cicloId:', cicloId);
+  console.log('[POST /estudo] Body completo:', req.body);
+  console.log('[POST /estudo] ====== FIM ======');
+  
   if (!userId || !projetoId || !materiaId || !tempo || !categoria || !disciplina) {
-    return res.status(400).json({ error: 'Campos obrigatórios ausentes.' });
+    const missing = [];
+    if (!userId) missing.push('userId');
+    if (!projetoId) missing.push('projetoId');
+    if (!materiaId) missing.push('materiaId');
+    if (!tempo) missing.push('tempo');
+    if (!categoria) missing.push('categoria');
+    if (!disciplina) missing.push('disciplina');
+    
+    const errorMsg = `Campos obrigatórios ausentes: ${missing.join(', ')}`;
+    console.log('[POST /estudo] ERRO:', errorMsg);
+    return res.status(400).json({ error: errorMsg });
   }
   try {
     let cicloVersao = null;
@@ -1676,9 +1699,11 @@ app.post('/estudo', async (req, res) => {
         cicloVersao
       }
     });
+    console.log('[POST /estudo] Estudo criado com sucesso:', estudo);
     res.status(201).json(estudo);
   } catch (err) {
-    res.status(500).json({ error: 'Erro ao salvar sessão de estudo.' });
+    console.error('[POST /estudo] Erro ao salvar:', err);
+    res.status(500).json({ error: 'Erro ao salvar sessão de estudo: ' + err.message });
   }
 });
 
