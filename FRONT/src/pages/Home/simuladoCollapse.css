@@ -1,0 +1,21 @@
+.collapse-expand-enter,
+.collapse-expand-enter-active,
+.collapse-expand-exit,
+.collapse-expand-exit-active {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.collapse-expand-enter {
+  max-height: 0;
+}
+.collapse-expand-enter-active {
+  max-height: 1000px;
+  transition: max-height 0.2s ease-in-out;
+}
+.collapse-expand-exit {
+  max-height: 1000px;
+}
+.collapse-expand-exit-active {
+  max-height: 0;
+  transition: max-height 0.2s ease-in-out;
+}

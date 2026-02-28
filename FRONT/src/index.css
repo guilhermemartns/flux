@@ -1,0 +1,117 @@
+/* Otter spin para lados diferentes e transição de cor */
+.otter-anim {
+  transition: color 0.3s cubic-bezier(.77,0,.18,1);
+}
+.otter-spin-right {
+  animation: otter-spin-right 0.8s cubic-bezier(.77,0,.18,1);
+}
+.otter-spin-left {
+  animation: otter-spin-left 0.8s cubic-bezier(.77,0,.18,1);
+}
+@keyframes otter-spin-right {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes otter-spin-left {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+/* Fade-in e slide-up animation para textos da tela inicial */
+.fadein-slideup {
+  opacity: 0;
+  transform: translateY(24px);
+  animation: fadein-slideup 0.7s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+
+@keyframes fadein-slideup {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+}
+
+body, html {
+  font-family: 'Inter', sans-serif !important;
+}
+  
+a {
+  color: #000 !important;
+  text-decoration: inherit !important;
+}
+
+body {
+  font-size: 80% !important;
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--background) !important;
+  color: var(--text-middle) !important;
+  
+}
+
+.container-fluid {
+  display: grid;
+  gap: 2rem;
+  padding: 2em !important;
+}
+
+.container {
+  display: grid;
+  gap: 2rem;
+  padding: 2em !important;
+}
+
+/* Título padrão dos cards */
+.card-title-padrao {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  font-weight: bold;
+  text-align: left;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  z-index: 1;
+  color: #000;
+  font-weight: 400; /* Regular */
+}
+
+/* Conteúdo dos cards */
+.card-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+
+  a:hover {
+    color: #747bff;
+  }
+
+  button {
+    background-color: #f9f9f9;
+  }
+}

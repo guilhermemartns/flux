@@ -1,0 +1,215 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  nome            String?
+  sobrenome       String?
+  apelido         String?
+  email           String?           @unique
+  senha           String
+  sexo            String?
+  nascimento      DateTime?
+  cidade          String?
+  uf              String?
+  foto            String?
+  role            String?           // 'admin' ou 'user'
+  EditalProgresso EditalProgresso[]
+  ciclos          Ciclo[]
+  cicloEstudos    CicloEstudo[]
+  estudos         Estudo[]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Simulado {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  numSim    Int
+  quanQuest Int
+  dataSim   DateTime
+  projetoId String     @db.ObjectId
+  projeto   Projeto    @relation(fields: [projetoId], references: [id])
+  simulado  String?
+  gabarito  String?
+  userId    String     @db.ObjectId
+  respostas Resposta[] @relation("SimuladoRespostas")
+}
+
+model Resposta {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  numero     Int
+  materia    String
+  editalItem String?
+  resposta   String
+  gabarito   String
+  acertou    Boolean?
+  chute      Boolean
+  anulada    Boolean
+  motivoErro String?
+  categoria  String?   // Nova variável para tipo/categoria do erro
+  acao       String?   // Nova variável para ação tomada (ex: revisei, pendente)
+  simuladoId String   @db.ObjectId
+  simulado   Simulado @relation("SimuladoRespostas", fields: [simuladoId], references: [id])
+  userId     String   @db.ObjectId
+  projetoId  String   @db.ObjectId
+  projeto    Projeto  @relation(fields: [projetoId], references: [id])
+  materiaId  String   @db.ObjectId
+  materiaRel Materia  @relation("MateriaRespostas", fields: [materiaId], references: [id])
+}
+
+model Materia {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  nome            String
+  projetoId       String            @db.ObjectId
+  projeto         Projeto           @relation(fields: [projetoId], references: [id])
+  edital          String[]          @default([])
+  userId          String            @db.ObjectId
+  EditalProgresso EditalProgresso[]
+  cicloMaterias   CicloMateria[]
+  cicloEstudos    CicloEstudo[]
+  estudos         Estudo[]
+  cor              String?           // Cor vinculada à matéria
+  respostas Resposta[] @relation("MateriaRespostas")
+}
+
+model ProjetoPadrao {
+  id         String          @id @default(auto()) @map("_id") @db.ObjectId
+  nome       String
+  descricao  String?
+  imagem     String?         // Caminho ou URL da imagem do projeto padrão
+  ano        Int?
+  cargo      String?
+  Materias   MateriaPadrao[]
+  carreiraId String?         @db.ObjectId
+  carreira   Carreira?       @relation(fields: [carreiraId], references: [id])
+}
+
+model Carreira {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
+  nome          String
+  projetosPadrao ProjetoPadrao[]
+}
+model MateriaPadrao {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  nome            String
+  conteudos       String[]      @default([])
+  projetoPadraoId String        @db.ObjectId
+  projetoPadrao   ProjetoPadrao @relation(fields: [projetoPadraoId], references: [id])
+  cor             String?       // Cor vinculada à matéria padrão
+}
+
+model EditalProgresso {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @db.ObjectId
+  materiaId String  @db.ObjectId
+  completos Int[]   @default([])
+  materia   Materia @relation(fields: [materiaId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
+}
+
+model Projeto {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  nome      String
+  descricao String?
+  imagem    String?   // Campo para armazenar a imagem principal do projeto
+  imagens   String[]  // Imagens extras para projetos mesclados
+  ano       Int?
+  cargo     String?
+  userId    String     @db.ObjectId
+  Resposta  Resposta[]
+  Materia   Materia[]
+  simulados Simulado[]
+  ciclos    Ciclo[]
+  estudos   Estudo[]
+  metaSemanal Float?   // Meta semanal em horas
+  createdAt DateTime   @default(now()) // Data de criação do projeto
+}
+
+model Ciclo {
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  nome         String
+  userId       String         @db.ObjectId
+  projetoId    String         @db.ObjectId
+  cicloVersao  Int            @default(1)
+  materias     CicloMateria[]
+  user         User     @relation(fields: [userId], references: [id])
+  projeto      Projeto  @relation(fields: [projetoId], references: [id])
+  createdAt    DateTime       @default(now())
+  estudos      CicloEstudo[]
+}
+
+model CicloMateria {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  cicloId    String   @db.ObjectId
+  ciclo      Ciclo    @relation(fields: [cicloId], references: [id])
+  materiaId  String   @db.ObjectId
+  materia    Materia  @relation(fields: [materiaId], references: [id])
+  tempoMin   Int
+  ordem      Int
+}
+
+model CicloEstudo {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  cicloId    String   @db.ObjectId
+  ciclo      Ciclo    @relation(fields: [cicloId], references: [id])
+  materiaId  String   @db.ObjectId
+  materia    Materia  @relation(fields: [materiaId], references: [id])
+  tempoEstudado Int
+  userId     String   @db.ObjectId
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model Estudo {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id])
+  projetoId    String   @db.ObjectId
+  projeto      Projeto  @relation(fields: [projetoId], references: [id])
+  materiaId    String   @db.ObjectId
+  materia      Materia  @relation(fields: [materiaId], references: [id])
+  tempo        Int
+  categoria    String
+  disciplina   String
+  dataSessao   DateTime @default(now())
+  cicloId      String?  // vinculação opcional ao ciclo
+  cicloVersao  Int?
+}
+
+model CicloFinalizado {
+  id         String   @id @map("_id") @default(auto()) @db.ObjectId
+  userId     String
+  cicloId    String
+  dataFim    DateTime @default(now())
+}
+
+model FraseDiaria {
+  id    String   @id @default(auto()) @map("_id") @db.ObjectId
+  frase String
+}
+
+model CategoriaDicaSidebar {
+  id    String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome  String
+  cor1  String
+  cor2  String
+  icon  String   // Nome do ícone FontAwesome (ex: "faLightbulb")
+  dicas DicaSidebar[]
+}
+
+model DicaSidebar {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  texto          String
+  categoriaId    String           @db.ObjectId
+  categoria      CategoriaDicaSidebar @relation(fields: [categoriaId], references: [id])
+}
