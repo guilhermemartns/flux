@@ -27,6 +27,7 @@ import Perfil from './pages/Home/Perfil.jsx';
 import MateriaDetalhe from './pages/Home/MateriaDetalhe.jsx';
 import MateriaOverview from './pages/Home/MateriaOverview.jsx';
 import Ciclo from './pages/Home/Ciclo';
+import FilaRevisao from './pages/Home/FilaRevisao';
 import Navbar from './components/Navbar.jsx';
 import { PageTitleProvider } from './components/PageTitleContext';
 import { ToastContainer } from 'react-toastify';
@@ -85,7 +86,7 @@ function AppLayout() {
       <Perfil />
       <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
       <div
-        className='div-lateral d-flex flex-column flex-grow-1 min-vh-100 h-100 w-100 '
+        className='div-lateral d-flex flex-column flex-grow-1 min-vh-100 h-100 w-100'
         style={{
           transition: 'margin-left 0.3s cubic-bezier(.77,0,.18,1)',
           marginLeft: sidebarCollapsed ? -sidebarWidth : 0,
@@ -102,6 +103,7 @@ function AppLayout() {
           <Route path="/dashboard/materia/:id/overview" element={<PrivateRoute><MateriaOverview /></PrivateRoute>} />
           <Route path="/projeto" element={<PrivateRoute><Projeto /></PrivateRoute>} />
           <Route path="/ciclo" element={<PrivateRoute><Ciclo /></PrivateRoute>} />
+          <Route path="/fila-revisao" element={<PrivateRoute><FilaRevisao /></PrivateRoute>} />
           <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
           <Route path="/inserir" element={<AdminRoute><Inserir /></AdminRoute>} />
         </Routes>

@@ -2064,4 +2064,198 @@ app.post('/projetos/mesclar-padrao', async (req, res) => {
   }
 });
 
+// ==================== FILA DE REVISÃO ====================
+
+// Listar itens da fila
+// Sincronizar fila ao salvar simulado (upsert de erros/brancos, remove acertos pendentes)
+app.post('/fila-revisao/sync', async (req, res) => {
+  try {
+    const { userId, projetoId, simuladoId, questoes } = req.body;
+    if (!userId || !projetoId || !simuladoId || !Array.isArray(questoes)) {
+      return res.status(400).json({ error: 'Dados inválidos.' });
+    }
+    const FALLBACK_ID = '000000000000000000000000';
+    for (const q of questoes) {
+      const existente = await prisma.filaRevisao.findFirst({ where: { userId, simuladoId, numeroQuestao: q.numero } });
+      const acertou = q.acertou;
+      const anulada = q.anulada;
+
+      if (anulada || acertou) {
+        // Acertou ou anulada: remove da fila apenas se estiver pendente
+        if (existente && existente.status === 'pendente') {
+          await prisma.filaRevisao.delete({ where: { id: existente.id } });
+        }
+        continue;
+      }
+
+      // Errou ou branco
+      const tipo = q.tipo;  // 'erro' | 'branco'
+      const materiaId = (q.materiaId && q.materiaId.trim() !== '') ? q.materiaId : FALLBACK_ID;
+      const materiaNome = q.materia || '';
+      const editalItem = q.editalItem || '';
+      const motivoErro = q.motivoErro || '';
+
+      if (existente) {
+        // Atualiza tipo/motivo preservando status, totalErros e acertosConsecutivos
+        await prisma.filaRevisao.update({
+          where: { id: existente.id },
+          data: {
+            tipo,
+            motivoErro: motivoErro || existente.motivoErro || '',
+            editalItem: editalItem || existente.editalItem || '',
+            materiaNome: materiaNome || existente.materiaNome,
+            materiaId: materiaId !== FALLBACK_ID ? materiaId : existente.materiaId,
+          }
+        });
+      } else {
+        await prisma.filaRevisao.create({
+          data: { userId, projetoId, materiaId, materiaNome, simuladoId, numeroQuestao: q.numero, tipo, editalItem, motivoErro }
+        });
+      }
+    }
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro ao sincronizar fila:', err);
+    return res.status(500).json({ error: 'Erro ao sincronizar fila de revisão.' });
+  }
+});
+
+app.get('/fila-revisao', async (req, res) => {
+  try {
+    const { userId, projetoId, status, materiaId } = req.query;
+    const where = { userId, projetoId };
+    if (status) where.status = status;
+    if (materiaId) where.materiaId = materiaId;
+    const itens = await prisma.filaRevisao.findMany({
+      where,
+      orderBy: [{ status: 'asc' }, { criadoEm: 'desc' }]
+    });
+    // Attach simulado PDF filenames
+    const simuladoIds = [...new Set(itens.map(i => i.simuladoId).filter(Boolean))];
+    let simuladoMap = {};
+    if (simuladoIds.length > 0) {
+      const simulados = await prisma.simulado.findMany({ where: { id: { in: simuladoIds } }, select: { id: true, simulado: true, gabarito: true } });
+      simulados.forEach(s => { simuladoMap[s.id] = s; });
+    }
+    const result = itens.map(i => ({
+      ...i,
+      pdfSimulado: simuladoMap[i.simuladoId]?.simulado || null,
+      pdfGabarito: simuladoMap[i.simuladoId]?.gabarito || null,
+    }));
+    return res.json(result);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao buscar fila de revisão.' });
+  }
+});
+
+// Adicionar item à fila (ou atualizar se já existir para o mesmo respostaId)
+app.post('/fila-revisao', async (req, res) => {
+  try {
+    const { userId, projetoId, materiaId, materiaNome, simuladoId, numeroQuestao, tipo, editalItem, motivoErro, respostaId } = req.body;
+    // Verifica duplicata por respostaId ou por (userId + simuladoId + numeroQuestao)
+    const existente = respostaId
+      ? await prisma.filaRevisao.findFirst({ where: { respostaId, userId, projetoId } })
+      : await prisma.filaRevisao.findFirst({ where: { userId, simuladoId, numeroQuestao } });
+    if (existente) {
+      const atualizado = await prisma.filaRevisao.update({
+        where: { id: existente.id },
+        data: {
+          totalErros: existente.totalErros + 1,
+          acertosConsecutivos: 0,
+          status: 'pendente',
+          tipo: tipo || existente.tipo,
+          editalItem: editalItem || existente.editalItem,
+          motivoErro: motivoErro || existente.motivoErro,
+          materiaNome: materiaNome || existente.materiaNome,
+          materiaId: materiaId || existente.materiaId,
+        }
+      });
+      return res.json(atualizado);
+    }
+    const novo = await prisma.filaRevisao.create({
+      data: { userId, projetoId, materiaId, materiaNome, simuladoId, numeroQuestao, tipo, editalItem, motivoErro, respostaId }
+    });
+    return res.json(novo);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao adicionar à fila.' });
+  }
+});
+
+// Atualizar anotação ou status manualmente
+app.put('/fila-revisao/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { anotacao, status } = req.body;
+    const atualizado = await prisma.filaRevisao.update({
+      where: { id },
+      data: { ...(anotacao !== undefined && { anotacao }), ...(status && { status }) }
+    });
+    return res.json(atualizado);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao atualizar item.' });
+  }
+});
+
+// Marcar como "acertei" — incrementa acertosConsecutivos; se >= 2, vira "dominado"
+app.put('/fila-revisao/:id/acertei', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await prisma.filaRevisao.findUnique({ where: { id } });
+    if (!item) return res.status(404).json({ error: 'Item não encontrado.' });
+    const novosAcertos = item.acertosConsecutivos + 1;
+    const novoStatus = novosAcertos >= 2 ? 'dominado' : item.status;
+    const atualizado = await prisma.filaRevisao.update({
+      where: { id },
+      data: { acertosConsecutivos: novosAcertos, status: novoStatus, ultimaRevisao: new Date() }
+    });
+    return res.json(atualizado);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao registrar acerto.' });
+  }
+});
+
+// Marcar como "errei de novo" — incrementa totalErros, reseta acertosConsecutivos
+app.put('/fila-revisao/:id/errei', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await prisma.filaRevisao.findUnique({ where: { id } });
+    if (!item) return res.status(404).json({ error: 'Item não encontrado.' });
+    const atualizado = await prisma.filaRevisao.update({
+      where: { id },
+      data: { totalErros: item.totalErros + 1, acertosConsecutivos: 0, status: 'pendente', ultimaRevisao: new Date() }
+    });
+    return res.json(atualizado);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro ao registrar erro.' });
+  }
+});
+
+// Remover item da fila
+app.delete('/fila-revisao/:id', async (req, res) => {
+  try {
+    await prisma.filaRevisao.delete({ where: { id: req.params.id } });
+    return res.json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ error: 'Erro ao remover item.' });
+  }
+});
+
+// Contagem de pendentes (para widget na home)
+app.get('/fila-revisao/count', async (req, res) => {
+  try {
+    const { userId, projetoId } = req.query;
+    const pendentes = await prisma.filaRevisao.count({ where: { userId, projetoId, status: 'pendente' } });
+    const dominados = await prisma.filaRevisao.count({ where: { userId, projetoId, status: 'dominado' } });
+    const arquivados = await prisma.filaRevisao.count({ where: { userId, projetoId, status: 'arquivado' } });
+    return res.json({ pendentes, dominados, arquivados });
+  } catch (err) {
+    return res.status(500).json({ error: 'Erro ao contar.' });
+  }
+});
+
 app.listen(3000)

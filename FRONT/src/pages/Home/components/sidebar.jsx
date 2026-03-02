@@ -60,7 +60,7 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
   // caso contrário, fechar e desfixar.
   useEffect(() => {
     const p = location.pathname;
-    const isSimRoute = p.startsWith('/simulados') || p.startsWith('/dashboard');
+    const isSimRoute = p.startsWith('/simulados') || p.startsWith('/dashboard') || p.startsWith('/fila-revisao');
     const isQuestRoute = p.startsWith('/questoes') || p.startsWith('/dashboard-questoes');
 
     setSimuladosPinned(isSimRoute);
@@ -237,6 +237,41 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
     api.get('/categorias-dica-sidebar').then(res => setCategorias(res.data || []));
   }, []);
 
+  // Contagem de pendentes na fila de revisão
+  const [simuladoCount, setSimuladoCount] = useState(0);
+  useEffect(() => {
+    function fetchSimuladoCount() {
+      const userId = JSON.parse(localStorage.getItem('user'))?.id || '';
+      const projetoId = localStorage.getItem('projetoSelecionado') || '';
+      if (!userId || !projetoId) return;
+      api.get('/simulados', { params: { userId, projetoId } })
+        .then(res => setSimuladoCount(Array.isArray(res.data) ? res.data.length : 0))
+        .catch(() => {});
+    }
+    fetchSimuladoCount();
+    const interval = setInterval(fetchSimuladoCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const [filaCount, setFilaCount] = useState(0);
+  useEffect(() => {
+    function fetchFilaCount() {
+      const userId = JSON.parse(localStorage.getItem('user'))?.id || '';
+      const projetoId = localStorage.getItem('projetoSelecionado') || '';
+      if (!userId || !projetoId) return;
+      api.get('/fila-revisao/count', { params: { userId, projetoId } })
+        .then(res => setFilaCount(res.data?.pendentes || 0))
+        .catch(() => {});
+    }
+    fetchFilaCount();
+    const interval = setInterval(fetchFilaCount, 60000);
+    window.addEventListener('filaRevisaoAtualizada', fetchFilaCount);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('filaRevisaoAtualizada', fetchFilaCount);
+    };
+  }, []);
+
   // Inserir categoria
   async function handleInserirCategoria() {
     if (!categoriaNome || !cor1 || !cor2 || !categoriaIcon) return;
@@ -390,10 +425,20 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
                    <Link to="/simulados" className={`menu-item submenu-item ${location.pathname === '/simulados' ? 'active' : ''}`}>
                      <Clipboard size={14} />
                      <span className='small'>Meus simulados</span>
+                     {simuladoCount > 0 && (
+                       <span className="badge rounded" style={{ background: 'rgba(142,142,147,0.15)', color: 'var(--text-light)', fontWeight: 700, fontSize: '0.75em', marginLeft: 'auto' }}>{simuladoCount}</span>
+                     )}
                    </Link>
                    <Link to="/dashboard" className={`menu-item submenu-item ${location.pathname.startsWith('/dashboard') ? 'active' : ''}`}>
                      <BarChart2 size={14} />
                      <span className='small'>Dashboard</span>
+                   </Link>
+                   <Link to="/fila-revisao" className={`menu-item submenu-item ${location.pathname === '/fila-revisao' ? 'active' : ''}`}>
+                     <RefreshCw size={14} />
+                     <span className='small'>Fila de Revisão</span>
+                     {filaCount > 0 && (
+                       <span className="badge rounded" style={{ background: 'rgba(255,45,85,0.15)', color: '#FF2D55', fontWeight: 700, fontSize: '0.75em', marginLeft: 'auto' }}>{filaCount}</span>
+                     )}
                    </Link>
                  </motion.div>
                )}

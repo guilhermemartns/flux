@@ -832,7 +832,7 @@ const Dashboard = () => {
                     return (
                       <div className="col-12 col-sm-6 col-md-4 col-lg-3 d-flex" key={materia.id}>
                         <div
-                          className="pointer card-padrao fadein card-padrao-hover w-100 d-flex flex-column position-relative"
+                          className="card-padrao fadein w-100 d-flex flex-column position-relative"
                           style={{
                             height: 240,
                             backgroundColor: materia.cor ? `${materia.cor}15` : '#0d6efd15',
@@ -840,7 +840,6 @@ const Dashboard = () => {
                             padding: 0,
                             overflow: 'hidden',
                           }}
-                          onClick={() => navigate(`/dashboard/materia/${materia.id}/overview`)}
                         >
                           {/* Header do card */}
                           <div className="p-3 pb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>

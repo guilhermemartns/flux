@@ -213,3 +213,23 @@ model DicaSidebar {
   categoriaId    String           @db.ObjectId
   categoria      CategoriaDicaSidebar @relation(fields: [categoriaId], references: [id])
 }
+
+model FilaRevisao {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId              String    @db.ObjectId
+  projetoId           String    @db.ObjectId
+  materiaId           String    @db.ObjectId
+  materiaNome         String
+  simuladoId          String    @db.ObjectId
+  numeroQuestao       Int
+  tipo                String    // "erro" | "branco"
+  status              String    @default("pendente") // "pendente" | "dominado" | "arquivado"
+  totalErros          Int       @default(1)
+  acertosConsecutivos Int       @default(0)
+  ultimaRevisao       DateTime?
+  anotacao            String?
+  editalItem          String?
+  motivoErro          String?
+  criadoEm            DateTime  @default(now())
+  respostaId          String?   @db.ObjectId
+}

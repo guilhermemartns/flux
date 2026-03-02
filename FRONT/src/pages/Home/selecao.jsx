@@ -13,6 +13,7 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
   const [pdfSimulado, setPdfSimulado] = useState(null);
   const [pdfGabarito, setPdfGabarito] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true); // Adicionar estado de loading
   const params = useParams();
   const id = propId || params.id;
@@ -257,14 +258,39 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
     console.log('dados para envio:', dados);
 
     try {
+      setSaving(true);
       const dadosValidos = dados.filter(q => q.simuladoId); // Só mantém os com simuladoId
       if (dadosValidos.length === 0) {
+        setSaving(false);
         // Não exibe texto de erro, apenas feedback visual
         return;
       }
 
       // Substitui todas as respostas do usuário
       await api.post('/salvarRespostas', { dados: dadosValidos });
+
+      // Sincroniza fila de revisão (upsert erros/brancos, remove acertos pendentes)
+      try {
+        const userId = JSON.parse(localStorage.getItem('user'))?.id || '';
+        const projetoId = dadosValidos[0]?.projetoId || '';
+        const simuladoId = dadosValidos[0]?.simuladoId || '';
+        await api.post('/fila-revisao/sync', {
+          userId,
+          projetoId,
+          simuladoId,
+          questoes: dadosValidos.map(q => ({
+            numero: q.numero,
+            anulada: q.anulada,
+            acertou: q.resposta !== '' && q.resposta !== 'S' && q.acertou, // branco ('' ou 'S') nunca é acerto
+            tipo: (q.resposta === '' || q.resposta === 'S') ? 'branco' : 'erro',
+            materia: q.materia || '',
+            materiaId: q.materiaId || '',
+            editalItem: q.editalItem || '',
+            motivoErro: q.motivoErro || '',
+          })),
+        }).catch(() => null);
+        window.dispatchEvent(new Event('filaRevisaoAtualizada'));
+      } catch { /* silencioso — não bloqueia o fluxo principal */ }
 
       // Upload dos arquivos PDF
       if (pdfSimulado || pdfGabarito) {
@@ -282,11 +308,13 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
       // Atualiza dashboard imediatamente
       localStorage.setItem('atualizaDashboard', Date.now());
 
+      setSaving(false);
       // Fecha o popup/modal após salvar
       setTimeout(() => {
         handleCloseSilent();
       }, 300);
     } catch (error) {
+      setSaving(false);
       toast.error('Erro ao salvar dados!');
       console.error('Erro ao salvar dados:', error);
       // Opcional: pode adicionar um ícone ou cor para erro, mas sem texto
@@ -649,7 +677,9 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
           <div style={{ position: 'sticky', bottom: 0, zIndex: 10, background: 'var(--background-l-light)', paddingTop: 2, paddingBottom: 2 }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.7em', marginTop: '0.7em', marginBottom: '0.2em' }}>
               <button type="button" className="btn btn-outline-primary-primary" style={{ padding: '4px 14px', fontSize: '0.97em' }} onClick={handleCloseSilent}>Cancelar</button>
-              <button type="submit" className="btn btn-primary-primary" style={{ padding: '4px 14px', fontSize: '0.97em' }}>Salvar Dados</button>
+              <button type="submit" className="btn btn-primary-primary" style={{ padding: '4px 14px', fontSize: '0.97em' }} disabled={saving}>
+                {saving ? <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Salvando...</> : 'Salvar Dados'}
+              </button>
             </div>
           </div>
         </form>
