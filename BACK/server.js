@@ -12,8 +12,8 @@ const bcrypt = require('bcryptjs');
 const app = express();
 const prisma = new PrismaClient();
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Servir arquivos da pasta uploads
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // ROTA PUT - Editar nome da carreira
@@ -148,11 +148,11 @@ app.post('/carreiras', async (req, res) => {
   }
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Auth-Token');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -1012,9 +1012,13 @@ app.delete('/usuarios/:id', autenticar, autorizarAdmin, async (req, res) => {
 });
 app.post('/usuarios', autenticar, autorizarAdmin, async (req, res) => {
   try {
-    const { nome, sobrenome, apelido, email, sexo, nascimento, cidade, uf, foto, role } = req.body;
+    const { nome, sobrenome, apelido, email, sexo, nascimento, cidade, uf, foto, role, senha } = req.body;
+    if (!nome || !email || !senha) {
+      return res.status(400).json({ error: 'Nome, email e senha são obrigatórios.' });
+    }
+    const senhaHash = await bcrypt.hash(senha, 10);
     const novoUsuario = await prisma.user.create({
-      data: { nome, sobrenome, apelido, email, sexo, nascimento, cidade, uf, foto, role }
+      data: { nome, sobrenome, apelido, email, sexo, nascimento: nascimento ? new Date(nascimento) : null, cidade, uf, foto, role: role || 'user', senha: senhaHash }
     });
     res.status(201).json({ id: novoUsuario.id, nome: novoUsuario.nome, email: novoUsuario.email, role: novoUsuario.role });
   } catch (error) {
@@ -1767,6 +1771,29 @@ app.delete('/estudo/:id', async (req, res) => {
     res.status(204).end();
   } catch (err) {
     res.status(500).json({ error: 'Erro ao apagar registro de estudo.' });
+  }
+});
+
+// PUT /estudo/:id - Editar um registro de estudo
+app.put('/estudo/:id', async (req, res) => {
+  const { id } = req.params;
+  const { materiaId, tempo, categoria, disciplina, dataSessao, cicloId } = req.body;
+  if (!id) return res.status(400).json({ error: 'Id obrigatório.' });
+  try {
+    const updated = await prisma.estudo.update({
+      where: { id },
+      data: {
+        ...(materiaId && { materiaId }),
+        ...(tempo !== undefined && { tempo: Number(tempo) }),
+        ...(categoria && { categoria }),
+        ...(disciplina && { disciplina }),
+        ...(dataSessao && { dataSessao: new Date(dataSessao) }),
+        cicloId: cicloId || null
+      }
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao editar registro de estudo: ' + err.message });
   }
 });
 

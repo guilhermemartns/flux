@@ -365,11 +365,11 @@ function Materias() {
           )}
         </div>
       </main>
-      <Modal show={showProjetoPadraoModal} onHide={() => setShowProjetoPadraoModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Salvar este projeto como Projeto Padrão</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
+      <Modal show={showProjetoPadraoModal} onHide={() => setShowProjetoPadraoModal(false)} centered backdrop="static" className="modal-fundo">
+        <Modal.Body className="modal-estilo">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Modal.Title className="fw-bold fs-5 m-0">Salvar este projeto como Projeto Padrão</Modal.Title>
+          </div>
           <div className="mb-3">
             <label>Nome do Projeto Padrão:</label>
             <input type="text" className="form-control" value={nomeProjetoPadrao} onChange={e => setNomeProjetoPadrao(e.target.value)} />
@@ -394,24 +394,20 @@ function Materias() {
               <strong>Erro:</strong> {erroProjetoPadrao}
             </div>
           ) : null}
+          <div className="d-flex justify-content-end gap-2 mt-3">
+            <button className="btn btn-outline-primary-primary3" onClick={() => setShowProjetoPadraoModal(false)}>Cancelar</button>
+            <button className="btn btn-primary-primary3" onClick={handleSalvarProjetoPadrao}>Salvar Projeto Padrão</button>
+          </div>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowProjetoPadraoModal(false)}>
-            Cancelar
-          </Button>
-          <Button variant="success" onClick={handleSalvarProjetoPadrao}>
-            Salvar Projeto Padrão
-          </Button>
-        </Modal.Footer>
       </Modal>
       {showModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 1050 }}></div>
       )}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Inserir nova matéria:</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" className="modal-fundo">
+        <Modal.Body className="modal-estilo">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Modal.Title className="fw-bold fs-5 m-0">Inserir nova matéria:</Modal.Title>
+          </div>
           <form className="form-modal needs-validation" noValidate onSubmit={e => {
             e.preventDefault();
             if (!materiasInput.trim()) {
@@ -438,12 +434,8 @@ function Materias() {
               <input type="text" required value={materiasInput.trim() ? 'ok' : ''} readOnly />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.7em', marginTop: '1em' }}>
-              <Button variant="secondary" onClick={() => setShowModal(false)}>
-                Cancelar
-              </Button>
-              <Button variant="primary" type="submit">
-                Cadastrar
-              </Button>
+              <button className="btn btn-outline-primary-primary3" onClick={() => setShowModal(false)}>Cancelar</button>
+              <button className="btn btn-primary-primary3" type="submit">Cadastrar</button>
             </div>
           </form>
         </Modal.Body>
@@ -451,11 +443,11 @@ function Materias() {
       {editModalId !== null && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 1050 }}></div>
       )}
-      <Modal show={editModalId !== null} onHide={() => { setEditModalId(null); setEditalInputs(""); }}>
-        <Modal.Header closeButton>
-          <Modal.Title>{editModalId && editModalId.includes('-') ? "Editar item do edital" : "Inserir novos itens no edital"}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
+      <Modal show={editModalId !== null} onHide={() => { setEditModalId(null); setEditalInputs(""); }} centered backdrop="static" className="modal-fundo">
+        <Modal.Body className="modal-estilo">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Modal.Title className="fw-bold fs-5 m-0">{editModalId && editModalId.includes('-') ? "Editar item do edital" : "Inserir novos itens no edital"}</Modal.Title>
+          </div>
           <form className="needs-validation" noValidate onSubmit={async e => {
             e.preventDefault();
             if (!editalInputs.trim()) {
@@ -508,12 +500,8 @@ function Materias() {
               <input type="text" required value={editalInputs.trim() ? 'ok' : ''} readOnly />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.7em', marginTop: '1em' }}>
-              <Button variant="secondary" onClick={() => { setEditModalId(null); setEditalInputs(""); }}>
-                Cancelar
-              </Button>
-              <Button variant="primary" type="submit">
-                Salvar
-              </Button>
+              <button className="btn btn-outline-primary-primary3" onClick={() => { setEditModalId(null); setEditalInputs(""); }}>Cancelar</button>
+              <button className="btn btn-primary-primary3" type="submit">Salvar</button>
             </div>
           </form>
         </Modal.Body>
@@ -521,21 +509,17 @@ function Materias() {
       {showEditModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 1050 }}></div>
       )}
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Editar nome da matéria</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered backdrop="static" className="modal-fundo">
+        <Modal.Body className="modal-estilo">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Modal.Title className="fw-bold fs-5 m-0">Editar nome da matéria</Modal.Title>
+          </div>
           <input type="text" className="form-control" value={editMateriaNome} onChange={e => setEditMateriaNome(e.target.value)} />
+          <div className="d-flex justify-content-end gap-2 mt-3">
+            <button className="btn btn-outline-primary-primary3" onClick={() => setShowEditModal(false)}>Cancelar</button>
+            <button className="btn btn-primary-primary3" onClick={updateMateriaNome}>Salvar</button>
+          </div>
         </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowEditModal(false)}>
-            Cancelar
-          </Button>
-          <Button variant="primary" onClick={updateMateriaNome}>
-            Salvar
-          </Button>
-        </Modal.Footer>
       </Modal>
     </div>
   );

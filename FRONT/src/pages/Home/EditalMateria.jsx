@@ -135,17 +135,18 @@ function EditalMateria() {
                     :
                     <p>Nenhum edital cadastrado.</p>
                 }
-                <Modal show={showModal} onHide={() => setShowModal(false)}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>Colar conteúdo do edital</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <textarea ref={textareaRef} rows={15} style={{ width: '100%' }} placeholder="Cole o edital aqui, cada linha será um item." className="input-dark" />
+                <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" className="modal-fundo">
+                    <Modal.Body className="modal-estilo">
+                        <div className="d-flex justify-content-between align-items-center mb-1">
+                            <Modal.Title className="fw-bold fs-5 m-0">Colar conteúdo do edital</Modal.Title>
+                        </div>
+                        <p className="text-secondary mb-3" style={{ fontSize: '0.8em' }}>Cole o texto do edital abaixo. Cada linha será salva como um item separado.</p>
+                        <textarea ref={textareaRef} rows={15} style={{ width: '100%' }} placeholder="Cole o edital aqui, cada linha será um item." className="form-control linha" />
+                        <div className="d-flex justify-content-end gap-2 mt-3">
+                            <button className="btn btn-outline-primary-primary3" onClick={() => setShowModal(false)}>Cancelar</button>
+                            <button className="btn btn-primary-primary3" onClick={handleSaveEdital}>Salvar</button>
+                        </div>
                     </Modal.Body>
-                    <Modal.Footer>
-                        <Button variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
-                        <Button variant="primary" onClick={handleSaveEdital}>Salvar</Button>
-                    </Modal.Footer>
                 </Modal>
             </div>
         </main>

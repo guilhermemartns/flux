@@ -1,24 +1,22 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api from '../../../services/api';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPiedPiperHat } from '@fortawesome/free-brands-svg-icons';
-import { faLocust,faOtter,faSyncAlt, faChartSimple, faQuestion,faGear, faGraduationCap, faBook, faClipboardList, faCog, faExclamationTriangle, faHome, faMap, faBookOpen, faLightbulb, faSmile, faBullseye, faHeartbeat, faRocket, faStar, faChartLine, faUser, faPenToSquare, faBars, faChevronDown, faChevronUp, faCircle, faBalanceScale, faCopy, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { Home, BookOpen, FileText, RefreshCw, Clipboard, BarChart2, HelpCircle, ChevronDown, User, Edit2, Menu, X, Zap, Target, Activity, AlertTriangle, Star, Smile } from 'react-feather';
 import { Modal, Button } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import StudyTimer from '../../../components/StudyTimer';
 import { useNavigate } from 'react-router-dom';
 
 const ICONES_CATEGORIA = [
-  { value: 'faLightbulb', label: 'Dica', icon: faLightbulb },
-  { value: 'faBookOpen', label: 'Sugestão', icon: faBookOpen },
-  { value: 'faSmile', label: 'Motivacional', icon: faSmile },
-  { value: 'faBullseye', label: 'Organização', icon: faBullseye },
-  { value: 'faHeartbeat', label: 'Saúde', icon: faHeartbeat },
-  { value: 'faRocket', label: 'Produtividade', icon: faRocket },
-  { value: 'faExclamationTriangle', label: 'Aviso', icon: faExclamationTriangle },
-  { value: 'faStar', label: 'Meta/Desafio', icon: faStar },
-  { value: 'faQuestion', label: 'Curiosidade', icon: faQuestion },
+  { value: 'faLightbulb', label: 'Dica', Icon: Zap },
+  { value: 'faBookOpen', label: 'Sugestão', Icon: BookOpen },
+  { value: 'faSmile', label: 'Motivacional', Icon: Smile },
+  { value: 'faBullseye', label: 'Organização', Icon: Target },
+  { value: 'faHeartbeat', label: 'Saúde', Icon: Activity },
+  { value: 'faRocket', label: 'Produtividade', Icon: Zap },
+  { value: 'faExclamationTriangle', label: 'Aviso', Icon: AlertTriangle },
+  { value: 'faStar', label: 'Meta/Desafio', Icon: Star },
+  { value: 'faQuestion', label: 'Curiosidade', Icon: HelpCircle },
 ];
 
 const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
@@ -48,7 +46,7 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
   const navigate = useNavigate();
 
   // Mostrar/ocultar card de dicas (fechar)
-  const [showDicaCard, setShowDicaCard] = useState(true);
+  const [showDicaCard, setShowDicaCard] = useState(false);
 
   // Estados para controlar dropdowns - iniciam expandidos
   const [simuladosExpanded, setSimuladosExpanded] = useState(true);
@@ -151,19 +149,18 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
 
   // Mapeamento de ícones
   const ICONES_MAP = {
-    faLightbulb,
-    faBookOpen,
-    faSmile,
-    faBullseye,
-    faHeartbeat,
-    faRocket,
-    faExclamationTriangle,
-    faStar,
-    faChartLine,
-    faBookOpen,
-    faQuestion,
+    faLightbulb: Zap,
+    faBookOpen: BookOpen,
+    faSmile: Smile,
+    faBullseye: Target,
+    faHeartbeat: Activity,
+    faRocket: Zap,
+    faExclamationTriangle: AlertTriangle,
+    faStar: Star,
+    faChartLine: BarChart2,
+    faQuestion: HelpCircle,
   };
-  let dicaIcon = ICONES_MAP[iconName] || faBookOpen;
+  const DicaIconComponent = ICONES_MAP[iconName] || BookOpen;
 
   useEffect(() => {
     function fetchProjetosSidebar() {
@@ -285,14 +282,11 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
           onClick={() => setCollapsed(c => !c)}
           aria-label={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
         >
-          <FontAwesomeIcon 
-            icon={faBars} 
-            size="lg" 
+          <Menu 
+            size={16} 
             className={`bars-anim`} 
             style={{ 
-              color: collapsed 
-                ? '#000' 
-                : '#000', // mesma cor da otter aberta
+              color: '#000',
               transition: 'color 0.3s cubic-bezier(.77,0,.18,1)'
             }} 
           />
@@ -330,7 +324,7 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
         </div>
         <div
           className='menu-navigation'
-          onClick={() => {
+          onClick={() => {E
             // Fecha imediatamente dropdowns; o useEffect abaixo reabrirá se a rota pertencer ao dropdown
             setSimuladosPinned(false);
             setQuestoesPinned(false);
@@ -340,30 +334,30 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
         >
           {/* Botões principais */}
           <Link to="/" className={`menu-item ${location.pathname === '/' ? 'active' : ''}`}>
-            <FontAwesomeIcon icon={faHome} />
+            <Home size={14} />
             <span>Home</span>
           </Link>
 
           <Link to="/projeto" className={`menu-item ${location.pathname === '/projeto' ? 'active' : ''}`}>
-            <FontAwesomeIcon icon={faGraduationCap} />
+            <BookOpen size={14} />
             <span>Projeto</span>
             {(Array.isArray(projetos) && projetos.filter(p => p && p.id).length === 0) ? (
               <span className="badge rounded bg-danger">Insira</span>
             ) : (!localStorage.getItem('projetoSelecionado') || !projetoNome) ? (
               <span className="badge rounded bg-warning text-dark">Selecione</span>
             ) : (
-              <span className="badge rounded bg-primary-primary text-dark">{projetoNome}</span>
+              <span className="badge rounded bg-primary-primary4 text-primary-primary5">{projetoNome}</span>
             )}
           </Link>
 
           <Link to="/edital" className={`menu-item ${location.pathname === '/edital' ? 'active' : ''}`}>
-            <FontAwesomeIcon icon={faBook} />
+            <FileText size={14} />
             <span>Edital</span>
           </Link>
 
           {/* Link para ciclo oculto 
           <Link to="/ciclo" className={`menu-item ${location.pathname === '/ciclo' ? 'active' : ''}`}>
-            <FontAwesomeIcon icon={faSyncAlt} />
+            <RefreshCw size={14} />
             <span>Ciclo</span>
           </Link>
           */}
@@ -378,12 +372,9 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
               className={`dropdown-header d-flex align-items-center gap-2 ${simuladosExpanded ? 'expanded' : ''}`}
               onClick={handleSimuladosClick}
             >
-               <FontAwesomeIcon icon={faClipboardList} />
+               <Clipboard size={14} />
                <span >Simulados</span>
-               <FontAwesomeIcon 
-                 icon={faChevronDown} 
-                 className="dropdown-arrow"
-               />
+               <ChevronDown size={12} className="dropdown-arrow" />
              </div>
 
             <AnimatePresence>
@@ -397,11 +388,11 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
                  >
                    {/* Linha separadora removida conforme solicitado */}
                    <Link to="/simulados" className={`menu-item submenu-item ${location.pathname === '/simulados' ? 'active' : ''}`}>
-                     <FontAwesomeIcon icon={faClipboardList} />
+                     <Clipboard size={14} />
                      <span className='small'>Meus simulados</span>
                    </Link>
                    <Link to="/dashboard" className={`menu-item submenu-item ${location.pathname.startsWith('/dashboard') ? 'active' : ''}`}>
-                     <FontAwesomeIcon icon={faChartSimple} />
+                     <BarChart2 size={14} />
                      <span className='small'>Dashboard</span>
                    </Link>
                  </motion.div>
@@ -409,7 +400,7 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
              </AnimatePresence>
           </div>
 
-          {/* Dropdown Questões */}
+          {/* Dropdown Questões oculto
           <div 
             className="dropdown-section"
             onMouseEnter={() => setQuestoesExpanded(true)}
@@ -419,12 +410,9 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
               className={`dropdown-header d-flex align-items-center gap-2 ${questoesExpanded ? 'expanded' : ''}`}
               onClick={handleQuestoesClick}
             >
-               <FontAwesomeIcon icon={faQuestion} />
+               <HelpCircle size={14} />
                <span>Questões</span>
-               <FontAwesomeIcon 
-                 icon={faChevronDown} 
-                 className="dropdown-arrow"
-               />
+               <ChevronDown size={12} className="dropdown-arrow" />
              </div>
             <AnimatePresence>
                {questoesExpanded && (
@@ -436,17 +424,18 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
                    className="dropdown-content"
                  >
                    <Link to="/questoes" className={`menu-item submenu-item ${location.pathname === '/questoes' ? 'active' : ''}`}>
-                     <FontAwesomeIcon icon={faQuestion} />
+                     <HelpCircle size={14} />
                      <span className='small'>Minhas questões</span>
                    </Link>
                    <Link to="/dashboard-questoes" className={`menu-item submenu-item ${location.pathname === '/dashboard-questoes' ? 'active' : ''}`}>
-                     <FontAwesomeIcon icon={faChartSimple} />
+                     <BarChart2 size={14} />
                      <span className='small'>Dashboard</span>
                    </Link>
                  </motion.div>
                )}
              </AnimatePresence>
           </div>
+          */}
 
           {/* Link para "Reportar erro" removido */}
         </div>
@@ -455,11 +444,11 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
         <div className="admin-section">
           <span className="admin-title">Admin</span>
           <Link to="/usuarios" className={`menu-item ${location.pathname === '/usuarios' ? 'active' : ''}`}>
-            <FontAwesomeIcon icon={faUser} />
+            <User size={14} />
             <span>Usuários</span>
           </Link>
           <Link to="/inserir" className={`menu-item ${location.pathname === '/inserir' ? 'active' : ''}`}>
-            <FontAwesomeIcon icon={faPenToSquare} />
+            <Edit2 size={14} />
             <span>Inserir</span>
           </Link>
         </div>
@@ -516,10 +505,10 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
                   justifyContent: 'center'
                 }}
               >
-                <FontAwesomeIcon icon={faTimes} />
+                <X size={14} />
               </button>
 
-              <FontAwesomeIcon icon={dicaIcon} size="lg" style={{ opacity: 0.8, marginRight: '0.7em' }} />
+              <DicaIconComponent size={16} style={{ opacity: 0.8, marginRight: '0.7em' }} />
               <div className='text-dark'>
                 <div style={{ fontWeight: 600 }}>{dicaCategoriaNome}</div>
                 <div style={{ fontSize: '0.9em', opacity: 0.85 }}>
@@ -543,11 +532,11 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
       {/* (Removido conforme solicitado) */}
 
       {/* Modal para inserir categoria e dicas */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Inserir Categoria e Dicas</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" className="modal-fundo">
+        <Modal.Body className="modal-estilo">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Modal.Title className="fw-bold fs-5 m-0">Inserir Categoria e Dicas</Modal.Title>
+          </div>
           <div className="mb-2 fw-bold">Inserir Categoria de Dica</div>
           <input
             type="text"
@@ -587,7 +576,7 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
               {ICONES_CATEGORIA.map(opt => (
                 <span key={opt.value} style={{ cursor: 'pointer', border: categoriaIcon === opt.value ? '2px solid #71dd8c' : '2px solid transparent', borderRadius: 8, padding: 2 }}
                   onClick={() => setCategoriaIcon(opt.value)}>
-                  <FontAwesomeIcon icon={opt.icon} size="lg" />
+                  <opt.Icon size={16} />
                 </span>
               ))}
             </div>

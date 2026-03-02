@@ -298,11 +298,11 @@ const Inserir = () => {
               </tbody>
             </table>
           </div>
-          <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
-            <Modal.Header closeButton>
-              <Modal.Title>{editProjetoIdx !== null ? 'Editar Projeto Padrão' : 'Inserir Projeto Padrão'}</Modal.Title>
-            </Modal.Header>
-            <Modal.Body >
+          <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" className="modal-fundo" size="lg">
+            <Modal.Body className="modal-estilo">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <Modal.Title className="fw-bold fs-5 m-0">{editProjetoIdx !== null ? 'Editar Projeto Padrão' : 'Inserir Projeto Padrão'}</Modal.Title>
+              </div>
               <div>
                 <div className="d-flex align-items-center mb-4" style={{ gap: 10 }}>
                   <span className="fw-bold fs-6">Nome:</span>
@@ -360,30 +360,30 @@ const Inserir = () => {
 
 
                         {showEditarCarreiraModal && carreiraEditando && (
-                          <Modal show={showEditarCarreiraModal} onHide={() => setShowEditarCarreiraModal(false)} centered>
-                            <Modal.Header closeButton>
-                              <Modal.Title>Editar nome da carreira</Modal.Title>
-                            </Modal.Header>
-                            <Modal.Body>
+                          <Modal show={showEditarCarreiraModal} onHide={() => setShowEditarCarreiraModal(false)} centered backdrop="static" className="modal-fundo">
+                            <Modal.Body className="modal-estilo">
+                              <div className="d-flex justify-content-between align-items-center mb-3">
+                                <Modal.Title className="fw-bold fs-5 m-0">Editar nome da carreira</Modal.Title>
+                              </div>
                               <Form.Group className="mb-3">
                                 <Form.Label>Novo nome</Form.Label>
                                 <Form.Control type="text" value={novoNomeCarreira} onChange={e => setNovoNomeCarreira(e.target.value)} />
                               </Form.Group>
+                              <div className="d-flex justify-content-end gap-2 mt-3">
+                                <button className="btn btn-outline-primary-primary3" onClick={() => setShowEditarCarreiraModal(false)}>Cancelar</button>
+                                <button className="btn btn-primary-primary3" onClick={async () => {
+                                  if (!novoNomeCarreira.trim()) return;
+                                  try {
+                                    const token = JSON.parse(localStorage.getItem('user'))?.token;
+                                    const res = await api.put(`/carreiras/${carreiraEditando.id}`, { nome: novoNomeCarreira }, { headers: { Authorization: `Bearer ${token}` } });
+                                    setCarreiras(carreiras.map(c => c.id === carreiraEditando.id ? { ...c, nome: res.data.nome } : c));
+                                    setShowEditarCarreiraModal(false);
+                                  } catch (err) {
+                                    alert('Erro ao editar carreira');
+                                  }
+                                }}>Salvar</button>
+                              </div>
                             </Modal.Body>
-                            <Modal.Footer>
-                              <Button variant="secondary" onClick={() => setShowEditarCarreiraModal(false)}>Cancelar</Button>
-                              <Button variant="primary" onClick={async () => {
-                                if (!novoNomeCarreira.trim()) return;
-                                try {
-                                  const token = JSON.parse(localStorage.getItem('user'))?.token;
-                                  const res = await api.put(`/carreiras/${carreiraEditando.id}`, { nome: novoNomeCarreira }, { headers: { Authorization: `Bearer ${token}` } });
-                                  setCarreiras(carreiras.map(c => c.id === carreiraEditando.id ? { ...c, nome: res.data.nome } : c));
-                                  setShowEditarCarreiraModal(false);
-                                } catch (err) {
-                                  alert('Erro ao editar carreira');
-                                }
-                              }}>Salvar</Button>
-                            </Modal.Footer>
                           </Modal>
                         )}
                         <div className="px-2 py-2" style={{ cursor: 'pointer', color: 'var(--primary-primary)' }} onClick={() => { setShowCarreiraModal(true); setShowCarreiraDropdown(false); }}>
@@ -415,31 +415,30 @@ const Inserir = () => {
                   ) : null)}
                 </div>
 
-                <Modal show={showCarreiraModal} onHide={() => setShowCarreiraModal(false)} centered>
-                  <Modal.Header closeButton>
-                    <Modal.Title>Inserir nova carreira</Modal.Title>
-                  </Modal.Header>
-                  <Modal.Body>
+                <Modal show={showCarreiraModal} onHide={() => setShowCarreiraModal(false)} centered backdrop="static" className="modal-fundo">
+                  <Modal.Body className="modal-estilo">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <Modal.Title className="fw-bold fs-5 m-0">Inserir nova carreira</Modal.Title>
+                    </div>
                     <Form.Group className="mb-3">
                       <Form.Label>Nome da carreira</Form.Label>
                       <Form.Control type="text" value={novaCarreira} onChange={e => setNovaCarreira(e.target.value)} />
                     </Form.Group>
+                    <div className="d-flex justify-content-end gap-2 mt-3">
+                      <button className="btn btn-outline-primary-primary3" onClick={() => setShowCarreiraModal(false)}>Cancelar</button>
+                      <button className="btn btn-primary-primary3" onClick={async () => {
+                        if (!novaCarreira.trim()) return;
+                        try {
+                          const res = await api.post('/carreiras', { nome: novaCarreira });
+                          setCarreiras([...carreiras, res.data]);
+                          setNovaCarreira('');
+                          setShowCarreiraModal(false);
+                        } catch (err) {
+                          alert('Erro ao inserir carreira');
+                        }
+                      }}>Salvar</button>
+                    </div>
                   </Modal.Body>
-                  <Modal.Footer >
-                    <Button variant="secondary" onClick={() => setShowCarreiraModal(false)}>Cancelar</Button>
-                    <Button variant="primary" onClick={async () => {
-                      if (!novaCarreira.trim()) return;
-                      try {
-                        const res = await api.post('/carreiras', { nome: novaCarreira });
-                        setCarreiras([...carreiras, res.data]);
-                        // Não altera o filtro da tabela ao inserir carreira
-                        setNovaCarreira('');
-                        setShowCarreiraModal(false);
-                      } catch (err) {
-                        alert('Erro ao inserir carreira');
-                      }
-                    }}>Salvar</Button>
-                  </Modal.Footer>
                 </Modal>
                 <div className="mb-4  p-3 rounded-3" style={{ background: 'var(--background-light)' }}>
                   <div className="mb-2 fw-semibold fs-6">Adicionar Matéria</div>
@@ -636,8 +635,7 @@ const Inserir = () => {
                   </table>
                 </div>
               </div>
-            </Modal.Body>
-            <Modal.Footer>
+              <div className="d-flex justify-content-end gap-2 mt-3">
               <button className="btn btn-outline-primary-primary" onClick={() => {
                 setShowModal(false);
                 setEditProjetoIdx(null);
@@ -650,7 +648,8 @@ const Inserir = () => {
               <button className="btn btn-primary-primary" onClick={handleSalvarProjetoPadrao} disabled={uploadingImagem}>
                 {uploadingImagem ? 'Salvando...' : (editProjetoIdx !== null ? 'Salvar Alterações' : 'Salvar Projeto Padrão')}
               </button>
-            </Modal.Footer>
+              </div>
+            </Modal.Body>
           </Modal>
         </>
       )}
@@ -688,11 +687,11 @@ const Inserir = () => {
               )}
             </tbody>
           </table>
-          <Modal show={showDicaModal} onHide={() => setShowDicaModal(false)} centered>
-            <Modal.Header closeButton>
-              <Modal.Title>Inserir Dicas Sidebar</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
+          <Modal show={showDicaModal} onHide={() => setShowDicaModal(false)} centered backdrop="static" className="modal-fundo">
+            <Modal.Body className="modal-estilo">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <Modal.Title className="fw-bold fs-5 m-0">Inserir Dicas Sidebar</Modal.Title>
+              </div>
               <Form.Group className="mb-3">
                 <Form.Label>Categoria</Form.Label>
                 <Form.Select value={categoriaId} onChange={e => setCategoriaId(e.target.value)}>
@@ -706,11 +705,11 @@ const Inserir = () => {
                 <Form.Label>Dicas (uma por linha)</Form.Label>
                 <Form.Control as="textarea" rows={4} value={dicasTexto} onChange={e => setDicasTexto(e.target.value)} />
               </Form.Group>
+              <div className="d-flex justify-content-end gap-2 mt-3">
+                <button className="btn btn-outline-primary-primary3" onClick={() => setShowDicaModal(false)}>Cancelar</button>
+                <button className="btn btn-primary-primary3" onClick={handleInserirDicas}>Salvar Dicas</button>
+              </div>
             </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={() => setShowDicaModal(false)}>Cancelar</Button>
-              <Button variant="primary" onClick={handleInserirDicas}>Salvar Dicas</Button>
-            </Modal.Footer>
           </Modal>
         </>
       )}

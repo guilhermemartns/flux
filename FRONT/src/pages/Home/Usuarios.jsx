@@ -78,7 +78,7 @@ const Usuarios = () => {
     <div className="container mt-4">
       {/* Título removido, agora é definido via PageTitleContext para o Navbar */}
       <div className="card-padrao rounded-3 shadow-sm p-3 mb-2  w-100">
-        <strong className=" mb-2 d-block  m-0">GERENCIAR USUÁRIOS</strong>
+        <strong className=" mb-2 d-block  m-0">Gerenciar Usuários</strong>
         <table className="w-100 border-0 rounded-3">
           <thead>
             <tr>
@@ -125,7 +125,7 @@ const Usuarios = () => {
                   onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.09)'}
                   onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
                 >
-                  <span className="fw-semibold text-primary-primary">+ Cadastrar Usuário</span>
+                  <span className="fw-semibold text-secondary">+ Cadastrar Usuário</span>
                 </div>
               </td>
             </tr>
@@ -133,11 +133,11 @@ const Usuarios = () => {
         </table>
       </div>
       {loading && <div>Carregando...</div>}
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title className="fw-bold fs-5">Cadastrar Usuário</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" className="modal-fundo">
+        <Modal.Body className="modal-estilo">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Modal.Title className="fw-bold fs-5 m-0">Cadastrar Usuário</Modal.Title>
+          </div>
           <Form onSubmit={cadastrarUsuario}>
             {/* Bloco 1: Nome, Sobrenome, Apelido, Sexo, Nascimento, Foto */}
             <div className="row g-2 mb-2">
@@ -210,7 +210,7 @@ const Usuarios = () => {
               <div className="col-md-6">
                 <Form.Group className="mb-2">
                   <Form.Label className="fw-semibold">Tipo</Form.Label>
-                  <Form.Select className="linha" value={novoUsuario.role} onChange={e => setNovoUsuario({ ...novoUsuario, role: e.target.value })} required>
+                  <Form.Select className="linha" value={novoUsuario.role} onChange={e => setNovoUsuario({ ...novoUsuario, role: e.target.value })}>
                     <option value="user">Usuário</option>
                     <option value="admin">Administrador</option>
                   </Form.Select>
@@ -233,10 +233,10 @@ const Usuarios = () => {
               </div>
             </div>
             <div className="d-flex justify-content-end gap-2 mt-3">
-              <Button type="button" variant="outline-secondary" onClick={() => setShowModal(false)}>
+              <Button type="button" variant="outline-primary-primary3" onClick={() => setShowModal(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" variant="success">
+              <Button type="submit" variant="primary">
                 Cadastrar
               </Button>
             </div>
@@ -244,11 +244,11 @@ const Usuarios = () => {
         </Modal.Body>
       </Modal>
       {/* Modal de edição de usuário */}
-  <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title className="fw-bold fs-5">Editar Usuário</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
+  <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered backdrop="static" className="modal-fundo">
+        <Modal.Body className="modal-estilo">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Modal.Title className="fw-bold fs-5 m-0">Editar Usuário</Modal.Title>
+          </div>
           {usuarioEdit && (
             <Form onSubmit={async e => {
               e.preventDefault();
@@ -279,7 +279,7 @@ const Usuarios = () => {
                 <div className="col-md-4">
                   <Form.Group className="mb-2">
                     <Form.Label className="fw-semibold">Sobrenome</Form.Label>
-                    <Form.Control type="text" className="linha" value={usuarioEdit.sobrenome} onChange={e => setUsuarioEdit({ ...usuarioEdit, sobrenome: e.target.value })} required />
+                    <Form.Control type="text" className="linha" value={usuarioEdit.sobrenome} onChange={e => setUsuarioEdit({ ...usuarioEdit, sobrenome: e.target.value })} />
                   </Form.Group>
                 </div>
                 <div className="col-md-4">
@@ -291,7 +291,7 @@ const Usuarios = () => {
                 <div className="col-md-4">
                   <Form.Group className="mb-2">
                     <Form.Label className="fw-semibold">Sexo</Form.Label>
-                    <Form.Select className="linha" value={usuarioEdit.sexo} onChange={e => setUsuarioEdit({ ...usuarioEdit, sexo: e.target.value })} required>
+                    <Form.Select className="linha" value={usuarioEdit.sexo} onChange={e => setUsuarioEdit({ ...usuarioEdit, sexo: e.target.value })}>
                       <option value="">Selecione</option>
                       <option value="M">Masculino</option>
                       <option value="F">Feminino</option>
@@ -302,7 +302,7 @@ const Usuarios = () => {
                 <div className="col-md-4">
                   <Form.Group className="mb-2">
                     <Form.Label className="fw-semibold">Nascimento</Form.Label>
-                    <Form.Control type="date" className="linha" value={usuarioEdit.nascimento ? usuarioEdit.nascimento.slice(0,10) : ''} onChange={e => setUsuarioEdit({ ...usuarioEdit, nascimento: e.target.value })} required />
+                    <Form.Control type="date" className="linha" value={usuarioEdit.nascimento ? usuarioEdit.nascimento.slice(0,10) : ''} onChange={e => setUsuarioEdit({ ...usuarioEdit, nascimento: e.target.value })} />
                   </Form.Group>
                 </div>
                 <div className="col-md-4">
@@ -339,7 +339,7 @@ const Usuarios = () => {
                 <div className="col-md-6">
                   <Form.Group className="mb-2">
                     <Form.Label className="fw-semibold">Tipo</Form.Label>
-                    <Form.Select className="linha" value={usuarioEdit.role} onChange={e => setUsuarioEdit({ ...usuarioEdit, role: e.target.value })} required>
+                    <Form.Select className="linha" value={usuarioEdit.role} onChange={e => setUsuarioEdit({ ...usuarioEdit, role: e.target.value })}>
                       <option value="user">Usuário</option>
                       <option value="admin">Administrador</option>
                     </Form.Select>
@@ -351,13 +351,13 @@ const Usuarios = () => {
                 <div className="col-md-8">
                   <Form.Group className="mb-2">
                     <Form.Label className="fw-semibold">Cidade</Form.Label>
-                    <Form.Control type="text" className="linha" value={usuarioEdit.cidade} onChange={e => setUsuarioEdit({ ...usuarioEdit, cidade: e.target.value })} required />
+                    <Form.Control type="text" className="linha" value={usuarioEdit.cidade} onChange={e => setUsuarioEdit({ ...usuarioEdit, cidade: e.target.value })} />
                   </Form.Group>
                 </div>
                 <div className="col-md-4">
                   <Form.Group className="mb-2">
                     <Form.Label className="fw-semibold">UF</Form.Label>
-                    <Form.Control type="text" className="linha" value={usuarioEdit.uf} onChange={e => setUsuarioEdit({ ...usuarioEdit, uf: e.target.value })} maxLength={2} required />
+                    <Form.Control type="text" className="linha" value={usuarioEdit.uf} onChange={e => setUsuarioEdit({ ...usuarioEdit, uf: e.target.value })} maxLength={2} />
                   </Form.Group>
                 </div>
               </div>

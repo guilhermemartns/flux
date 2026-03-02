@@ -6,9 +6,7 @@ import ErrosBarChart from './components/graficos/ErrosBarChart';
 import MotivoErroBarChart from './components/graficos/MotivoErroBarChart';
 import BrancosBarChart from './components/graficos/BrancosBarChart';
 import MotivoBrancoBarChart from './components/graficos/MotivoBrancoBarChart';
-import { FaTrash, FaArrowLeft } from 'react-icons/fa';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPenToSquare, faArrowUp, faArrowDown, faTrash, faCopy, faEdit } from '@fortawesome/free-solid-svg-icons';
+import { ArrowLeft, ChevronUp, ChevronDown, Edit, Trash2 } from 'react-feather';
 import Swal from 'sweetalert2';
 
 function MateriaDetalhe() {
@@ -269,26 +267,7 @@ function MateriaDetalhe() {
     }
 
     async function handleDeleteItem(idx) {
-        const result = await Swal.fire({
-            title: 'Deseja apagar este item do edital?',
-            text: 'Essa ação não pode ser desfeita.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sim, apagar',
-            cancelButtonText: 'Cancelar',
-            reverseButtons: true,
-            customClass: {
-                container: 'alert-fundo',
-                popup: 'text-white',
-                title: 'text-white',
-                content: 'text-white',
-                confirmButton: 'btn m-2 btn-primary-primary',
-                cancelButton: 'btn btn-outline-primary-primary',
-            },
-            buttonsStyling: false,
-            background: 'transparent',
-        });
-        if (!result.isConfirmed) return;
+        if (!window.confirm('Deseja apagar este item do edital? Essa ação não pode ser desfeita.')) return;
         const novoEdital = materia.edital.filter((_, i) => i !== idx);
         try {
             await api.post(`/materias/${materia.id}/edital`, { edital: novoEdital });
@@ -372,8 +351,8 @@ function MateriaDetalhe() {
             <main className="container-fluid pt-3 pb-4 px-4">
                 <div>
                     <div className="d-flex align-items-center justify-content-between mb-3 position-relative">
-                        <Button variant='' onClick={() => navigate(-1)} className="btn btn-outline-primary-primary fw-bold w-auto px-2 py-1 d-flex align-items-center justify-content-center w-44 h-38 btn btn-outline-primary btn-sm">
-                            <FaArrowLeft className="me-2" /> Voltar
+                        <Button variant='' onClick={() => navigate(-1)} className="btn btn-outline-primary-primary3 fw-bold w-auto px-2 py-1 d-flex align-items-center justify-content-center w-44 h-38 btn btn-outline-primary btn-sm">
+                            <ArrowLeft size={16} className="me-2" /> Voltar
                         </Button>
                         <strong className="display-6 titulo-menor fs-3 text-uppercase fw-bold position-absolute start-50 translate-middle-x">
                             {materia.nome.length > 40 ? `${materia.nome.slice(0, 40)}...` : materia.nome}
@@ -381,8 +360,8 @@ function MateriaDetalhe() {
                         <div></div>
                     </div>
                     {Array.isArray(materia.edital) && materia.edital.length > 0 ? (
-                        <div className="card-padrao ">
-                            <strong className="d-flex mb-3 text-center">EDITAL VERTICALIZADO</strong>
+                        <div className="card-padrao2 ">
+                            <strong className="d-flex mb-3 text-center">Edital Verticalizado</strong>
                             <div>
                                 <div className=" d-flex align-items-center gap-3">
                                     <strong>Progresso:</strong><span className="fw-semibold text-end" >{getPorcentagem(materia)}%</span>
@@ -432,16 +411,16 @@ function MateriaDetalhe() {
                                                 <td className="align-middle" style={{ width: '1%' }}>
                                                   <div className="d-flex justify-content-center align-items-center gap-3 w-100">
                                                         <button className="btn-icon p-0  d-flex align-items-center justify-content-center" title="Trocar posição com o item acima" onClick={e => { e.stopPropagation(); handleMoveItem(idx, 'up'); }} disabled={idx === 0}>
-                                                            <FontAwesomeIcon icon={faArrowUp} className="fs-5 align-middle" />
+                                                            <ChevronUp size={16} className="align-middle" />
                                                         </button>
                                                         <button className="btn-icon p-0  d-flex align-items-center justify-content-center" title="Trocar posição com o item abaixo" onClick={e => { e.stopPropagation(); handleMoveItem(idx, 'down'); }} disabled={idx === materia.edital.length - 1}>
-                                                            <FontAwesomeIcon icon={faArrowDown} className="fs-5 align-middle" />
+                                                            <ChevronDown size={16} className="align-middle" />
                                                         </button>
                                                         <button className="btn-icon p-0  d-flex align-items-center justify-content-center" title="Editar" onClick={e => { e.stopPropagation(); handleEditItem(idx); }}>
-                                                            <FontAwesomeIcon icon={faPenToSquare} className="fs-5 align-middle" />
+                                                            <Edit size={16} className="align-middle" />
                                                         </button>
                                                         <button className="btn-icon p-0   d-flex align-items-center justify-content-center" title="Apagar" onClick={e => { e.stopPropagation(); handleDeleteItem(idx); }}>
-                                                            <FaTrash className="fs-5 align-middle" />
+                                                            <Trash2 size={16} className="align-middle" />
                                                         </button>
                                                   </div>
                                                 </td>
@@ -456,8 +435,8 @@ function MateriaDetalhe() {
                                                     onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.09)'}
                                                     onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
                                                 >
-                                                    <span className="fw-semibold text-primary-primary">
-                                                        + Adicionar novo item ao edital
+                                                    <span className="fw-semibold text-secondary">
+                                                        + Adicionar Novo Item
                                                     </span>
                                                 </div>
                                             </td>
@@ -467,11 +446,12 @@ function MateriaDetalhe() {
                                 {showAddItemModal && (
                                     <div ></div>
                                 )}
-                                <Modal show={showAddItemModal} onHide={() => setShowAddItemModal(false)}>
-                                    <Modal.Header closeButton>
-                                        <Modal.Title>Adicionar itens ao edital</Modal.Title>
-                                    </Modal.Header>
-                                    <Modal.Body>
+                                <Modal show={showAddItemModal} onHide={() => setShowAddItemModal(false)} centered backdrop="static" className="modal-fundo">
+                                    <Modal.Body className="modal-estilo">
+                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                            <Modal.Title className="fw-bold fs-5 m-0">Adicionar itens ao edital</Modal.Title>
+                                        </div>
+                                        <p className="text-secondary mb-3" style={{ fontSize: '0.8em' }}>Digite um item por linha. Cada linha será salva como um tópico separado do edital.</p>
                                         <form className="needs-validation" noValidate onSubmit={e => {
                                             e.preventDefault();
                                             if (!newItemValue.trim()) {
@@ -481,50 +461,39 @@ function MateriaDetalhe() {
                                             handleAddItem();
                                         }}>
                                             <textarea
-                                                placeholder="Digite um item por linha (máx. 200 caracteres cada)"
+                                                placeholder="Um item por linha..."
                                                 rows={5}
                                                 value={newItemValue}
                                                 onChange={e => {
                                                     const linhas = e.target.value.split('\n').map(l => l.slice(0, 200));
                                                     setNewItemValue(linhas.join('\n'));
                                                 }}
-                                                className="form-control"
-                                                
+                                                className="form-control linha"
                                                 required
                                             />
-                                            <small >Você pode adicionar vários itens de uma vez, separando cada um em uma linha.</small>
                                             <div className="d-none">
                                                 <input type="text" required value={newItemValue.trim() ? 'ok' : ''} readOnly />
                                             </div>
                                             <div className="d-flex justify-content-end gap-3 mt-4">
-                                                <Button variant="secondary" onClick={() => setShowAddItemModal(false)}>
-                                                    Cancelar
-                                                </Button>
-                                                <Button variant="primary" type="submit">
-                                                    Adicionar
-                                                </Button>
+                                                <button className="btn btn-outline-primary-primary3" type="button" onClick={() => setShowAddItemModal(false)}>Cancelar</button>
+                                                <button className="btn btn-primary-primary3" type="submit">Adicionar</button>
                                             </div>
                                         </form>
                                     </Modal.Body>
                                 </Modal>
-                                {showEditItemModal && (
-                                    <div className="position-fixed top-0 left-0 w-100 vh-100 bg-dark bg-opacity-50 backdrop-blur" ></div>
-                                )}
-                                <Modal show={showEditItemModal} onHide={() => setShowEditItemModal(false)}>
-                                    <Modal.Header closeButton>
-                                        <Modal.Title>Editar item do edital</Modal.Title>
-                                    </Modal.Header>
-                                    <Modal.Body>
-                                        <input type="text" className="form-control" value={editItemValue} onChange={e => setEditItemValue(e.target.value)} />
+                                <Modal show={showEditItemModal} onHide={() => setShowEditItemModal(false)} centered backdrop="static" className="modal-fundo">
+                                    <Modal.Body className="modal-estilo">
+                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                            <Modal.Title className="fw-bold fs-5 m-0">Editar item do edital</Modal.Title>
+                                        </div>
+                                        <p className="text-secondary mb-3" style={{ fontSize: '0.8em' }}>Altere o texto do item selecionado.</p>
+                                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Item</label>
+                                        <input type="text" className="form-control linha" value={editItemValue} onChange={e => setEditItemValue(e.target.value)} />
+                                        <div className="d-flex justify-content-end gap-2 mt-3">
+                                            <button className="btn btn-outline-primary-primary3" onClick={() => setShowEditItemModal(false)}>Cancelar</button>
+                                            <button className="btn btn-primary-primary3" onClick={saveEditItem}>Salvar</button>
+                                        </div>
                                     </Modal.Body>
-                                    <Modal.Footer>
-                                        <Button variant="secondary" onClick={() => setShowEditItemModal(false)}>
-                                            Cancelar
-                                        </Button>
-                                        <Button variant="primary" onClick={saveEditItem}>
-                                            Salvar
-                                        </Button>
-                                    </Modal.Footer>
                                 </Modal>
                             </div>
                         </div>
@@ -534,11 +503,12 @@ function MateriaDetalhe() {
                             <Button variant="primary fw-bold" onClick={() => setShowAddItemModal(true)}>
                                 + Inserir edital
                             </Button>
-                            <Modal show={showAddItemModal} onHide={() => setShowAddItemModal(false)}>
-                                <Modal.Header closeButton>
-                                    <Modal.Title>Adicionar itens ao edital</Modal.Title>
-                                </Modal.Header>
-                                <Modal.Body>
+                                        <Modal show={showAddItemModal} onHide={() => setShowAddItemModal(false)} centered backdrop="static" className="modal-fundo">
+                                <Modal.Body className="modal-estilo">
+                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                        <Modal.Title className="fw-bold fs-5 m-0">Adicionar itens ao edital</Modal.Title>
+                                    </div>
+                                    <p className="text-secondary mb-3" style={{ fontSize: '0.8em' }}>Digite um item por linha. Cada linha será salva como um tópico separado do edital.</p>
                                     <form className="needs-validation" noValidate onSubmit={e => {
                                         e.preventDefault();
                                         if (!newItemValue.trim()) {
@@ -548,28 +518,22 @@ function MateriaDetalhe() {
                                         handleAddItem();
                                     }}>
                                         <textarea
-                                            placeholder="Digite um item por linha (máx. 200 caracteres cada)"
+                                            placeholder="Um item por linha..."
                                             rows={5}
                                             value={newItemValue}
                                             onChange={e => {
                                                 const linhas = e.target.value.split('\n').map(l => l.slice(0, 200));
                                                 setNewItemValue(linhas.join('\n'));
                                             }}
-                                            className="form-control"
-                                           
+                                            className="form-control linha"
                                             required
                                         />
-                                        <small className="text-muted fw-medium">Você pode adicionar vários itens de uma vez, separando cada um em uma linha.</small>
                                         <div className="d-none">
                                             <input type="text" required value={newItemValue.trim() ? 'ok' : ''} readOnly />
                                         </div>
                                         <div className="d-flex justify-content-end gap-3 mt-4">
-                                            <Button variant="secondary" onClick={() => setShowAddItemModal(false)}>
-                                                Cancelar
-                                            </Button>
-                                            <Button variant="primary" type="submit">
-                                                Adicionar
-                                            </Button>
+                                            <button className="btn btn-outline-primary-primary3" type="button" onClick={() => setShowAddItemModal(false)}>Cancelar</button>
+                                            <button className="btn btn-primary-primary3" type="submit">Adicionar</button>
                                         </div>
                                     </form>
                                 </Modal.Body>
@@ -580,9 +544,9 @@ function MateriaDetalhe() {
 
                 <div className="d-flex w-100">
                     {/* Histórico de Estudo da Matéria */}
-                    <div className="card-padrao fadein w-100 " style={{ padding: '1rem', position: 'relative' }}>
-                        <div className="card-title-padrao">HISTÓRICO DE ESTUDO</div>
-                        <div className="card-content">
+                    <div className="card-padrao2 fadein w-100 " style={{ padding: '1rem', position: 'relative' }}>
+                        <div className="card-title-padrao">Histórico de Estudo</div>
+                        <div className="card-content mb-3">
                             <ul className="list-group rounded list-group-flush" style={{ maxHeight: 220, overflowY: 'auto' }}>
                                 {loadingEstudos ? (
                                     <li className="list-group-item"><Spinner animation="border" size="sm" /> Carregando estudos...</li>

@@ -1,9 +1,8 @@
 import Sidebar from './components/sidebar.jsx';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import api from '../../services/api';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faOtter, faTimesCircle, faCircle, faBalanceScale, faCopy, faEdit, faTrash, faFaceSadCry, faRocket, faFileImport } from '@fortawesome/free-solid-svg-icons';
-import { faPiedPiperAlt, faPiedPiperHat } from '@fortawesome/free-brands-svg-icons';
+import { Trash, Upload, Edit2, Zap, Calendar, Award } from 'react-feather';
+import FireIcon from '../../components/FireIcon';
 import { useNavigate } from 'react-router-dom';
 import { Line } from 'react-chartjs-2';
 import { Chart, CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip, Title } from 'chart.js';
@@ -14,6 +13,7 @@ import { usePageTitle } from '../../components/PageTitleContext';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import confetti from 'canvas-confetti';
+import { StudyTimerContext } from '../../components/StudyTimerContext';
 Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip, Title);
 
 
@@ -26,11 +26,11 @@ function getSidebarCollapsed() {
     try {
       const usuario = JSON.parse(localStorage.getItem('user'));
       if (!usuario) return true; // Se não há usuário, começa recolhida
-      
+
       // Se há um projeto selecionado, significa que tem projetos - começa expandida
       const projetoSelecionado = localStorage.getItem('projetoSelecionado');
       if (projetoSelecionado) return false; // Expandida
-      
+
       return true; // Recolhida por padrão
     } catch {
       return true; // Em caso de erro, começa recolhida
@@ -40,6 +40,7 @@ function getSidebarCollapsed() {
 }
 
 const Home = () => {
+  const { openFormWithEdit } = useContext(StudyTimerContext);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getSidebarCollapsed);
   const [simulados, setSimulados] = useState([]);
   const [resumos, setResumos] = useState({});
@@ -72,11 +73,11 @@ const Home = () => {
           setTemProjetosCadastrados(false);
           return;
         }
-        
+
         const res = await api.get('/projetos', { params: { userId: usuario.id } });
         const projetos = res.data || [];
         setTemProjetosCadastrados(projetos.length > 0);
-        
+
         // Ajusta a sidebar baseada na existência de projetos
         if (projetos.length > 0) {
           // Se há projetos, sidebar deve estar expandida (exceto se usuário já definiu preferência)
@@ -90,7 +91,7 @@ const Home = () => {
           setSidebarCollapsed(true);
           localStorage.setItem('sidebarCollapsed', '1');
         }
-        
+
         // Se não há projeto selecionado mas há projetos disponíveis, seleciona o primeiro
         if (projetos.length > 0 && !localStorage.getItem('projetoSelecionado')) {
           localStorage.setItem('projetoSelecionado', projetos[0].id);
@@ -101,7 +102,7 @@ const Home = () => {
         setTemProjetosCadastrados(false);
       }
     }
-    
+
     verificarProjetosCadastrados();
   }, []);
 
@@ -176,7 +177,7 @@ const Home = () => {
     try {
       // Tenta diferentes formatos de data
       let date;
-      
+
       // Se já é um objeto Date válido
       if (dateString instanceof Date && !isNaN(dateString.getTime())) {
         date = dateString;
@@ -191,7 +192,7 @@ const Home = () => {
       else {
         date = new Date(dateString);
       }
-      
+
       if (isNaN(date.getTime())) return 'Data inválida';
       return date.toLocaleDateString('pt-BR');
     } catch (error) {
@@ -243,7 +244,7 @@ const Home = () => {
   const [metaSemanalHoras, setMetaSemanalHoras] = useState(Math.floor(metaSemanal));
   const [metaSemanalMinutos, setMetaSemanalMinutos] = useState(0);
   const [diasMigrados, setDiasMigrados] = useState(0); // Novo state para dias migrados
-  
+
   // Estados para migração de horas
   const [showModalMigracaoHoras, setShowModalMigracaoHoras] = useState(false);
   const [horasParaMigrar, setHorasParaMigrar] = useState('');
@@ -254,13 +255,12 @@ const Home = () => {
     setMetaSemanal(metaSemanalHoras + metaSemanalMinutos / 60);
   }, [metaSemanalHoras, metaSemanalMinutos]);
 
-  useEffect(() => {
-    async function fetchHistorico() {
+  async function fetchHistoricoEstudo() {
       try {
         const usuario = JSON.parse(localStorage.getItem('user'));
         const projetoId = localStorage.getItem('projetoSelecionado') || '';
         if (!usuario || !projetoId) return;
-        
+
         const res = await api.get('/estudo', { params: { userId: usuario.id, projetoId } });
         setHistoricoEstudo(res.data || []);
 
@@ -339,7 +339,9 @@ const Home = () => {
         } catch { }
       } catch { }
     }
-    fetchHistorico();
+
+  useEffect(() => {
+    fetchHistoricoEstudo();
   }, []);
 
   // Função para apagar registro de estudo com confirmação
@@ -419,10 +421,10 @@ const Home = () => {
         const usuario = JSON.parse(localStorage.getItem('user'));
         const projetoId = localStorage.getItem('projetoSelecionado') || '';
         if (!usuario || !projetoId) return;
-        
+
         // Verifica no localStorage se a migração já foi usada
         const migracaoJaUsada = localStorage.getItem(`migracao_${usuario.id}_${projetoId}`) === 'true';
-        
+
         setMigracaoUsada(migracaoJaUsada);
       } catch {
         setMigracaoUsada(false);
@@ -438,10 +440,10 @@ const Home = () => {
         const usuario = JSON.parse(localStorage.getItem('user'));
         const projetoId = localStorage.getItem('projetoSelecionado') || '';
         if (!usuario || !projetoId) return;
-        
+
         // Verifica no localStorage se a migração de horas já foi usada
         const migracaoHorasJaUsada = localStorage.getItem(`migracaoHoras_${usuario.id}_${projetoId}`) === 'true';
-        
+
         // Para testes, permitimos múltiplas migrações
         setMigracaoHorasUsada(false);
       } catch {
@@ -512,17 +514,17 @@ const Home = () => {
 
     const diasNum = parseInt(diasParaMigrar);
     const recordeNum = parseInt(recordeParaMigrar);
-    
+
     if (!diasParaMigrar.trim() || isNaN(diasNum) || diasNum < 0) {
       alert('Por favor, insira um número válido de dias consecutivos (maior ou igual a 0).');
       return;
     }
-    
+
     if (!recordeParaMigrar.trim() || isNaN(recordeNum) || recordeNum < 0) {
       alert('Por favor, insira um número válido para o melhor recorde (maior ou igual a 0).');
       return;
     }
-    
+
     if (recordeNum < diasNum) {
       alert('O melhor recorde não pode ser menor que os dias consecutivos atuais.');
       return;
@@ -534,8 +536,8 @@ const Home = () => {
       if (!usuario || !projetoId) return;
 
       // Busca a primeira matéria do projeto para usar como referência
-      const materiasRes = await api.get('/edital', { 
-        params: { userId: usuario.id, projetoId } 
+      const materiasRes = await api.get('/edital', {
+        params: { userId: usuario.id, projetoId }
       });
       const materias = materiasRes.data;
       if (!materias || materias.length === 0) {
@@ -555,10 +557,10 @@ const Home = () => {
       setShowModalMigracao(false);
       setDiasParaMigrar('');
       setRecordeParaMigrar('');
-      
+
       // Recarrega os dados para atualizar contadores
       window.location.reload();
-      
+
       alert(`Migração concluída!\nDias consecutivos atuais: ${diasNum}\nMelhor recorde: ${recordeNum}`);
     } catch (error) {
       console.error('Erro na migração:', error);
@@ -571,7 +573,7 @@ const Home = () => {
     try {
       const usuario = JSON.parse(localStorage.getItem('user'));
       const projetoId = localStorage.getItem('projetoSelecionado');
-      
+
       if (!usuario || !projetoId) {
         alert('Erro: Usuário ou projeto não identificado.');
         return;
@@ -590,12 +592,12 @@ const Home = () => {
         // Se for 0, reseta a migração
         localStorage.setItem(`horasMigradas_${usuario.id}_${projetoId}`, '0');
         localStorage.setItem(`migracaoHoras_${usuario.id}_${projetoId}`, 'true');
-        
+
         setMigracaoHorasUsada(true);
         setShowModalMigracaoHoras(false);
         setHorasParaMigrar('');
         setMinutosParaMigrar('');
-        
+
         alert('Migração de horas processada! Contagem iniciada do zero.');
         return;
       }
@@ -608,10 +610,10 @@ const Home = () => {
       setShowModalMigracaoHoras(false);
       setHorasParaMigrar('');
       setMinutosParaMigrar('');
-      
+
       // Recarrega os dados para atualizar contadores
       window.location.reload();
-      
+
       alert(`${horas}h ${minutos}min migrados com sucesso! Esse tempo será adicionado ao seu total.`);
     } catch (error) {
       console.error('Erro na migração de horas:', error);
@@ -628,7 +630,7 @@ const Home = () => {
     try {
       const usuario = JSON.parse(localStorage.getItem('user'));
       const projetoId = localStorage.getItem('projetoSelecionado');
-      
+
       if (!usuario || !projetoId) {
         alert('Erro: Usuário ou projeto não identificado.');
         return;
@@ -639,10 +641,10 @@ const Home = () => {
       localStorage.removeItem(`migracaoHoras_${usuario.id}_${projetoId}`);
 
       setMigracaoHorasUsada(false);
-      
+
       // Recarrega os dados para atualizar contadores
       window.location.reload();
-      
+
       alert('Migração de horas removida com sucesso!');
     } catch (error) {
       console.error('Erro ao limpar migração de horas:', error);
@@ -675,24 +677,26 @@ const Home = () => {
 
     return (
       <div className="app-container d-flex flex-column justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+
         <div className="text-center">
-          <img src="/sigma.png" alt="FLUX Logo" className="mb-3 fadein-slideup" style={{ width: '75px', height: 'auto', margin: '0 auto', display: 'block' }} />
-          <h2 className="mb-4 text-primary-primary fadein-slideup">Bem-vindo ao FLUX!</h2>
+
+          <div className="mb-3 fadein-slideup" style={{ fontSize: '2.5rem', fontWeight: 100, color: 'var(--text-light)', margin: '0 auto', display: 'block', letterSpacing: '3px' }}>@meuflux</div>
+          <h2 className="mb-4 text-primary-primary fadein-slideup">Bem-vindo ao Flux!</h2>
           <div className="mb-3 fs-5  d-flex justify-content-center align-items-center gap-2 fadein-slideup">
             {fraseDoDia || ''}
-            <FontAwesomeIcon icon={faRocket} className="ms-2 text-primary-primary2" />
+            <Zap size={16} className="ms-2 text-primary-primary2" />
           </div>
           <div className="mb-4 fs-6  fadein-slideup" style={{ color: 'var(--text-light)' }}>
             <p>
-              O FLUX é seu <span className="fw-bold text-primary-primary" style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: 8 }}>Sistema de Gestão e Monitoramento de Aprendizado</span> a partir de agora!<br />
-              Desenvolvido por estudantes e para estudantes, organize suas matérias, registre simulados, acompanhe seu desempenho e evolua rumo à aprovação!
+              O FLUX é seu <span className="fw-bold text-primary-primary" style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: 8 }}>Sistema de gestão e monitoramento de aprendizado</span>a partir de agora!<br />
+
             </p>
             <p>
               Para começar, crie ou selecione um projeto. Assim você poderá cadastrar matérias, simulados e acompanhar seu progresso.
             </p>
           </div>
           <button
-            className="btn btn-primary-primary px-4 py-2 fadein-slideup"
+            className="btn btn-primary-primary3 px-4 py-2 fadein-slideup"
 
             onClick={handleIniciarProjeto}
           >
@@ -713,72 +717,397 @@ const Home = () => {
 
   // Adicione no início do componente Home (antes do return)
   // Troque os labels dos botões:
-  const resumoOpcoes = ['dia', 'semana', 'mes'];
-  const resumoLabels = { dia: 'DO DIA', semana: 'DA SEMANA', mes: 'DO MÊS' };
+  const resumoOpcoes = ['dia', 'semana', 'mes', 'total'];
+  const resumoLabels = { dia: 'do Dia', semana: 'da Semana', mes: 'do Mês', total: 'Total' };
   function handleResumoPeriodoToggle() {
     const idx = resumoOpcoes.indexOf(resumoPeriodo);
     setResumoPeriodo(resumoOpcoes[(idx + 1) % resumoOpcoes.length]);
   }
 
   return (
+
+
+
+
+
     <div className="app-container">
+
+
+
       <main className="container-fluid gap-4 pt-3">
-        <div className="d-flex w-100 align-items-center min-vh-10" style={{ animationDelay: '0.1s' }}>
-          <div className="card-padrao2 fadein flex-fill text-center me-4 d-flex flex-column w-25" style={{ height: '100%', animationDelay: '0.15s', position: 'relative' }}>
-            <div className='logo' style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)' }}>
-              <img src="/sigma.png" alt="FLUX" style={{ width: '40px', height: 'auto', verticalAlign: 'middle' }} />
-            </div>
-            <div className="d-flex flex-column justify-content-center align-items-center h-100">
-              <div className="mb-2" style={{ opacity: 0.9 }}>
-                <span className="text-primary-primary" style={{ fontSize: '0.95em', fontWeight: 500 }}>
-                  Olá{nomeUsuario && <span>, {nomeUsuario}</span>}! 👋
-                </span>
+
+
+
+
+        <div className="m-0 w-100 p-3 border fadein" style={{ borderRadius: 25, animationDelay: '0.1s', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+          <div className="card-title-padrao position-absolute px-3" style={{ top: '-12px', left: '20px', zIndex: 1, backgroundColor: 'var(--background)' }}>TEMPO</div>
+
+          <div className="d-flex w-100" style={{ animationDelay: '0.15s' }}>
+            <div className="card-padrao2 fadein flex-grow-1 me-4" style={{ animationDelay: '0.18s', padding: '1rem', position: 'relative' }}>
+              <div className="d-flex align-items-center " style={{ width: '100%' }}>
+                <div className="card-title-padrao">Constância nos Estudos</div>
+                {/* Remover as condições, sempre mostrar os botões */}
+                <button
+                  className="btn btn-sm btn-link p-0 text-secondary me-2"
+                  style={{ marginLeft: 'auto' }}
+                  onClick={() => {
+                    if (window.confirm('Zerar todos os dados de migração?')) {
+                      const usuario = JSON.parse(localStorage.getItem('user'));
+                      const projetoId = localStorage.getItem('projetoSelecionado') || '';
+                      localStorage.removeItem(`diasMigrados_${usuario.id}_${projetoId}`);
+                      localStorage.removeItem(`recordeMigrado_${usuario.id}_${projetoId}`);
+                      localStorage.removeItem(`migracao_${usuario.id}_${projetoId}`);
+                      window.location.reload();
+                    }
+                  }}
+                  title="Limpar dados de migração"
+                >
+                  <Trash size={14} />
+                </button>
+                <button
+                  className="btn btn-sm btn-link p-0 text-secondary me-2"
+                  onClick={() => setShowModalMigracao(true)}
+                  title="Migrar constância de outro app (uso único)"
+                >
+                  <Upload size={14} />
+                </button>
               </div>
-              <span className="fw-bold">
-                {fraseDoDia || ''}
-              </span>
+              <div className="card-content " style={{ justifyContent: 'flex-start' }}>
+                <div className="dias-consecutivos  d-flex flex-row flex-wrap justify-content-center w-100" style={{ paddingTop: '1rem' }}>
+                  {(() => {
+                    const totalIcons = 30;
+                    const hoje = new Date();
+                    // Criar set de datas de estudo reais apenas (usando datas locais)
+                    const datasEstudoReais = new Set(historicoEstudo.map(e => {
+                      try {
+                        if (typeof e.dataSessao === 'string' && e.dataSessao.includes('T')) {
+                          return e.dataSessao.split('T')[0];
+                        }
+                        const d = new Date(e.dataSessao);
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        return `${y}-${m}-${day}`;
+                      } catch {
+                        return '';
+                      }
+                    }));
+                    // Obter dias migrados do localStorage
+                    const usuario = JSON.parse(localStorage.getItem('user'));
+                    const projetoId = localStorage.getItem('projetoSelecionado');
+                    const diasMigradosStorage = parseInt(localStorage.getItem(`diasMigrados_${usuario?.id}_${projetoId}`)) || 0;
+                    return [...Array(totalIcons)].map((_, i) => {
+                      const data = new Date(hoje);
+                      data.setHours(0, 0, 0, 0);
+                      data.setDate(hoje.getDate() - (totalIcons - 1 - i));
+                      const y = data.getFullYear();
+                      const m = String(data.getMonth() + 1).padStart(2, '0');
+                      const day = String(data.getDate()).padStart(2, '0');
+                      const dataStr = `${y}-${m}-${day}`;
+                      // Verifica se estudou realmente neste dia
+                      const estudouReal = datasEstudoReais.has(dataStr);
+                      // Verifica se este dia está dentro do período de migração
+                      const diasAtras = totalIcons - 1 - i; // Quantos dias atrás esta div representa
+                      const dentroMigracao = diasAtras < diasMigradosStorage;
+                      // Um dia é considerado "estudado" se realmente estudou OU se está dentro da migração
+                      const estudou = estudouReal || dentroMigracao;
+                      // Determinar a cor e título baseado no tipo 
+                      let cor = '#be9da4'; // Padrão: não estudou
+                      let titulo = 'Não estudou';
+                      if (estudouReal) {
+                        cor = 'var(--primary-primary)'; // Verde: estudou realmente
+                        titulo = 'Estudou';
+                      } else if (dentroMigracao) {
+                        cor = 'var(--primary-primary-dark)'; // Verde mais escuro: dia migrado
+                        titulo = 'Dia migrado (não faltou)';
+                      }
+                      // Adiciona o dia no title
+                      const title = `${titulo} - ${day}/${m}/${y}`;
+                      return (
+                        <div
+                          key={i}
+                          title={title}
+                          className={`d-flex align-items-center justify-content-center text-light ${i === 0 ? 'rounded-start' : i === totalIcons - 1 ? 'rounded-end' : ''}`}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            width: 50,
+                            height: 34,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0',
+                            background: '#fff',
+                            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.09)',
+                            borderRadius: i === 0 ? '6px 0 0 6px' : i === totalIcons - 1 ? '0 6px 6px 0' : 0,
+                          }}
+                        >
+                          <FireIcon isActive={estudou} size={18} />
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            </div>
+            <div className="card-padrao2 fadein" style={{ width: '40%', minWidth: 280, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', animationDelay: '0.2s', padding: '1rem', position: 'relative' }}>
+              <div className="d-flex align-items-center " style={{ width: '100%' }}>
+
+              </div>
+              <div className="card-content">
+                <div className="d-flex flex-row align-items-center justify-content-around w-100" style={{ gap: '0.5rem' }}>
+                  <div className="d-flex flex-column align-items-center text-center" style={{ flex: 1 }}>
+                    <div className='text-primary-primary d-flex align-items-center gap-1' style={{ fontSize: '1.5em', fontWeight: 600, lineHeight: 1 }}>
+                      <Calendar size={16} />
+                      {(() => {
+                        const diasUnicos = new Set(historicoEstudo.map(e => {
+                          if (typeof e.dataSessao === 'string' && e.dataSessao.includes('T')) return e.dataSessao.split('T')[0];
+                          const d = new Date(e.dataSessao);
+                          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        }));
+                        return diasUnicos.size;
+                      })()} <span style={{ fontSize: '0.5em', fontWeight: 500 }}>dias</span>
+                    </div>
+                    <div style={{ fontSize: '0.75em', color: 'var(--text-light)', fontWeight: 500, marginTop: '0.2rem' }}>registrados</div>
+                  </div>
+                  <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }}></div>
+                  <div className="d-flex flex-column align-items-center text-center" style={{ flex: 1 }}>
+                    <div className='d-flex align-items-center gap-1' style={{ fontSize: '2.4em', color: 'var(--primary-primary)', fontWeight: 700, lineHeight: 1 }}><Zap size={22} />{diasSemFalhar} <span style={{ fontSize: '0.5em', fontWeight: 500 }}>dias</span></div>
+                    <div style={{ fontSize: '0.75em', color: 'var(--text-light)', fontWeight: 600, marginTop: '0.2rem' }}>Sequência atual</div>
+                  </div>
+                  <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }}></div>
+                  <div className="d-flex flex-column align-items-center text-center" style={{ flex: 1 }}>
+                    <div className='d-flex align-items-center gap-1' style={{ fontSize: '1.5em', color: '#ffc107', fontWeight: 700, lineHeight: 1 }}><Award size={18} />{recordeDias} <span style={{ fontSize: '0.5em', fontWeight: 500 }}>dias</span></div>
+                    <div style={{ fontSize: '0.75em', color: 'var(--text-light)', fontWeight: 600, marginTop: '0.2rem' }}>Melhor recorde</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
 
 
-          <div className="card-padrao2 fadein flex-fill text-center me-4 d-flex flex-column justify-content-center w-25" style={{ height: '100%', animationDelay: '0.2s', padding: '1rem', position: 'relative' }}>
-            <div className="d-flex align-items-center mb-3" style={{ width: '100%' }}>
-              <div className="card-title-padrao m-0">METAS E PROGRESSO</div>
-              <button className="btn btn-sm btn-link p-0 text-primary-primary" style={{ marginLeft: 'auto' }} onClick={() => setShowModalMeta(true)}>
-                <FontAwesomeIcon icon={faEdit} />
-              </button>
-            </div>
-            <div className="card-content" style={{ paddingTop: 0 }}>
-              {/* Barra de progresso semanal */}
-              <div className="mt-2 mb-1 text-start">
-                <span className="fw-bold">Progresso semanal:</span>
-                {(() => {
-                  const hoje = new Date();
-                  const dias = [];
-                  for (let i = 0; i < 7; i++) {
-                    const d = new Date(hoje);
-                    d.setDate(hoje.getDate() - i);
-                    dias.push(d.toDateString());
-                  }
-                  const estudos7dias = historicoEstudo.filter(e => dias.includes(new Date(e.dataSessao).toDateString()));
-                  const totalMin = estudos7dias.reduce((acc, est) => acc + (est.tempo || 0), 0);
-                  const totalHoras = totalMin / 60;
-                  const progresso = Math.min((totalHoras / metaSemanal) * 100, 100);
-                  return (
-                    <div className="progress" style={{ height: '10px' }}>
-                      <div
-                        className="progress-bar bg-primary-primary"
-                        role="progressbar"
-                        style={{ width: `${progresso}%` }}
-                        aria-valuenow={progresso}
-                        aria-valuemin="0"
-                        aria-valuemax="100"
-                      />
+
+
+
+
+
+          <div className="d-flex w-100 align-items-stretch min-vh-10" style={{ animationDelay: '0.2s' }}>
+
+
+
+
+            <div className="card-padrao2 fadein text-center me-4 d-flex flex-column" style={{ flex: '0.6 1 0', minWidth: 0, maxHeight: 280, animationDelay: '0.25s', padding: '1rem', position: 'relative' }}>
+              <div className="d-flex align-items-center " style={{ width: '100%' }}>
+                <div className="d-flex align-items-center " style={{ width: '100%' }}>
+                  <div className="card-title-padrao m-0">Tempo Total de Estudo</div>
+                  <div className="flex-grow-1"></div>
+                  <button
+                    className="btn btn-sm btn-link p-0 text-secondary me-1"
+                    onClick={handleLimparMigracaoHoras}
+                    title="Limpar migração de horas"
+                  >
+                    <Trash size={14} />
+                  </button>
+                  <button className="btn btn-sm btn-link p-0 text-secondary" onClick={() => setShowModalMigracaoHoras(true)}>
+                    <Upload size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="card-content d-flex flex-row justify-content-around align-items-center" style={{ flex: 1, gap: '1rem' }}>
+
+                {/* Coluna Esquerda: Semanal + Mensal */}
+                <div className="d-flex flex-column justify-content-center align-items-center" style={{ flex: 1, gap: '0.6rem' }}>
+                  {/* Semanal */}
+                  <div className="d-flex flex-column align-items-center text-center">
+                    <div style={{ fontSize: '1.1em', color: 'var(--primary-primary)', fontWeight: 700 }}>
+                      {(() => {
+                        const hoje = new Date();
+                        const dias = [];
+                        for (let i = 0; i < 7; i++) {
+                          const d = new Date(hoje);
+                          d.setDate(hoje.getDate() - i);
+                          dias.push(d.toDateString());
+                        }
+                        const estudos7dias = historicoEstudo.filter(e => dias.includes(new Date(e.dataSessao).toDateString()));
+                        const totalMin = estudos7dias.reduce((acc, est) => acc + (est.tempo || 0), 0);
+                        const horas = Math.floor(totalMin / 60);
+                        const minutos = totalMin % 60;
+                        return `${horas}h ${minutos}min`;
+                      })()}
                     </div>
-                  );
-                })()}
-                <span className="ms-2">
+                    <div style={{ fontSize: '0.75em', color: 'var(--text-light)', fontWeight: 600 }}>Semanal</div>
+                  </div>
+                  <div style={{ width: '60%', borderTop: '1px solid rgba(255,255,255,0.1)' }}></div>
+                  {/* Mensal */}
+                  <div className="d-flex flex-column align-items-center text-center">
+                    <div style={{ fontSize: '1.1em', color: 'var(--primary-primary)', fontWeight: 700 }}>
+                      {(() => {
+                        const hoje = new Date();
+                        const dias = [];
+                        for (let i = 0; i < 30; i++) {
+                          const d = new Date(hoje);
+                          d.setDate(hoje.getDate() - i);
+                          dias.push(d.toDateString());
+                        }
+                        const estudos30dias = historicoEstudo.filter(e => dias.includes(new Date(e.dataSessao).toDateString()));
+                        const totalMin = estudos30dias.reduce((acc, est) => acc + (est.tempo || 0), 0);
+                        const horas = Math.floor(totalMin / 60);
+                        const minutos = totalMin % 60;
+                        return `${horas}h ${minutos}min`;
+                      })()}
+                    </div>
+                    <div style={{ fontSize: '0.75em', color: 'var(--text-light)', fontWeight: 600 }}>Mensal</div>
+                  </div>
+                </div>
+
+                {/* Divisor vertical */}
+                <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }}></div>
+
+                {/* Coluna Direita: Total */}
+                <div className="d-flex flex-column align-items-center justify-content-center text-center" style={{ flex: 1 }}>
+                  <div style={{ fontSize: '2em', color: 'var(--primary-primary)', fontWeight: 700, marginBottom: '0.2rem' }}>
+                    {(() => {
+                      const totalMin = historicoEstudo.reduce((acc, est) => acc + (est.tempo || 0), 0);
+                      const usuario = JSON.parse(localStorage.getItem('user'));
+                      const projetoId = localStorage.getItem('projetoSelecionado');
+                      const horasMigradas = parseInt(localStorage.getItem(`horasMigradas_${usuario?.id}_${projetoId}`)) || 0;
+                      const totalComMigracao = totalMin + horasMigradas;
+                      const horas = Math.floor(totalComMigracao / 60);
+                      const minutos = totalComMigracao % 60;
+                      return `${horas}h ${minutos}min`;
+                    })()}
+                  </div>
+                  <div style={{ fontSize: '1em', color: 'var(--text-light)', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>Total</div>
+                </div>
+              </div>
+
+              {/* Info extra: dias de estudo + maior tempo diário */}
+              <div className="d-flex flex-row justify-content-around align-items-center" style={{ gap: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.08)', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.8em', color: 'var(--text-light)', textAlign: 'center' }}>
+                  {(() => {
+                    const totalMin = historicoEstudo.reduce((acc, est) => acc + (est.tempo || 0), 0);
+                    const usuario = JSON.parse(localStorage.getItem('user'));
+                    const projetoId = localStorage.getItem('projetoSelecionado');
+                    const horasMigradas = parseInt(localStorage.getItem(`horasMigradas_${usuario?.id}_${projetoId}`)) || 0;
+                    const totalComMigracao = totalMin + horasMigradas;
+                    const dias = Math.floor(totalComMigracao / 1440);
+                    return <><span style={{ color: 'var(--primary-primary)', fontWeight: 700 }}>{dias}</span> dias de estudo</>;
+                  })()}
+                </div>
+                <div style={{ fontSize: '0.8em', color: 'var(--text-light)', textAlign: 'center' }}>
+                  {(() => {
+                    if (historicoEstudo.length === 0) return 'Sem registros';
+                    const dias = {};
+                    historicoEstudo.forEach(e => {
+                      const key = new Date(e.dataSessao).toDateString();
+                      dias[key] = (dias[key] || 0) + (e.tempo || 0);
+                    });
+                    const maiorDia = Object.entries(dias).sort((a, b) => b[1] - a[1])[0];
+                    if (!maiorDia) return '';
+                    const horas = Math.floor(maiorDia[1] / 60);
+                    const minutos = Math.round(maiorDia[1] % 60);
+                    return <>Melhor dia: <span className="badge bg-primary-primary4 text-primary-primary5" style={{ fontSize: '0.85em' }}>{horas}h {minutos}min</span></>;
+                  })()}
+                </div>
+              </div>
+
+            </div>
+
+
+
+
+
+            <div className="card-padrao2 fadein me-4 text-center d-flex flex-column justify-content-center" style={{ flex: '1 1 0', minWidth: 0, height: '100%', animationDelay: '0.3s', padding: '1rem', position: 'relative' }}>
+
+              <div className="d-flex align-items-center mb-3" style={{ width: '100%' }}>
+                <div className="card-title-padrao m-0">Meta Semanal</div>
+                <button className="btn btn-sm btn-link p-0 text-primary-primary" style={{ marginLeft: 'auto' }} onClick={() => setShowModalMeta(true)}>
+                  <Edit2 size={14} />
+                </button>
+              </div>
+              <div className="card-content d-flex flex-column justify-content-center" style={{ flex: 1 }}>
+                <div className="d-flex justify-content-center flex-column align-items-stretch gap-0">
+                  {(() => {
+                    const hoje = new Date();
+                    const dias = [];
+                    // Começar de hoje (i=0) e voltar 6 dias (i=6), totalizando 7 dias
+                    for (let i = 0; i < 7; i++) {
+                      const d = new Date(hoje);
+                      d.setDate(hoje.getDate() - i);
+                      dias.unshift(d); // Adiciona no início para manter ordem cronológica
+                    }
+                    function formatDateForComparison(date) {
+                      if (typeof date === 'string') {
+                        return date.split('T')[0];
+                      }
+                      const d = new Date(date);
+                      const y = d.getFullYear();
+                      const m = String(d.getMonth() + 1).padStart(2, '0');
+                      const day = String(d.getDate()).padStart(2, '0');
+                      return `${y}-${m}-${day}`;
+                    }
+                    const diasSemana = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+                    const labels = dias.map(d => diasSemana[d.getDay()]);
+                    const labelsCompletos = dias.map(d => `${diasSemana[d.getDay()]} ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`);
+                    const valores = dias.map(d => {
+                      const diaStr = formatDateForComparison(d);
+                      const estudosHoje = historicoEstudo.filter(e => {
+                        const estudoStr = formatDateForComparison(e.dataSessao);
+                        return estudoStr === diaStr;
+                      });
+                      const totalMin = estudosHoje.reduce((acc, est) => acc + (est.tempo || 0), 0);
+                      return +(totalMin / 60).toFixed(2);
+                    });
+                    if (historicoEstudo.length === 0) return (
+                      <div style={{ width: '100%', height: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-light)', gap: '0.4rem' }}>
+                        <span style={{ fontSize: '0.8rem' }}>Nenhum estudo registrado ainda.</span>
+                      </div>
+                    );
+                    return <div style={{ width: '100%', height: 100 }}>
+                      <Bar
+                        data={{
+                          labels,
+                          datasets: [{
+                            label: 'Horas',
+                            data: valores,
+                            backgroundColor: '#71dd8c',
+                            borderRadius: 6,
+                          }]
+                        }}
+                        options={{
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                              callbacks: {
+                                title: function (context) {
+                                  return labelsCompletos[context[0].dataIndex];
+                                },
+                                label: function (context) {
+                                  const horas = Math.floor(context.parsed.y);
+                                  const minutos = Math.round((context.parsed.y - horas) * 60);
+                                  return `Horas: ${horas}h ${minutos}min`;
+                                }
+                              }
+                            }
+                          },
+                          scales: {
+                            x: { grid: { display: true, color: 'rgba(255,255,255,0.08)' }, ticks: { color: 'var(--text-light)', font: { size: 9 } } },
+                            y: { grid: { display: false }, ticks: { color: 'var(--text-light)', font: { size: 9 }, stepSize: 1, precision: 0, callback: (v) => Number.isInteger(v) ? v : '' } }
+                          },
+                          responsive: true,
+                          maintainAspectRatio: false,
+                        }}
+                        height={80}
+                      />
+                    </div>;
+                  })()}
+                </div>
+              </div>
+              <div className="card-content" style={{ paddingTop: 0 }}>
+                {/* Barra de progresso semanal */}
+                <div className="mt-2 mb-1 text-start">
+                  <span className="fw-bold">Progresso:</span>
                   {(() => {
                     const hoje = new Date();
                     const dias = [];
@@ -789,401 +1118,639 @@ const Home = () => {
                     }
                     const estudos7dias = historicoEstudo.filter(e => dias.includes(new Date(e.dataSessao).toDateString()));
                     const totalMin = estudos7dias.reduce((acc, est) => acc + (est.tempo || 0), 0);
-                    const horasEstudadas = Math.floor(totalMin / 60);
-                    const minutosEstudados = Math.round(totalMin % 60);
-                    const metaMin = Math.round(metaSemanal * 60);
-                    const metaHoras = Math.floor(metaMin / 60);
-                    const metaMinutos = Math.round(metaMin % 60);
-                    return `${horasEstudadas}h ${minutosEstudados}min / ${metaHoras}h ${metaMinutos}min`;
+                    const totalHoras = totalMin / 60;
+                    const progresso = Math.min((totalHoras / metaSemanal) * 100, 100);
+                    return (
+                      <div className="progress" style={{ height: '10px' }}>
+                        <div
+                          className="progress-bar"
+                          role="progressbar"
+                          style={{ width: `${progresso}%`, backgroundColor: '#71dd8c' }}
+                          aria-valuenow={progresso}
+                          aria-valuemin="0"
+                          aria-valuemax="100"
+                        />
+                      </div>
+                    );
                   })()}
-                </span>
+                  <span className="ms-2">
+                    {(() => {
+                      const hoje = new Date();
+                      const dias = [];
+                      for (let i = 0; i < 7; i++) {
+                        const d = new Date(hoje);
+                        d.setDate(hoje.getDate() - i);
+                        dias.push(d.toDateString());
+                      }
+                      const estudos7dias = historicoEstudo.filter(e => dias.includes(new Date(e.dataSessao).toDateString()));
+                      const totalMin = estudos7dias.reduce((acc, est) => acc + (est.tempo || 0), 0);
+                      const horasEstudadas = Math.floor(totalMin / 60);
+                      const minutosEstudados = Math.round(totalMin % 60);
+                      const metaMin = Math.round(metaSemanal * 60);
+                      const metaHoras = Math.floor(metaMin / 60);
+                      const metaMinutos = Math.round(metaMin % 60);
+                      return `${horasEstudadas}h ${minutosEstudados}min / ${metaHoras}h ${metaMinutos}min`;
+                    })()}
+                  </span>
+                </div>
+                {/* Barra de progresso mensal */}
+
+                {showModalMeta && (
+                  <Modal show={showModalMeta} onHide={() => setShowModalMeta(false)} centered backdrop="static" className="modal-fundo">
+                    <Modal.Body className="modal-estilo">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <Modal.Title className="fw-bold fs-5 m-0">Meta Semanal</Modal.Title>
+                      </div>
+                      <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>
+                        Defina quantas horas você quer estudar por semana. O progresso é exibido no card da barra semanal e reinicia toda segunda-feira.
+                      </p>
+                      <div className="d-flex gap-3 align-items-end mb-3">
+                        <div>
+                          <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Horas</label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={167}
+                            value={metaSemanalHoras}
+                            onChange={e => setMetaSemanalHoras(Math.max(0, Math.min(167, Number(e.target.value))))}
+                            className="linha form-control"
+                            style={{ width: 80, textAlign: 'center', fontFamily: 'monospace', fontSize: '1.1em' }}
+                          />
+                        </div>
+                        <span className="pb-2 fw-bold" style={{ color: 'var(--text-light)' }}>:</span>
+                        <div>
+                          <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Minutos</label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={59}
+                            value={metaSemanalMinutos}
+                            onChange={e => setMetaSemanalMinutos(Math.max(0, Math.min(59, Number(e.target.value))))}
+                            className="linha form-control"
+                            style={{ width: 80, textAlign: 'center', fontFamily: 'monospace', fontSize: '1.1em' }}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-secondary" style={{ fontSize: '0.75em' }}>Dica: comece com metas realistas e aumente gradualmente conforme sua rotina.</p>
+                      <div className="d-flex justify-content-end gap-2 mt-3">
+                        <button className="btn btn-outline-primary-primary3" onClick={() => setShowModalMeta(false)}>Cancelar</button>
+                        <button className="btn btn-primary-primary3" onClick={handleSalvarMetaSemanal}>Salvar</button>
+                      </div>
+                    </Modal.Body>
+                  </Modal>
+                )}
+
+                {/* Modal de Migração de Constância */}
+                {showModalMigracao && (
+                  <Modal show={showModalMigracao} onHide={() => setShowModalMigracao(false)} centered backdrop="static" className="modal-fundo">
+                    <Modal.Body className="modal-estilo">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <Modal.Title className="fw-bold fs-5 m-0">Migrar Constância</Modal.Title>
+                      </div>
+                      <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>Importe sua sequência de dias consecutivos e seu recorde de outro aplicativo.</p>
+                      <div className="d-flex gap-3 mb-3">
+                        <div style={{ flex: 1 }}>
+                          <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Dias consecutivos</label>
+                          <input
+                            type="number"
+                            min="0"
+                            className="linha form-control"
+                            value={diasParaMigrar}
+                            onChange={e => setDiasParaMigrar(e.target.value)}
+                            placeholder="Ex: 15"
+                            style={{ fontSize: '1.1rem', textAlign: 'center' }}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Melhor recorde</label>
+                          <input
+                            type="number"
+                            min="0"
+                            className="linha form-control"
+                            value={recordeParaMigrar}
+                            onChange={e => setRecordeParaMigrar(e.target.value)}
+                            placeholder="Ex: 30"
+                            style={{ fontSize: '1.1rem', textAlign: 'center' }}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-secondary" style={{ fontSize: '0.75em' }}>O recorde deve ser ≥ dias consecutivos atuais.</p>
+                      <div className="d-flex justify-content-end gap-2 mt-3">
+                        <button className="btn btn-outline-primary-primary3" onClick={() => setShowModalMigracao(false)}>Cancelar</button>
+                        <button className="btn btn-primary-primary3" onClick={handleMigrarConstancia}>Migrar</button>
+                      </div>
+                    </Modal.Body>
+                  </Modal>
+                )}
+
+                {/* Modal de Migração de Horas */}
+                {showModalMigracaoHoras && (
+                  <Modal show={showModalMigracaoHoras} onHide={() => setShowModalMigracaoHoras(false)} centered backdrop="static" className="modal-fundo">
+                    <Modal.Body className="modal-estilo">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <Modal.Title className="fw-bold fs-5 m-0">Migrar Horas de Estudo</Modal.Title>
+                      </div>
+                      <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>Importe suas horas acumuladas de outro aplicativo. Inserir 0h 0min reseta o contador.</p>
+                      <div className="d-flex gap-3 align-items-end mb-3">
+                        <div>
+                          <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Horas</label>
+                          <input
+                            type="number"
+                            min="0"
+                            className="linha form-control"
+                            value={horasParaMigrar}
+                            onChange={e => setHorasParaMigrar(e.target.value)}
+                            placeholder="120"
+                            style={{ width: 90, textAlign: 'center', fontFamily: 'monospace', fontSize: '1.1em' }}
+                          />
+                        </div>
+                        <span className="pb-2 fw-bold" style={{ color: 'var(--text-light)' }}>h</span>
+                        <div>
+                          <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Minutos</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            className="linha form-control"
+                            value={minutosParaMigrar}
+                            onChange={e => setMinutosParaMigrar(e.target.value)}
+                            placeholder="30"
+                            style={{ width: 90, textAlign: 'center', fontFamily: 'monospace', fontSize: '1.1em' }}
+                          />
+                        </div>
+                        <span className="pb-2 fw-bold" style={{ color: 'var(--text-light)' }}>min</span>
+                      </div>
+                      <div className="d-flex justify-content-end gap-2 mt-3">
+                        <button className="btn btn-outline-primary-primary3" onClick={() => setShowModalMigracaoHoras(false)}>Cancelar</button>
+                        <button className="btn btn-primary-primary3" onClick={handleMigrarHoras}>Migrar</button>
+                      </div>
+                    </Modal.Body>
+                  </Modal>
+                )}
               </div>
-              {/* Barra de progresso mensal */}
-              <div className="mt-2 mb-1 text-start">
-                <span className="fw-bold">Progresso mensal:</span>
-                {(() => {
-                  const hoje = new Date();
-                  const dias = [];
-                  for (let i = 0; i < 30; i++) {
-                    const d = new Date(hoje);
-                    d.setDate(hoje.getDate() - i);
-                    dias.push(d.toDateString());
-                  }
-                  const estudos30dias = historicoEstudo.filter(e => dias.includes(new Date(e.dataSessao).toDateString()));
-                  const totalMin = estudos30dias.reduce((acc, est) => acc + (est.tempo || 0), 0);
-                  const totalHoras = totalMin / 60;
-                  // Meta mensal proporcional à meta semanal
-                  const metaMensal = metaSemanal * 4.345; // 4.345 semanas em média por mês
-                  const progresso = Math.min((totalHoras / metaMensal) * 100, 100);
-                  return (
-                    <div className="progress" style={{ height: '10px' }}>
-                      <div
-                        className="progress-bar bg-primary-primary"
-                        role="progressbar"
-                        style={{ width: `${progresso}%` }}
-                        aria-valuenow={progresso}
-                        aria-valuemin="0"
-                        aria-valuemax="100"
-                      />
-                    </div>
-                  );
-                })()}
-                <span className="ms-2">
-                  {(() => {
-                    const hoje = new Date();
-                    const dias = [];
-                    for (let i = 0; i < 30; i++) {
-                      const d = new Date(hoje);
-                      d.setDate(hoje.getDate() - i);
-                      dias.push(d.toDateString());
-                    }
-                    const estudos30dias = historicoEstudo.filter(e => dias.includes(new Date(e.dataSessao).toDateString()));
-                    const totalMin = estudos30dias.reduce((acc, est) => acc + (est.tempo || 0), 0);
-                    const horasEstudadas = Math.floor(totalMin / 60);
-                    const minutosEstudados = Math.round(totalMin % 60);
-                    // Meta mensal proporcional à meta semanal
-                    const metaMensal = metaSemanal * 4.345;
-                    const metaMin = Math.round(metaMensal * 60);
-                    const metaHoras = Math.floor(metaMin / 60);
-                    const metaMinutos = Math.round(metaMin % 60);
-                    return `${horasEstudadas}h ${minutosEstudados}min / ${metaHoras}h ${metaMinutos}min`;
-                  })()}
-                </span>
-              </div>
-              {showModalMeta && (
-                <Modal show={showModalMeta} onHide={() => setShowModalMeta(false)} centered backdrop="static" className="modal-fundo">
-                  <Modal.Body className="modal-estilo">
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <Modal.Title className="fw-bold fs-5 m-0">Editar meta semanal</Modal.Title>
-                      <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowModalMeta(false)}></button>
-                    </div>
-                    <label className="small mb-2">Meta semanal:</label>
-                    <div className="d-flex gap-2 align-items-center mb-2">
-                      <input
-                        type="number"
 
-                        min={0}
-                        max={167}
-                        value={metaSemanalHoras}
-                        onChange={e => setMetaSemanalHoras(Math.max(0, Math.min(167, Number(e.target.value))))}
-                        className="linha form-control w-25"
-                        placeholder="Horas"
-                      />
-                      <span>:</span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={59}
-                        value={metaSemanalMinutos}
-                        onChange={e => setMetaSemanalMinutos(Math.max(0, Math.min(59, Number(e.target.value))))}
-                        className="linha form-control w-25"
-                        placeholder="Minutos"
-                      />
-                    </div>
-                    <div className="d-flex justify-content-end gap-2 mt-3">
-                      <button className="btn btn-outline-primary-primary" onClick={() => setShowModalMeta(false)}>Cancelar</button>
-                      <button className="btn btn-primary-primary" onClick={handleSalvarMetaSemanal}>Salvar</button>
-                    </div>
-                  </Modal.Body>
-                </Modal>
-              )}
 
-              {/* Modal de Migração de Constância */}
-              {showModalMigracao && (
-                <Modal show={showModalMigracao} onHide={() => setShowModalMigracao(false)} centered backdrop="static" className="modal-fundo">
-                  <Modal.Body className="modal-estilo">
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <Modal.Title className="fw-bold fs-5 m-0">Migrar Constância de Estudos</Modal.Title>
-                      <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowModalMigracao(false)}></button>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <p className="small mb-2">
-                        Esta funcionalidade permite migrar sua sequência de dias consecutivos e seu melhor recorde de outro aplicativo.
-                      </p>
-                    </div>
-                    
-                    <div className="d-flex align-items-center gap-3 mb-3">
-                      <label className="small mb-0" style={{ minWidth: '160px' }}>Dias consecutivos atuais:</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className="linha form-control"
-                        value={diasParaMigrar}
-                        onChange={e => setDiasParaMigrar(e.target.value)}
-                        placeholder="Ex: 15"
-                        style={{ fontSize: '1.1rem', textAlign: 'center', width: '120px' }}
-                      />
-                    </div>
-                    
-                    <div className="d-flex align-items-center gap-3 mb-2">
-                      <label className="small mb-0" style={{ minWidth: '160px' }}>Melhor recorde histórico:</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className="linha form-control"
-                        value={recordeParaMigrar}
-                        onChange={e => setRecordeParaMigrar(e.target.value)}
-                        placeholder="Ex: 30"
-                        style={{ fontSize: '1.1rem', textAlign: 'center', width: '120px' }}
-                      />
-                    </div>
-                    
-                    <small className="mt-1 d-block">
-                      <strong>Dias consecutivos:</strong> Quantos dias seguidos você está estudando atualmente.<br/>
-                      <strong>Melhor recorde:</strong> O maior número de dias consecutivos que você já alcançou (deve ser ≥ dias atuais).
-                    </small>
-                    
-                    <div className="d-flex justify-content-end gap-2 mt-3">
-                      <button className="btn btn-outline-primary-primary" onClick={() => setShowModalMigracao(false)}>Cancelar</button>
-                      <button className="btn btn-primary-primary" onClick={handleMigrarConstancia}>
-                        Migrar Dados
-                      </button>
-                    </div>
-                  </Modal.Body>
-                </Modal>
-              )}
-
-              {/* Modal de Migração de Horas */}
-              {showModalMigracaoHoras && (
-                <Modal show={showModalMigracaoHoras} onHide={() => setShowModalMigracaoHoras(false)} centered backdrop="static" className="modal-fundo">
-                  <Modal.Body className="modal-estilo">
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <Modal.Title className="fw-bold fs-5 m-0">Migrar Horas de Estudo</Modal.Title>
-                      <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowModalMigracaoHoras(false)}></button>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <p className="small mb-2">
-                        Esta funcionalidade permite migrar suas horas de estudo acumuladas de outro aplicativo.
-                      </p>
-                      <p className="small mb-3">
-                        Insira quantas horas você já tinha estudado no outro app:
-                      </p>
-                    </div>
-                    
-                    <div className="d-flex align-items-center gap-3 mb-2">
-                      <label className="small mb-0">Horas de estudo:</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className="linha form-control"
-                        value={horasParaMigrar}
-                        onChange={e => setHorasParaMigrar(e.target.value)}
-                        placeholder="Ex: 120"
-                        style={{ fontSize: '1.1rem', textAlign: 'center', width: '100px' }}
-                      />
-                      <span>h</span>
-                      <input
-                        type="number"
-                        min="0"
-                        max="59"
-                        className="linha form-control"
-                        value={minutosParaMigrar}
-                        onChange={e => setMinutosParaMigrar(e.target.value)}
-                        placeholder="Ex: 30"
-                        style={{ fontSize: '1.1rem', textAlign: 'center', width: '100px' }}
-                      />
-                      <span>min</span>
-                    </div>
-                    <small className=" mt-1 d-block">
-                      Este tempo será adicionado ao seu total atual. Se inserir 0h 0min, o contador será resetado.
-                    </small>
-                    
-                    <div className="d-flex justify-content-end gap-2 mt-3">
-                      <button className="btn btn-outline-primary-primary" onClick={() => setShowModalMigracaoHoras(false)}>Cancelar</button>
-                      <button className="btn btn-primary-primary" onClick={handleMigrarHoras}>
-                        Migrar Horas
-                      </button>
-                    </div>
-                  </Modal.Body>
-                </Modal>
-              )}
             </div>
-          </div>
+            <div className='resumo-dia card-padrao2 fadein d-flex flex-column' style={{ flex: '1.1 1 0', minWidth: 0, height: '100%', animationDelay: '0.32s', padding: '1rem', position: 'relative', overflow: 'visible' }}>
 
 
 
-
-
-          <div className="card-padrao2 fadein flex-fill text-center d-flex flex-column justify-content-center w-25" style={{ height: '100%', animationDelay: '0.25s', padding: '1rem', position: 'relative' }}>
-            <div className="card-title-padrao">HORAS DE ESTUDO NA SEMANA</div>
-            <div className="card-content">
-              <div className="d-flex justify-content-center flex-column align-items-stretch gap-0">
+              <div className="d-flex align-items-center mb-3" style={{ width: '100%' }}>
+                <div className="card-title-padrao m-0">
+                  Estudo {' '}
+                  <button
+                    className="btn btn-outline-primary-primary btn-sm"
+                    style={{ padding: '0.25rem 0.7rem', fontSize: '0.85rem', fontWeight: 700, letterSpacing: 1, marginLeft: 4 }}
+                    onClick={handleResumoPeriodoToggle}
+                  >
+                    {resumoLabels[resumoPeriodo]}
+                  </button>
+                </div>
+              </div>
+              <div className="card-content d-flex flex-column" style={{ paddingTop: 0, overflow: 'visible', flex: 1 }}>
                 {(() => {
-                  const hoje = new Date();
-                  const dias = [];
-                  // Começar de hoje (i=0) e voltar 6 dias (i=6), totalizando 7 dias
-                  for (let i = 0; i < 7; i++) {
-                    const d = new Date(hoje);
-                    d.setDate(hoje.getDate() - i);
-                    dias.unshift(d); // Adiciona no início para manter ordem cronológica
-                  }
-                  function formatDateForComparison(date) {
-                    if (typeof date === 'string') {
-                      return date.split('T')[0];
+                  // Função para obter estudos do período
+                  function getEstudosPeriodo() {
+                    const hoje = new Date();
+                    // Retorna todos os estudos para o período total
+                    if (resumoPeriodo === 'total') {
+                      return historicoEstudo;
                     }
-                    const d = new Date(date);
-                    const y = d.getFullYear();
-                    const m = String(d.getMonth() + 1).padStart(2, '0');
-                    const day = String(d.getDate()).padStart(2, '0');
-                    return `${y}-${m}-${day}`;
+                    // Gera set de strings YYYY-MM-DD para os dias do período
+                    if (resumoPeriodo === 'semana' || resumoPeriodo === 'mes') {
+                      const diasCount = resumoPeriodo === 'semana' ? 7 : 30;
+                      const diasSet = new Set();
+                      for (let i = 0; i < diasCount; i++) {
+                        const d = new Date(hoje);
+                        d.setHours(0, 0, 0, 0);
+                        d.setDate(hoje.getDate() - i);
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        diasSet.add(`${y}-${m}-${day}`);
+                      }
+                      return historicoEstudo.filter(e => {
+                        if (!e?.dataSessao) return false;
+                        if (typeof e.dataSessao === 'string' && e.dataSessao.includes('T')) {
+                          return diasSet.has(e.dataSessao.split('T')[0]);
+                        }
+                        const d = new Date(e.dataSessao);
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        return diasSet.has(`${y}-${m}-${day}`);
+                      });
+                    } else {
+                      // Dia atual em YYYY-MM-DD
+                      const y = hoje.getFullYear();
+                      const m = String(hoje.getMonth() + 1).padStart(2, '0');
+                      const day = String(hoje.getDate()).padStart(2, '0');
+                      const hojeStr = `${y}-${m}-${day}`;
+                      return historicoEstudo.filter(e => {
+                        if (!e?.dataSessao) return false;
+                        if (typeof e.dataSessao === 'string' && e.dataSessao.includes('T')) {
+                          return e.dataSessao.split('T')[0] === hojeStr;
+                        }
+                        const d = new Date(e.dataSessao);
+                        const yy = d.getFullYear();
+                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                        const dd = String(d.getDate()).padStart(2, '0');
+                        return `${yy}-${mm}-${dd}` === hojeStr;
+                      });
+                    }
                   }
-                  const labels = dias.map(d => `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`);
-                  const valores = dias.map(d => {
-                    const diaStr = formatDateForComparison(d);
-                    const estudosHoje = historicoEstudo.filter(e => {
-                      const estudoStr = formatDateForComparison(e.dataSessao);
-                      return estudoStr === diaStr;
-                    });
-                    const totalMin = estudosHoje.reduce((acc, est) => acc + (est.tempo || 0), 0);
-                    return +(totalMin / 60).toFixed(2);
+                  const estudosPeriodo = getEstudosPeriodo();
+                  if (estudosPeriodo.length === 0) {
+                    return <div className="text-secondary d-flex flex-column align-items-center justify-content-center gap-2 text-center" style={{ minHeight: 180 }}><span>Nenhum estudo registrado neste período.</span></div>;
+                  }
+                  const materias = {};
+                  let totalMin = 0;
+                  estudosPeriodo.forEach(e => {
+                    const mat = e.disciplina || e.categoria || 'Outra';
+                    materias[mat] = (materias[mat] || 0) + (e.tempo || 0);
+                    totalMin += (e.tempo || 0);
                   });
-                  return <div style={{ width: '100%', height: 160 }}>
-                    <Bar
-                      data={{
-                        labels,
-                        datasets: [{
-                          label: 'Horas',
-                          data: valores,
-                          backgroundColor: '#71dd8c',
-                          borderRadius: 6,
-                        }]
-                      }}
-                      options={{
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            callbacks: {
-                              label: function(context) {
-                                // Mostra "Horas: Xh Ymin"
-                                const horas = Math.floor(context.parsed.y);
-                                const minutos = Math.round((context.parsed.y - horas) * 60);
-                                return `Horas: ${horas}h ${minutos}min`;
+                  const labels = Object.keys(materias);
+                  const data = Object.values(materias);
+                  const coresMateriasResumo = labels.map(nome => materiasCoresMap[nome] || '#1b59f9');
+                  const horasPorMateria = data.map(min => `${Math.floor(min / 60)}h ${Math.round(min % 60)}min`);
+                  const labelsComHoras = labels.map((nome, idx) => `${nome} `);
+                  return <div className="d-flex flex-column" style={{ flex: 1 }}>
+                    <div className="resumo-semana d-flex flex-row align-items-stretch w-100" style={{ flex: 1, overflow: 'visible' }}>
+                      <div className="d-flex align-items-center justify-content-center" style={{ flex: 1, overflow: 'visible', position: 'relative' }}>
+                        <div style={{ width: 140, height: 140, flexShrink: 0, overflow: 'visible', position: 'relative' }}>
+                          <Pie
+                            data={{
+                              labels: labelsComHoras,
+                              datasets: [
+                                {
+                                  data,
+                                  backgroundColor: coresMateriasResumo,
+                                  borderColor: '#fff',
+                                  borderWidth: 2,
+                                }
+                              ]
+                            }}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                  callbacks: {
+                                    label: function (context) {
+                                      const idx = context.dataIndex;
+                                      const minutos = data[idx] || 0;
+                                      const horas = Math.floor(minutos / 60);
+                                      const min = Math.round(minutos % 60);
+                                      return ` ${horas}h ${min}min`;
+                                    }
+                                  }
+                                }
                               }
-                            }
-                          }
-                        },
-                        scales: {
-                          x: { grid: { display: false }, ticks: { color: 'var(--text-light)', font: { size: 10 } } },
-                          y: { grid: { display: false }, ticks: { color: 'var(--text-light)', font: { size: 10 }, stepSize: 1 } }
-                        },
-                        responsive: true,
-                        maintainAspectRatio: false,
-                      }}
-                      height={120}
-                    />
+                            }}
+                            width={140}
+                            height={140}
+                          />
+                        </div>
+                      </div>
+                      <div className="d-flex flex-column align-items-start justify-content-center" style={{ overflow: 'visible', flex: 1, minWidth: 0 }}>
+                        <ul className="list-unstyled mb-0" style={{ fontSize: '0.8em', marginTop: -10 }}>
+                          {labels.map((nome, idx) => (
+                            <li key={nome} style={{ color: 'var(--text-light, #ccc)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                              <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '4px', backgroundColor: coresMateriasResumo[idx], flexShrink: 0 }} title={nome}></span>
+                              <span title={nome} style={{ whiteSpace: 'nowrap' }}>{nome.length > 35 ? nome.slice(0, 35) + '...' : nome}</span>
+                              <span style={{ flex: 1, borderBottom: '1px dotted var(--text-light)', height: '1em', marginBottom: '2px' }}></span>
+                              <span style={{ whiteSpace: 'nowrap' }}>{horasPorMateria[idx]}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-2 fw-bold text-primary-primary" style={{ textAlign: 'left' }}>Total: <span className="badge text-primary-primary5 bg-primary-primary4">{(() => {
+                          const horas = Math.floor(totalMin / 60);
+                          const minutos = Math.round(totalMin % 60);
+                          return `${horas}h ${minutos}min`;
+                        })()}</span></div>
+                      </div>
+                    </div>
                   </div>;
                 })()}
               </div>
             </div>
+
+
+
           </div>
 
         </div>
-        <div className="d-flex w-100" style={{ animationDelay: '0.3s' }}>
-          <div className="card-padrao2 fadein flex-grow-1 me-4" style={{ animationDelay: '0.35s', padding: '1rem', position: 'relative' }}>
-            <div className="d-flex align-items-center " style={{ width: '100%' }}>
-              <div className="card-title-padrao">CONSTÂNCIA NOS ESTUDOS</div>
-              {/* Remover as condições, sempre mostrar os botões */}
-              <button 
-                className="btn btn-sm btn-link p-0 text-primary-primary me-2" 
-                style={{ marginLeft: 'auto' }} 
-                onClick={() => setShowModalMigracao(true)}
-                title="Migrar constância de outro app (uso único)"
-              >
-                <FontAwesomeIcon icon={faFileImport} />
-              </button>
-              <button 
-                className="btn btn-sm btn-link p-0 text-danger me-2" 
-                onClick={() => {
-                  if (window.confirm('Zerar todos os dados de migração?')) {
-                    const usuario = JSON.parse(localStorage.getItem('user'));
-                    const projetoId = localStorage.getItem('projetoSelecionado') || '';
-                    localStorage.removeItem(`diasMigrados_${usuario.id}_${projetoId}`);
-                    localStorage.removeItem(`recordeMigrado_${usuario.id}_${projetoId}`);
-                    localStorage.removeItem(`migracao_${usuario.id}_${projetoId}`);
-                    window.location.reload();
-                  }
-                }}
-                title="Limpar dados de migração"
-              >
-                <FontAwesomeIcon icon={faTrash} />
-              </button>
-            </div>
-            <div className="card-content p-0">
-              <div className=" " style={{ fontSize: '0.95em', fontWeight: 500}}>
-                <span>Você está há <strong>{diasSemFalhar}</strong> {diasSemFalhar === 1 ? 'dia' : 'dias'} consecutivos sem falhar! Seu melhor recorde é de <strong>{recordeDias}</strong> {recordeDias === 1 ? 'dia' : 'dias'}!</span>
+
+        <div className="m-0 w-100 p-3 border fadein" style={{ borderRadius: 25, animationDelay: '0.3s', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+          <div className="card-title-padrao position-absolute px-3" style={{ top: '-12px', left: '20px', zIndex: 1, backgroundColor: 'var(--background)' }}>DESEMPENHO</div>
+
+          {/* Removido resumo do progresso */}
+          <div className='d-flex w-100 align-items-center min-vh-10' style={{ animationDelay: '0.35s', gap: '1.5rem' }}>
+
+
+
+
+
+
+            <div className='evolucao card-padrao2 fadein text-center d-flex flex-column ' style={{ height: 200, flex: '0 0 calc(70% - 1rem)', width: 'calc(70% - 1rem)', minHeight: 160, animationDelay: '0.38s', padding: '1rem', position: 'relative' }}>
+              <div className="card-title-padrao" >Evolução Geral em Simulados</div>
+              <div className="card-content" style={{ paddingTop: 0, width: '100%' }}>
+                <div style={{ width: '100%', height: '80%', margin: '0 auto', position: 'relative' }}>
+                  {simuladosOrdenados.length === 0 ? (
+                    <div style={{ width: '100%', height: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-light)', gap: '0.4rem' }}>
+                      <span style={{ fontSize: '0.8rem' }}>Nenhum simulado cadastrado ainda.</span>
+                    </div>
+                  ) : (
+                  <Line
+                    data={{
+                      labels: simuladosOrdenados.length > 0 ? simuladosOrdenados.map(s => `Simulado #${s.numSim}`) : [''],
+                      datasets: [
+                        {
+                          label: 'Acertos',
+                          data: simuladosOrdenados.length > 0 ? simuladosOrdenados.map(s => {
+                            const resumo = resumos[s.id];
+                            return resumo ? (resumo.acertos ?? 0) : 0;
+                          }) : [0],
+                          borderColor: '#34C759',
+                          backgroundColor: '#71dd8c22',
+                          fill: false,
+                          tension: 0.2,
+                        },
+                        {
+                          label: 'Erros',
+                          data: simuladosOrdenados.length > 0 ? simuladosOrdenados.map(s => {
+                            const resumo = resumos[s.id];
+                            return resumo ? (resumo.erros ?? 0) : 0;
+                          }) : [0],
+                          borderColor: '#FF2D55',
+                          backgroundColor: '#83313e22',
+                          fill: false,
+                          tension: 0.2,
+                        },
+                        {
+                          label: 'Brancos',
+                          data: simuladosOrdenados.length > 0 ? simuladosOrdenados.map(s => {
+                            const resumo = resumos[s.id];
+                            return resumo ? (resumo.brancos ?? 0) : 0;
+                          }) : [0],
+                          borderColor: '#FF9500',
+                          backgroundColor: '#FF950022',
+                          fill: false,
+                          tension: 0.2,
+                        },
+                        {
+                          label: 'Líquido',
+                          data: simuladosOrdenados.length > 0 ? simuladosOrdenados.map((s, idx) => {
+                            const resumo = resumos[s.id];
+                            return resumo ? (resumo.acertos ?? 0) - (resumo.erros ?? 0) : 0;
+                          }) : [0],
+                          borderColor: '#1b59f9',
+                          backgroundColor: (context) => {
+                            const chart = context.chart;
+                            const { ctx, chartArea } = chart;
+                            if (!chartArea) return 'rgba(27,89,249,0.1)';
+                            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                            gradient.addColorStop(0, 'rgba(27,89,249,0.25)');
+                            gradient.addColorStop(1, 'rgba(27,89,249,0.05)');
+                            return gradient;
+                          },
+                          fill: true,
+                          tension: 0.2,
+                        },
+                        {
+                          label: 'Tendência Líquida',
+                          data: (() => {
+                            function calcularLinhaTendencia(yArray) {
+                              const n = yArray.length;
+                              if (n === 0) return [];
+                              const xArray = Array.from({ length: n }, (_, i) => i + 1);
+                              const xMean = xArray.reduce((a, b) => a + b, 0) / n;
+                              const yMean = yArray.reduce((a, b) => a + b, 0) / n;
+                              let num = 0, den = 0;
+                              for (let i = 0; i < n; i++) {
+                                num += (xArray[i] - xMean) * (yArray[i] - yMean);
+                                den += (xArray[i] - xMean) ** 2;
+                              }
+                              const m = den === 0 ? 0 : num / den;
+                              const b = yMean - m * xMean;
+                              return xArray.map(x => m * x + b);
+                            }
+                            const liquidos = simuladosOrdenados.length > 0 ? simuladosOrdenados.map((s, idx) => {
+                              const resumo = resumos[s.id];
+                              return resumo ? (resumo.acertos ?? 0) - (resumo.erros ?? 0) : 0;
+                            }) : [0];
+                            return calcularLinhaTendencia(liquidos);
+                          })(),
+                          borderColor: '#ff9800',
+                          backgroundColor: 'rgba(255,152,0,0.1)',
+                          borderDash: [6, 6],
+                          pointRadius: 0,
+                          fill: false,
+                          tension: 0,
+                          order: 10
+                        }
+                      ]
+                    }}
+                    options={{
+                      scales: {
+                        x: { grid: { display: false }, ticks: { color: 'var(--text-light)' } },
+                        y: {
+                          grid: { display: false },
+                          ticks: {
+                            color: 'var(--text-light)',
+                            callback: function (value) {
+                              return Number.isInteger(value) ? value : '';
+                            },
+                            stepSize: 1,
+                            precision: 0
+                          }
+                        }
+                      },
+                      plugins: { legend: { display: false } },
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      animation: false,
+                    }}
+                    height={120}
+                  />
+                  )}
+                </div>
+
+
               </div>
-              <div className="dias-consecutivos p-2 d-flex flex-row flex-wrap justify-content-center w-100">
+
+            </div>
+
+            <div className="card-padrao2 fadein text-center d-flex flex-column" style={{ height: '100%', flex: '0 0 calc(30% - 1rem)', width: 'calc(30% - 1rem)', animationDelay: '0.15s', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.75rem', fontWeight: 300, letterSpacing: '0.5px', color: 'var(--text-light)' }}>
+                @meuflux
+              </div>
+
+              <div className="d-flex flex-column justify-content-center align-items-center h-100">
+                <div className="mb-2" style={{ opacity: 0.9 }}>
+                  <span className="text-primary-primary" style={{ fontSize: '0.95em', fontWeight: 500 }}>
+                    Olá{nomeUsuario && <span>, {nomeUsuario}</span>}! 👋
+                  </span>
+                </div>
+                <span className="fw-bold">
+                  {fraseDoDia || ''}
+                </span>
+              </div>
+            </div>
+
+
+
+          </div>
+
+          <div className="card-padrao2 fadein" style={{ animationDelay: '0.65s', padding: '1rem', position: 'relative' }}>
+            <div className="card-title-padrao">Evolução Geral por Matéria em Simulados</div>
+            <div className="card-content">
+              <div className="row" style={{ margin: 0 }}>
                 {(() => {
-                  const totalIcons = 30;
-                  const hoje = new Date();
-                  // Criar set de datas de estudo reais apenas (usando datas locais)
-                  const datasEstudoReais = new Set(historicoEstudo.map(e => {
-                    try {
-                      if (typeof e.dataSessao === 'string' && e.dataSessao.includes('T')) {
-                        return e.dataSessao.split('T')[0];
+                  // Lista de todas as matérias
+                  const todasMaterias = Array.from(new Set(simuladosOrdenados.flatMap(sim => (resumos[sim.id]?.materias ?? []).map(m => m.nome))));
+                  if (todasMaterias.length === 0) return (
+                    <div style={{ width: '100%', height: 120, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-light)', gap: '0.4rem' }}>
+                      <span style={{ fontSize: '0.8rem' }}>Nenhum simulado cadastrado ainda.</span>
+                    </div>
+                  );
+                  return todasMaterias.map(materiaNome => {
+                    // Array de porcentagens líquidas por simulado para a matéria
+                    const materiaPorcentagens = simuladosOrdenados.map(sim => {
+                      const mat = (resumos[sim.id]?.materias ?? []).find(m => m.nome === materiaNome);
+                      const totalMat = mat ? (mat.acertos + mat.erros + mat.brancos) : 0;
+                      const liquido = mat ? (mat.acertos - mat.erros) : 0;
+                      return totalMat > 0 ? ((liquido / totalMat) * 100) : null;
+                    });
+                    const tendenciaMateria = (() => {
+                      const arr = materiaPorcentagens.map(v => v === null ? 0 : Number(v));
+                      const n = arr.length;
+                      if (n === 0) return [];
+                      const xArray = Array.from({ length: n }, (_, i) => i + 1);
+                      const xMean = xArray.reduce((a, b) => a + b, 0) / n;
+                      const yMean = arr.reduce((a, b) => a + b, 0) / n;
+                      let num = 0, den = 0;
+                      for (let i = 0; i < n; i++) {
+                        num += (xArray[i] - xMean) * (arr[i] - yMean);
+                        den += (xArray[i] - xMean) ** 2;
                       }
-                      const d = new Date(e.dataSessao);
-                      const y = d.getFullYear();
-                      const m = String(d.getMonth() + 1).padStart(2, '0');
-                      const day = String(d.getDate()).padStart(2, '0');
-                      return `${y}-${m}-${day}`;
-                    } catch {
-                      return '';
-                    }
-                  }));
-                  // Obter dias migrados do localStorage
-                  const usuario = JSON.parse(localStorage.getItem('user'));
-                  const projetoId = localStorage.getItem('projetoSelecionado');
-                  const diasMigradosStorage = parseInt(localStorage.getItem(`diasMigrados_${usuario?.id}_${projetoId}`)) || 0;
-                  return [...Array(totalIcons)].map((_, i) => {
-                    const data = new Date(hoje);
-                    data.setHours(0,0,0,0);
-                    data.setDate(hoje.getDate() - (totalIcons - 1 - i));
-                    const y = data.getFullYear();
-                    const m = String(data.getMonth() + 1).padStart(2, '0');
-                    const day = String(data.getDate()).padStart(2, '0');
-                    const dataStr = `${y}-${m}-${day}`;
-                    // Verifica se estudou realmente neste dia
-                    const estudouReal = datasEstudoReais.has(dataStr);
-                    // Verifica se este dia está dentro do período de migração
-                    const diasAtras = totalIcons - 1 - i; // Quantos dias atrás esta div representa
-                    const dentroMigracao = diasAtras < diasMigradosStorage;
-                    // Um dia é considerado "estudado" se realmente estudou OU se está dentro da migração
-                    const estudou = estudouReal || dentroMigracao;
-                    // Determinar a cor e título baseado no tipo 
-                    let cor = '#be9da4'; // Padrão: não estudou
-                    let titulo = 'Não estudou';
-                    if (estudouReal) {
-                      cor = 'var(--primary-primary)'; // Verde: estudou realmente
-                      titulo = 'Estudou';
-                    } else if (dentroMigracao) {
-                      cor = 'var(--primary-primary-dark)'; // Verde mais escuro: dia migrado
-                      titulo = 'Dia migrado (não faltou)';
-                    }
-                    // Adiciona o dia no title
-                    const title = `${titulo} - ${day}/${m}/${y}`;
+                      const m = den === 0 ? 0 : num / den;
+                      const b = yMean - m * xMean;
+                      return xArray.map(x => m * x + b);
+                    })();
+                    // Labels: nomes dos simulados
+                    const simLabels = simuladosOrdenados.map(sim => `Simulado #${sim.numSim}`);
+                    const corMateria = materiasCoresMap[materiaNome] || '#0d6efd';
                     return (
-                      <div
-                        key={i}
-                        title={title}
-                        className={`d-flex align-items-center justify-content-center text-light ${i === 0 ? 'rounded-start' : i === totalIcons - 1 ? 'rounded-end' : ''}`}
-                        style={{ 
-                          flex: 1, 
-                          minWidth: 0, 
-                          justifyContent: 'center', 
-                          background: cor, 
-                          width: 28, 
-                          height: 28
-                        }}
-                      >
-                        <span style={{ fontSize: '1.1em' }}>
-                          <FontAwesomeIcon icon={estudou ? faCheckCircle : faTimesCircle} 
-                            className={estudou ? '' : '#8f292d'} 
-                            style={estudou ? {} : { color: '#83313e' }} 
+                      <div className="col-12 col-sm-6 col-md-3 col-lg-2 mb-3" key={materiaNome}>
+                        <div className="h-100" style={{ maxWidth: 180 }}>
+                          <div className=" fw-bold text-center mb-2" style={{ fontSize: '0.95em' }}>{materiaNome.length > 25 ? materiaNome.slice(0, 25) + '...' : materiaNome}</div>
+                          <Line
+                            data={{
+                              labels: simLabels,
+                              datasets: [
+                                {
+                                  label: '% Líquido',
+                                  data: materiaPorcentagens,
+                                  borderColor: corMateria,
+                                  backgroundColor: (context) => {
+                                    const chart = context.chart;
+                                    const { ctx, chartArea } = chart;
+                                    if (!chartArea) return corMateria + '22';
+                                    const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                                    gradient.addColorStop(0, corMateria + '44');
+                                    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                                    return gradient;
+                                  },
+                                  fill: true,
+                                  tension: 0.2,
+                                },
+                                {
+                                  label: 'Tendência',
+                                  data: tendenciaMateria,
+                                  borderColor: '#ff9800',
+                                  backgroundColor: 'rgba(255,152,0,0.1)',
+                                  borderDash: [6, 6],
+                                  pointRadius: 0,
+                                  fill: false,
+                                  tension: 0,
+                                  order: 10
+                                }
+                              ]
+                            }}
+                            plugins={[{
+                              beforeDatasetsDraw: (chart) => {
+                                const ctx = chart.ctx;
+                                const chartArea = chart.chartArea;
+                                if (!chartArea) return;
+                                const datasetIndex = chart.data.datasets.findIndex(ds => ds.label === '% Líquido');
+                                if (datasetIndex === -1) return;
+                                const meta = chart.getDatasetMeta(datasetIndex);
+                                ctx.save();
+                                const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                                gradient.addColorStop(0, corMateria);
+                                gradient.addColorStop(1, corMateria + '05');
+                                ctx.globalAlpha = 0.5;
+                                ctx.fillStyle = gradient;
+                                ctx.beginPath();
+                                meta.data.forEach((point, i) => {
+                                  if (i === 0) ctx.moveTo(point.x, chartArea.bottom);
+                                  ctx.lineTo(point.x, point.y);
+                                });
+                                meta.data.slice().reverse().forEach((point, i) => {
+                                  ctx.lineTo(point.x, chartArea.bottom);
+                                });
+                                ctx.closePath();
+                                ctx.fill();
+                                ctx.restore();
+                              }
+                            }]}
+                            options={{
+                              scales: {
+                                x: {
+                                  grid: { display: false },
+                                  ticks: { color: '#bbb', display: false }
+                                },
+                                y: {
+                                  beginAtZero: true,
+                                  max: 100,
+                                  title: { display: false },
+                                  grid: {
+                                    display: true,
+                                    color: (context) => {
+                                      if (context.tick.value === 0) {
+                                        return '#dc3545'; // Vermelho para a linha do 0
+                                      }
+                                      return 'rgba(187, 187, 187, 0.1)'; // Cinza claro para outras linhas
+                                    },
+                                    lineWidth: (context) => {
+                                      if (context.tick.value === 0) {
+                                        return 2; // Linha mais grossa para o 0
+                                      }
+                                      return 1;
+                                    }
+                                  },
+                                  ticks: { color: 'var(--text-light)' }
+                                }
+                              },
+                              plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                  callbacks: {
+                                    title: (tooltipItems) => {
+                                      // Mostra o nome do simulado
+                                      return simLabels[tooltipItems[0].dataIndex];
+                                    }
+                                  }
+                                }
+                              }
+                            }}
+                            height={60}
+                            width={120}
                           />
-                        </span>
+                        </div>
                       </div>
                     );
                   });
@@ -1191,532 +1758,19 @@ const Home = () => {
               </div>
             </div>
           </div>
-          <div className="card-padrao2 fadein" style={{ width: '25%', minWidth: 180, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', animationDelay: '0.4s', padding: '1rem', position: 'relative' }}>
-            <div className="d-flex align-items-center mb-3" style={{ width: '100%' }}>
-              <div className="card-title-padrao m-0">TEMPO TOTAL DE ESTUDO</div>
-              <div className="flex-grow-1"></div>
-              <button 
-                className="btn btn-sm btn-link p-0 text-danger me-1"
-                onClick={handleLimparMigracaoHoras}
-                title="Limpar migração de horas"
-              >
-                <FontAwesomeIcon icon={faTrash} />
-              </button>
-              <button className="btn btn-sm btn-link p-0 text-primary-primary" onClick={() => setShowModalMigracaoHoras(true)}>
-                <FontAwesomeIcon icon={faFileImport} />
-              </button>
-            </div>
-            <div className="card-content">
-              <div className='text-primary-primary' style={{ fontSize: '2em', fontWeight: 600 }}>
-                {(() => {
-                  const totalMin = historicoEstudo.reduce((acc, est) => acc + (est.tempo || 0), 0);
-                  
-                  // Adicionar horas migradas se existirem
-                  const usuario = JSON.parse(localStorage.getItem('user'));
-                  const projetoId = localStorage.getItem('projetoSelecionado');
-                  const horasMigradas = parseInt(localStorage.getItem(`horasMigradas_${usuario?.id}_${projetoId}`)) || 0;
-                  
-                  const totalComMigracao = totalMin + horasMigradas;
-                  const horas = Math.floor(totalComMigracao / 60);
-                  const minutos = totalComMigracao % 60;
-                  return `${horas}h ${minutos}min`;
-                })()}
-              </div>
-              <div style={{ fontSize: '1em', color: 'var(--text-light)', fontWeight: 500 }}>
-                {(() => {
-                  const totalMin = historicoEstudo.reduce((acc, est) => acc + (est.tempo || 0), 0);
-                  // Adicionar horas migradas se existirem
-                  const usuario = JSON.parse(localStorage.getItem('user'));
-                  const projetoId = localStorage.getItem('projetoSelecionado');
-                  const horasMigradas = parseInt(localStorage.getItem(`horasMigradas_${usuario?.id}_${projetoId}`)) || 0;
-                  const totalComMigracao = totalMin + horasMigradas;
-                  const dias = Math.floor(totalComMigracao / 1440); // 1440 min = 1 dia
-                  return `${dias} dias de estudo`;
-                })()}
-              </div>
-              <div className='text-primary-primary' >
-                {(() => {
-                  if (historicoEstudo.length === 0) return '';
-                  const dias = {};
-                  historicoEstudo.forEach(e => {
-                    const d = new Date(e.dataSessao);
-                    const key = d.toDateString();
-                    dias[key] = (dias[key] || 0) + (e.tempo || 0);
-                  });
-                  const maiorDia = Object.entries(dias).sort((a, b) => b[1] - a[1])[0];
-                  if (!maiorDia) return '';
-                  const horas = Math.floor(maiorDia[1] / 60);
-                  const minutos = Math.round(maiorDia[1] % 60);
-                  return <>Maior tempo em um dia: <span className="badge bg-primary-primary text-dark" >{horas}h {minutos}min</span></>;
-                })()}
-              </div>
-            </div>
-          </div>
+
         </div>
 
-
-
-        {/* Removido resumo do progresso */}
-        <div className='d-flex w-100 align-items-center min-vh-10' style={{ animationDelay: '0.45s' }}>
-
-
-
-
-
-
-          <div className='resumo-dia card-padrao2 fadein flex-fill me-4 flex-column justify-content-center ' style={{ height: 280, width: 220, textAlign: 'left', animationDelay: '0.5s', padding: '1rem', position: 'relative' }}>
-            <div className="d-flex align-items-center mb-3" style={{ width: '100%' }}>
-              <div className="card-title-padrao m-0">
-                ESTUDO {' '}
-                <button
-                  className="btn btn-outline-primary-primary btn-sm"
-                  style={{ padding: '0.25rem 0.7rem', fontSize: '0.85rem', fontWeight: 700, letterSpacing: 1, marginLeft: 4 }}
-                  onClick={handleResumoPeriodoToggle}
-                >
-                  {resumoLabels[resumoPeriodo]}
-                </button>
-              </div>
-            </div>
-            <div className="card-content" style={{ paddingTop: 0 }}>
-              {(() => {
-                // Função para obter estudos do período
-                function getEstudosPeriodo() {
-                  const hoje = new Date();
-                  // Gera set de strings YYYY-MM-DD para os dias do período
-                  if (resumoPeriodo === 'semana' || resumoPeriodo === 'mes') {
-                    const diasCount = resumoPeriodo === 'semana' ? 7 : 30;
-                    const diasSet = new Set();
-                    for (let i = 0; i < diasCount; i++) {
-                      const d = new Date(hoje);
-                      d.setHours(0, 0, 0, 0);
-                      d.setDate(hoje.getDate() - i);
-                      const y = d.getFullYear();
-                      const m = String(d.getMonth() + 1).padStart(2, '0');
-                      const day = String(d.getDate()).padStart(2, '0');
-                      diasSet.add(`${y}-${m}-${day}`);
-                    }
-                    return historicoEstudo.filter(e => {
-                      if (!e?.dataSessao) return false;
-                      if (typeof e.dataSessao === 'string' && e.dataSessao.includes('T')) {
-                        return diasSet.has(e.dataSessao.split('T')[0]);
-                      }
-                      const d = new Date(e.dataSessao);
-                      const y = d.getFullYear();
-                      const m = String(d.getMonth() + 1).padStart(2, '0');
-                      const day = String(d.getDate()).padStart(2, '0');
-                      return diasSet.has(`${y}-${m}-${day}`);
-                    });
-                  } else {
-                    // Dia atual em YYYY-MM-DD
-                    const y = hoje.getFullYear();
-                    const m = String(hoje.getMonth() + 1).padStart(2, '0');
-                    const day = String(hoje.getDate()).padStart(2, '0');
-                    const hojeStr = `${y}-${m}-${day}`;
-                    return historicoEstudo.filter(e => {
-                      if (!e?.dataSessao) return false;
-                      if (typeof e.dataSessao === 'string' && e.dataSessao.includes('T')) {
-                        return e.dataSessao.split('T')[0] === hojeStr;
-                      }
-                      const d = new Date(e.dataSessao);
-                      const yy = d.getFullYear();
-                      const mm = String(d.getMonth() + 1).padStart(2, '0');
-                      const dd = String(d.getDate()).padStart(2, '0');
-                      return `${yy}-${mm}-${dd}` === hojeStr;
-                    });
-                  }
-                }
-                const estudosPeriodo = getEstudosPeriodo();
-                if (estudosPeriodo.length === 0) {
-                  return <div className="text-secondary d-flex flex-column align-items-center justify-content-center gap-2 text-center" style={{ minHeight: 180 }}><FontAwesomeIcon icon={faFaceSadCry} size="2x" /><span>Nenhum estudo registrado neste período.</span></div>;
-                }
-                const materias = {};
-                let totalMin = 0;
-                estudosPeriodo.forEach(e => {
-                  const mat = e.disciplina || e.categoria || 'Outra';
-                  materias[mat] = (materias[mat] || 0) + (e.tempo || 0);
-                  totalMin += (e.tempo || 0);
-                });
-                const labels = Object.keys(materias);
-                const data = Object.values(materias);
-                const coresMateriasResumo = labels.map(nome => materiasCoresMap[nome] || '#1b59f9');
-                const horasPorMateria = data.map(min => `${Math.floor(min / 60)}h ${Math.round(min % 60)}min`);
-                const labelsComHoras = labels.map((nome, idx) => `${nome} `);
-                return <>
-                  <div className="resumo-semana d-flex align-items-center justify-content-center w-100" style={{ minHeight: 180 }}>
-                    <div className='w-25 m-auto' style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                      <Pie
-                        data={{
-                          labels: labelsComHoras,
-                          datasets: [
-                            {
-                              data,
-                              backgroundColor: coresMateriasResumo,
-                              borderColor: '#fff',
-                              borderWidth: 2,
-                            }
-                          ]
-                        }}
-                        options={{
-                          responsive: true,
-                          plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                              callbacks: {
-                                label: function (context) {
-                                  const idx = context.dataIndex;
-                                  const minutos = data[idx] || 0;
-                                  const horas = Math.floor(minutos / 60);
-                                  const min = Math.round(minutos % 60);
-                                  return ` ${horas}h ${min}min`;
-                                }
-                              }
-                            }
-                          }
-                        }}
-                        width={5}
-                        height={5}
-                      />
-                    </div>
-                    <div className="w-50 ms-3 d-flex flex-column align-items-start justify-content-center" style={{ minWidth: 120 }}>
-                      <ul className="list-unstyled mb-0" style={{ fontSize: '0.8em', marginTop: -10 }}>
-                        {labels.map((nome, idx) => (
-                          <li key={nome} className="mb-1" style={{ color: '#ffffff' }}>
-                            <span className="fw-bold" style={{ color: coresMateriasResumo[idx] }}>{nome}:</span> <span>{horasPorMateria[idx]}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <div className="mt-2 fw-bold text-primary-primary" style={{ textAlign: 'left' }}>Total: <span className="badge text-dark bg-primary-primary">{(() => {
-                        const horas = Math.floor(totalMin / 60);
-                        const minutos = Math.round(totalMin % 60);
-                        return `${horas}h ${minutos}min`;
-                      })()}</span></div>
-                    </div>
-                  </div>
-                </>;
-              })()}
-            </div>
-          </div>
-
-          <div className='evolucao card-padrao2 fadein text-center me-4  d-flex flex-column ' style={{ height: 280, maxWidth: 660, width: 660, minHeight: 220, margin: '0 auto', animationDelay: '0.55s', padding: '1rem', position: 'relative' }}>
-            <div className="card-title-padrao" >EVOLUÇÃO GERAL EM SIMULADOS</div>
-            <div className="card-content" style={{ paddingTop: 0, width: '100%' }}>
-              <div style={{ width: '100%', height: '80%', margin: '0 auto', position: 'relative' }}>
-                <Line
-                  data={{
-                    labels: simuladosOrdenados.length > 0 ? simuladosOrdenados.map(s => `Simulado #${s.numSim}`) : [''],
-                    datasets: [
-                      {
-                        label: 'Acertos',
-                        data: simuladosOrdenados.length > 0 ? simuladosOrdenados.map(s => {
-                          const resumo = resumos[s.id];
-                          return resumo ? (resumo.acertos ?? 0) : 0;
-                        }) : [0],
-                        borderColor: '#71dd8c',
-                        backgroundColor: '#71dd8c22',
-                        fill: false,
-                        tension: 0.2,
-                      },
-                      {
-                        label: 'Erros',
-                        data: simuladosOrdenados.length > 0 ? simuladosOrdenados.map(s => {
-                          const resumo = resumos[s.id];
-                          return resumo ? (resumo.erros ?? 0) : 0;
-                        }) : [0],
-                        borderColor: '#83313e',
-                        backgroundColor: '#83313e22',
-                        fill: false,
-                        tension: 0.2,
-                      },
-                      {
-                        label: 'Brancos',
-                        data: simuladosOrdenados.length > 0 ? simuladosOrdenados.map(s => {
-                          const resumo = resumos[s.id];
-                          return resumo ? (resumo.brancos ?? 0) : 0;
-                        }) : [0],
-                        borderColor: '#fff',
-                        backgroundColor: '#fff',
-                        fill: false,
-                        tension: 0.2,
-                      },
-                      {
-                        label: 'Líquido',
-                        data: simuladosOrdenados.length > 0 ? simuladosOrdenados.map((s, idx) => {
-                          const resumo = resumos[s.id];
-                          return resumo ? (resumo.acertos ?? 0) - (resumo.erros ?? 0) : 0;
-                        }) : [0],
-                        borderColor: '#1b59f9',
-                        backgroundColor: (context) => {
-                          const chart = context.chart;
-                          const { ctx, chartArea } = chart;
-                          if (!chartArea) return 'rgba(27,89,249,0.1)';
-                          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                          gradient.addColorStop(0, 'rgba(27,89,249,0.25)');
-                          gradient.addColorStop(1, 'rgba(27,89,249,0.05)');
-                          return gradient;
-                        },
-                        fill: true,
-                        tension: 0.2,
-                      },
-                      {
-                        label: 'Tendência Líquida',
-                        data: (() => {
-                          function calcularLinhaTendencia(yArray) {
-                            const n = yArray.length;
-                            if (n === 0) return [];
-                            const xArray = Array.from({ length: n }, (_, i) => i + 1);
-                            const xMean = xArray.reduce((a, b) => a + b, 0) / n;
-                            const yMean = yArray.reduce((a, b) => a + b, 0) / n;
-                            let num = 0, den = 0;
-                            for (let i = 0; i < n; i++) {
-                              num += (xArray[i] - xMean) * (yArray[i] - yMean);
-                              den += (xArray[i] - xMean) ** 2;
-                            }
-                            const m = den === 0 ? 0 : num / den;
-                            const b = yMean - m * xMean;
-                            return xArray.map(x => m * x + b);
-                          }
-                          const liquidos = simuladosOrdenados.length > 0 ? simuladosOrdenados.map((s, idx) => {
-                            const resumo = resumos[s.id];
-                            return resumo ? (resumo.acertos ?? 0) - (resumo.erros ?? 0) : 0;
-                          }) : [0];
-                          return calcularLinhaTendencia(liquidos);
-                        })(),
-                        borderColor: '#ff9800',
-                        backgroundColor: 'rgba(255,152,0,0.1)',
-                        borderDash: [6, 6],
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0,
-                        order: 10
-                      }
-                    ]
-                  }}
-                  options={{
-                    scales: {
-                      x: { grid: { display: false }, ticks: { color: 'var(--text-light)' } },
-                      y: {
-                        grid: { display: false },
-                        ticks: {
-                          color: 'var(--text-light)',
-                          callback: function (value) {
-                            return Number.isInteger(value) ? value : '';
-                          },
-                          stepSize: 1,
-                          precision: 0
-                        }
-                      }
-                    },
-                    plugins: { legend: { display: false } },
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                  }}
-                  height={180}
-                />
-                {simulados.length === 0 && (
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', color: 'var(--text-light)', fontSize: '1.1em', pointerEvents: 'none' }}>
-                    Nenhum simulado cadastrado ainda.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className=' card-padrao2 fadein flex-fill text-start  d-flex flex-column justify-content-center ' style={{ height: 280, width: 220, minHeight: 220, animationDelay: '0.6s', padding: '1rem', position: 'relative' }}>
-            <div className="card-title-padrao" style={{ marginBottom: '1rem' }}>ESTATÍSTICAS</div>
-            <div className="card-content" style={{ paddingTop: 0, height: 'calc(100% - 2rem)', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-around' }}>
-
-              <div className="p-2 text-center d-flex flex-column align-items-center" style={{ flex: 1 }}>
-                <span className="fw-bold text-start">Melhor nota em simulado</span>
-                <span className="badge bg-primary-primary2 rounded-pill mt-1 mb-1" style={{ fontSize: '1.2em' }}>{(() => {
-                                   const notas = simuladosOrdenados.map(s => {
-                    const resumo = resumos[s.id];
-                    if (!resumo) return null;
-                    return (resumo.acertos ?? 0) - (resumo.erros ?? 0);
-                  }).filter(n => n !== null);
-                  if (notas.length === 0) return '--';
-                  return Math.max(...notas);
-                })()}</span>
-                <span className="text-secondary" ></span>
-              </div>
-              <div className="p-2 text-center d-flex flex-column align-items-center" style={{ flex: 1 }}>
-                <span className="fw-bold text-start">Último simulado</span>
-                <span className="badge rounded-pill bg-primary-primary3  mt-1 mb-1 text-dark" style={{ fontSize: '1.2em' }}>{(() => {
-                  const ultimoSimulado = simuladosOrdenados[0]; // Primeiro da lista ordenada = mais recente
-                  const resumoUltimo = ultimoSimulado ? resumos[ultimoSimulado.id] : null;
-                  const notaUltimo = resumoUltimo ? (resumoUltimo.acertos ?? 0) - (resumoUltimo.erros ?? 0) : null;
-                  return notaUltimo !== null ? notaUltimo : '--';
-                })()}</span>
-                <span className="text-secondary" ></span>
-              </div>
-              <div className="p-2 text-center d-flex flex-column align-items-center" style={{ flex: 1 }}>
-                <span className="fw-bold text-start">Questões resolvidas</span>
-                <span className="badge rounded-pill bg-secondary mt-1 mb-1" style={{ fontSize: '1.2em' }}>{simuladosOrdenados.reduce((acc, s) => acc + (s.quanQuest || 0), 0)}</span>
-                <span className="text-secondary" ></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card-padrao2 fadein" style={{ animationDelay: '0.65s', padding: '1rem', position: 'relative' }}>
-          <div className="card-title-padrao">EVOLUÇÃO GERAL POR MATÉRIA EM SIMULADOS</div>
-          <div className="card-content">
-            <div className="row" style={{ margin: 0 }}>
-              {(() => {
-                // Lista de todas as matérias
-                const todasMaterias = Array.from(new Set(simuladosOrdenados.flatMap(sim => (resumos[sim.id]?.materias ?? []).map(m => m.nome))));
-                return todasMaterias.map(materiaNome => {
-                  // Array de porcentagens líquidas por simulado para a matéria
-                  const materiaPorcentagens = simuladosOrdenados.map(sim => {
-                    const mat = (resumos[sim.id]?.materias ?? []).find(m => m.nome === materiaNome);
-                    const totalMat = mat ? (mat.acertos + mat.erros + mat.brancos) : 0;
-                    const liquido = mat ? (mat.acertos - mat.erros) : 0;
-                    return totalMat > 0 ? ((liquido / totalMat) * 100) : null;
-                  });
-                  const tendenciaMateria = (() => {
-                    const arr = materiaPorcentagens.map(v => v === null ? 0 : Number(v));
-                    const n = arr.length;
-                    if (n === 0) return [];
-                    const xArray = Array.from({ length: n }, (_, i) => i + 1);
-                    const xMean = xArray.reduce((a, b) => a + b, 0) / n;
-                    const yMean = arr.reduce((a, b) => a + b, 0) / n;
-                    let num = 0, den = 0;
-                    for (let i = 0; i < n; i++) {
-                      num += (xArray[i] - xMean) * (arr[i] - yMean);
-                      den += (xArray[i] - xMean) ** 2;
-                    }
-                    const m = den === 0 ? 0 : num / den;
-                    const b = yMean - m * xMean;
-                    return xArray.map(x => m * x + b);
-                  })();
-                  // Labels: nomes dos simulados
-                  const simLabels = simuladosOrdenados.map(sim => `Simulado #${sim.numSim}`);
-                  const corMateria = materiasCoresMap[materiaNome] || '#0d6efd';
-                  return (
-                    <div className="col-12 col-sm-6 col-md-3 col-lg-2 mb-3" key={materiaNome}>
-                      <div className="h-100" style={{ maxWidth: 180 }}>
-                        <div className=" fw-bold text-center mb-2" style={{ fontSize: '0.95em' }}>{materiaNome.length > 25 ? materiaNome.slice(0, 25) + '...' : materiaNome}</div>
-                        <Line
-                          data={{
-                            labels: simLabels,
-                            datasets: [
-                              {
-                                label: '% Líquido',
-                                data: materiaPorcentagens,
-                                borderColor: corMateria,
-                                backgroundColor: (context) => {
-                                  const chart = context.chart;
-                                  const { ctx, chartArea } = chart;
-                                  if (!chartArea) return corMateria + '22';
-                                  const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                                  gradient.addColorStop(0, corMateria + '44');
-                                  gradient.addColorStop(1, 'rgba(0,0,0,0)');
-                                  return gradient;
-                                },
-                                fill: true,
-                                tension: 0.2,
-                              },
-                              {
-                                label: 'Tendência',
-                                data: tendenciaMateria,
-                                borderColor: '#ff9800',
-                                backgroundColor: 'rgba(255,152,0,0.1)',
-                                borderDash: [6, 6],
-                                pointRadius: 0,
-                                fill: false,
-                                tension: 0,
-                                order: 10
-                              }
-                            ]
-                          }}
-                          plugins={[{
-                            beforeDatasetsDraw: (chart) => {
-                              const ctx = chart.ctx;
-                              const chartArea = chart.chartArea;
-                              if (!chartArea) return;
-                              const datasetIndex = chart.data.datasets.findIndex(ds => ds.label === '% Líquido');
-                              if (datasetIndex === -1) return;
-                              const meta = chart.getDatasetMeta(datasetIndex);
-                              ctx.save();
-                              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                              gradient.addColorStop(0, corMateria);
-                              gradient.addColorStop(1, corMateria + '05');
-                              ctx.globalAlpha = 0.5;
-                              ctx.fillStyle = gradient;
-                              ctx.beginPath();
-                              meta.data.forEach((point, i) => {
-                                if (i === 0) ctx.moveTo(point.x, chartArea.bottom);
-                                ctx.lineTo(point.x, point.y);
-                              });
-                              meta.data.slice().reverse().forEach((point, i) => {
-                                ctx.lineTo(point.x, chartArea.bottom);
-                              });
-                              ctx.closePath();
-                              ctx.fill();
-                              ctx.restore();
-                            }
-                          }]}
-                          options={{
-                            scales: {
-                              x: {
-                                grid: { display: false },
-                                ticks: { color: '#bbb', display: false }
-                              },
-                              y: {
-                                beginAtZero: true,
-                                max: 100,
-                                title: { display: false },
-                                grid: { 
-                                  display: true,
-                                  color: (context) => {
-                                    if (context.tick.value === 0) {
-                                      return '#dc3545'; // Vermelho para a linha do 0
-                                    }
-                                    return 'rgba(187, 187, 187, 0.1)'; // Cinza claro para outras linhas
-                                  },
-                                  lineWidth: (context) => {
-                                    if (context.tick.value === 0) {
-                                      return 2; // Linha mais grossa para o 0
-                                    }
-                                    return 1;
-                                  }
-                                },
-                                ticks: { color: 'var(--text-light)' }
-                              }
-                            },
-                            plugins: {
-                              legend: { display: false },
-                              tooltip: {
-                                callbacks: {
-                                  title: (tooltipItems) => {
-                                    // Mostra o nome do simulado
-                                    return simLabels[tooltipItems[0].dataIndex];
-                                  }
-                                }
-                              }
-                            }
-                          }}
-                          height={60}
-                          width={120}
-                        />
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        </div>
-
-        <div className=" m-0 w-100 p-3 border fadein" style={{ borderRadius: 25, animationDelay: '0.7s' }}>
+        <div className=" m-0 w-100 p-3 border fadein" style={{ borderRadius: 25, animationDelay: '0.7s', position: 'relative' }}>
+          <div className="card-title-padrao position-absolute px-3" style={{ top: '-12px', left: '20px', zIndex: 1, backgroundColor: 'var(--background)' }}>HISTÓRICO</div>
           <div className="card-padrao2 fadein mb-3" style={{ animationDelay: '0.75s', padding: '1rem', position: 'relative' }}>
-            <div className="card-title-padrao">HISTÓRICO DE ESTUDO</div>
+            <div className="card-title-padrao">Histórico de Estudo</div>
             <div className="card-content">
               <ul className="list-group rounded list-group-flush" style={{ maxHeight: 220, overflowY: 'auto' }}>
                 {historicoEstudo.length === 0 ? (
                   <li className="list-group-item">Nenhum registro encontrado.</li>
                 ) : (
-                  historicoEstudo.map((estudo, idx) => (
+                  [...historicoEstudo].reverse().map((estudo, idx) => (
                     <li key={estudo.id || idx} className=" list-group-item d-flex align-items-center justify-content-between">
                       <span>
                         {(() => {
@@ -1728,14 +1782,14 @@ const Home = () => {
                         })()} - {estudo.disciplina || estudo.categoria || 'Disciplina'}
                         {estudo.categoria && <span> | <span style={{ color: 'var(--primary-primary)' }}>{estudo.categoria}</span></span>}
                         {estudo.editalItem && <span> | <span style={{ color: '#ffc107' }}>Edital: {estudo.editalItem}</span></span>}
-                        {' '} - {estudo.tempo} min
+                        {' '} - {estudo.tempo >= 60 ? `${Math.floor(estudo.tempo / 60)}h${estudo.tempo % 60 > 0 ? ` ${estudo.tempo % 60}min` : ''}` : `${estudo.tempo} min`}
                       </span>
                       <span className="d-flex gap-2">
-                        <button className="btn-icon text-primary-primary" title="Editar" onClick={() => {/* implementar ação de editar */ }}>
-                          <FontAwesomeIcon icon={faEdit} />
+                        <button className="btn-icon text-primary-primary" title="Editar" onClick={() => openFormWithEdit(estudo, fetchHistoricoEstudo)}>
+                          <Edit2 size={14} />
                         </button>
                         <button className="btn-icon text-primary-primary" title="Apagar" onClick={() => handleApagarEstudo(estudo.id)}>
-                          <FontAwesomeIcon icon={faTrash} />
+                          <Trash size={14} />
                         </button>
                       </span>
                     </li>
@@ -1745,13 +1799,13 @@ const Home = () => {
             </div>
           </div>
           <div className="card-padrao2 fadein" style={{ maxHeight: 300, overflowY: 'auto', animationDelay: '0.8s', padding: '1rem', position: 'relative' }}>
-            <div className="card-title-padrao">HISTÓRICO DOS ÚLTIMOS SIMULADOS</div>
+            <div className="card-title-padrao">Histórico dos Últimos Simulados</div>
             <div className="card-content">
               <ul className="rounded list-group list-group-flush">
                 {simuladosOrdenados.length === 0 ? (
                   <li className="list-group-item">Nenhum simulado encontrado.</li>
                 ) : (
-                  simuladosOrdenados.slice(-5).reverse().map(s => {
+                  [...simuladosOrdenados].reverse().map(s => {
                     const resumo = resumos[s.id];
                     const notaLiquida = resumo ? (resumo.acertos ?? 0) - (resumo.erros ?? 0) : '--';
                     const data = formatarDataSegura(s.dataSim);
@@ -1760,7 +1814,7 @@ const Home = () => {
                         <span>
                           <strong>Simulado #{s.numSim}</strong> - <span className="text-secondary">{data}</span>
                         </span>
-                        <span className="badge bg-primary-primary text-dark">{notaLiquida} pts</span>
+                        <span className="badge bg-primary-primary4 text-dark">{notaLiquida} pts</span>
                       </li>
                     );
                   })

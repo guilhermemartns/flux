@@ -37,7 +37,8 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
+  color-scheme: light;
+  background-color: #ffffff;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -84,10 +85,8 @@ body {
   position: relative;
   margin: 0;
   padding: 0;
-  font-weight: bold;
   text-align: left;
   font-size: 0.9rem;
-  text-transform: uppercase;
   z-index: 1;
   color: #000;
   font-weight: 400; /* Regular */
@@ -101,17 +100,3 @@ body {
   justify-content: center;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-
-  a:hover {
-    color: #747bff;
-  }
-
-  button {
-    background-color: #f9f9f9;
-  }
-}

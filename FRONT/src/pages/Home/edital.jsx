@@ -5,17 +5,12 @@ import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Modal, Button, Spinner } from 'react-bootstrap';
-import { FaTrash, FaRegEye, FaRegEyeSlash, FaBook } from 'react-icons/fa';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPenToSquare, faCheck, faTimes, faCircle } from '@fortawesome/free-solid-svg-icons';
+import { Trash, Eye, EyeOff, BookOpen, Edit2, Check, X, Circle, Folder } from 'react-feather';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
 import Navbar from '../../components/Navbar.jsx';
 import { usePageTitle } from '../../components/PageTitleContext';
-import { faFolderOpen } from '@fortawesome/free-solid-svg-icons';
-
-// Estado para modal de projeto padrão
 // (deve vir depois dos imports)
 
 const PALETAS = [
@@ -227,26 +222,7 @@ function Materias() {
     }
 
     async function deleteMateria(id) {
-        const result = await Swal.fire({
-            title: 'Deseja apagar esta matéria?',
-            text: 'Essa ação não pode ser desfeita.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sim, apagar',
-            cancelButtonText: 'Cancelar',
-            reverseButtons: true,
-            customClass: {
-                container: 'alert-fundo',
-                popup: 'text-white',
-                title: 'text-white',
-                content: 'text-white',
-                confirmButton: 'btn m-2 btn-primary-primary',
-                cancelButton: 'btn btn-outline-primary-primary',
-            },
-            buttonsStyling: false,
-            background: 'transparent',
-        });
-        if (!result.isConfirmed) return;
+        if (!window.confirm('Deseja apagar esta matéria? Essa ação não pode ser desfeita.')) return;
         try {
             await api.delete(`/edital/${id}`);
             getMaterias(); // atualiza a lista
@@ -422,7 +398,7 @@ function Materias() {
             {!projetoSelecionado ? (
                 <div className="app-container d-flex flex-column justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
                     <div className="text-center">
-                        <FontAwesomeIcon icon={faFolderOpen} size="4x" className="mb-3 text-secondary" />
+                        <Folder size={48} className="mb-3 text-secondary" />
                         <h4 className="mb-3 text-center  fs-6">
                             Nenhum projeto selecionado.<br />
                             Selecione ou crie um projeto para acessar o edital.
@@ -437,15 +413,17 @@ function Materias() {
                     <main className="container-fluid gap-4 pt-3 " style={{ animationDelay: '0.05s', paddingTop: 90 }}>
 
                         <div className="d-flex align-items-center gap-4 w-100">
-                            <span className="d-flex text-primary-primary3 align-items-center gap-2 fw-bold text-nowrap">
+                            <span className="d-flex text-secondary align-items-center gap-2 fw-bold text-nowrap">
                                 Progresso Geral do Edital:
                                 <span>{getProgressoGeral()}%</span>
                             </span>
-                            <div className="flex-grow-1  rounded-pill " >
+                            <div className="flex-grow-1  rounded-pill " style={{ backgroundColor: 'rgba(0, 0, 0, 0.08)', height: '3px' }} >
                                 <div className="bg-primary-primary3 rounded-pill" style={{ height: '3px', width: `${getProgressoGeral()}%`, transition: 'width 0.3s' }}></div>
                             </div>
 
                         </div>
+                        <div className="m-0 w-100 p-3 border fadein position-relative " style={{ borderRadius: '1em', animationDelay: '0.7s' }}>
+                            <div className="card-title-padrao position-absolute px-3" style={{ top: '-12px', left: '20px', zIndex: 1, backgroundColor: 'var(--background)' }}>CONTEÚDO PROGRAMÁTICO</div>
                         <div className="row g-3">
                             {/* Cards de matérias */}
                             {materias.length > 0 ? (
@@ -466,28 +444,12 @@ function Materias() {
                                                 className="pointer card-padrao fadein card-padrao-hover w-100 d-flex flex-column position-relative"
                                                 style={{
                                                     height: 200,
-                                                    borderLeft: materia.cor ? `4px solid ${materia.cor}` : '4px solid #0d6efd',
+                                                    backgroundColor: materia.cor ? `${materia.cor}15` : '#0d6efd15',
                                                     animationDelay,
                                                     padding: 0,
                                                     overflow: 'hidden',
-                                                    transition: 'border-left-color 0.3s ease',
-                                                    background: 'var(--background-dark)'
                                                 }}
                                                 onClick={() => navigate(`/materia/${materia.id}`)}
-                                                onMouseEnter={e => {
-                                                    e.currentTarget.style.borderLeftColor = '#71dd8c';
-                                                    const rightIndicator = e.currentTarget.querySelector('.right-indicator');
-                                                    if (rightIndicator) {
-                                                        rightIndicator.style.backgroundColor = '#71dd8c';
-                                                    }
-                                                }}
-                                                onMouseLeave={e => {
-                                                    e.currentTarget.style.borderLeftColor = materia.cor || '#0d6efd';
-                                                    const rightIndicator = e.currentTarget.querySelector('.right-indicator');
-                                                    if (rightIndicator) {
-                                                        rightIndicator.style.backgroundColor = materia.cor || '#0d6efd';
-                                                    }
-                                                }}
                                             >
                                                 {/* Header do card */}
                                                 <div className="p-3 pb-2 position-relative" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
@@ -533,7 +495,7 @@ function Materias() {
                                                             }}
                                                             title="Editar matéria"
                                                         >
-                                                            <FontAwesomeIcon icon={faPenToSquare} style={{ fontSize: '1.1rem' }} />
+                                                            <Edit2 size={18} style={{ fontSize: '1.1rem', color: 'var(--primary-primary)' }} />
                                                         </button>
                                                         <button
                                                             className="btn d-flex align-items-center justify-content-center"
@@ -556,7 +518,7 @@ function Materias() {
                                                             }}
                                                             title="Apagar matéria"
                                                         >
-                                                            <FaTrash style={{ fontSize: '1.1rem' }} />
+                                                            <Trash size={18} style={{ fontSize: '1.1rem', color: 'var(--primary-primary)' }} />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -575,18 +537,18 @@ function Materias() {
                                                                     {progresso}%
                                                                 </span>
                                                             </div>
-                                                            <div className="progress mb-2" style={{ height: '6px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                                                            <div className="progress mb-2" style={{ height: '6px', backgroundColor: 'rgba(0, 0, 0, 0.08)' }}>
                                                                 <div
                                                                     className="progress-bar"
                                                                     style={{
                                                                         width: `${progresso}%`,
-                                                                        backgroundColor: materia.cor || '#0d6efd',
+                                                                        backgroundColor: materia.cor || '#4CAF50',
                                                                         transition: 'width 0.5s ease'
                                                                     }}
                                                                 ></div>
                                                             </div>
                                                             <div className="text-center">
-                                                                <span className="text-light small">
+                                                                <span className="text-secondary small">
                                                                     <strong>{feitos}</strong> de <strong>{total}</strong> itens completos
                                                                 </span>
                                                             </div>
@@ -600,19 +562,7 @@ function Materias() {
                                                     )}
                                                 </div>
 
-                                                {/* Indicador de cor da matéria */}
-                                                <div
-                                                    className="position-absolute right-indicator"
-                                                    style={{
-                                                        top: 0,
-                                                        right: 0,
-                                                        width: '4px',
-                                                        height: '100%',
-                                                        backgroundColor: materia.cor || '#0d6efd',
-                                                        opacity: 0.3,
-                                                        transition: 'background-color 0.3s ease'
-                                                    }}
-                                                ></div>
+
                                             </div>
                                         </div>
                                     );
@@ -632,64 +582,50 @@ function Materias() {
                                     onClick={() => setShowModal(true)}
                                 >
                                     <div className="d-flex flex-column align-items-center justify-content-center h-100 w-100 p-3">
-                                        <span className="fw-bold fs-6 text-primary-primary text-center">+ Adicionar Nova Matéria</span>
+                                        <span className="fw-bold fs-6 text-secondary text-center">+ Adicionar Nova Matéria</span>
                                         <span className="fs-6 text-secondary mt-2 text-center">Clique para cadastrar uma nova matéria</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        </div>
                     </main>
                 </div>
             )}
-            <Modal className='modal-fundo' show={showProjetoPadraoModal} onHide={() => setShowProjetoPadraoModal(false)} centered>
+            <Modal className='modal-fundo' show={showProjetoPadraoModal} onHide={() => setShowProjetoPadraoModal(false)} centered backdrop="static">
                 <Modal.Body className='modal-estilo'>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                        <Modal.Title className='fw-bold fs-5 m-0'>Salvar este projeto como Projeto Padrão</Modal.Title>
-                        <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowProjetoPadraoModal(false)}></button>
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                        <Modal.Title className='fw-bold fs-5 m-0'>Salvar como Projeto Padrão</Modal.Title>
+                    </div>
+                    <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>Um projeto padrão pode ser reutilizado para criar novos projetos com as mesmas matérias e edital. Defina um nome de identificação.</p>
+                    <div className="mb-3">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Nome do Projeto Padrão</label>
+                        <input type="text" className="form-control linha" value={nomeProjetoPadrao} onChange={e => setNomeProjetoPadrao(e.target.value)} />
                     </div>
                     <div className="mb-3">
-                        <label>Nome do Projeto Padrão:</label>
-                        <input type="text" className="form-control" value={nomeProjetoPadrao} onChange={e => setNomeProjetoPadrao(e.target.value)} />
-                    </div>
-                    <div>
-                        <label>Matérias e Conteúdos que serão salvos:</label>
-                        <ul>
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Matérias incluídas ({materias.length})</label>
+                        <ul className="mb-0" style={{ fontSize: '0.82em', color: 'var(--text-light)', paddingLeft: '1.2em', maxHeight: 120, overflowY: 'auto' }}>
                             {materias.map((mat, idx) => (
-                                <li key={idx}>
-                                    <strong>{mat.nome}</strong>
-                                    <ul>
-                                        {Array.isArray(mat.edital) && mat.edital.map((c, cidx) => (
-                                            <li key={cidx}>{c}</li>
-                                        ))}
-                                    </ul>
-                                </li>
+                                <li key={idx}><strong>{mat.nome}</strong>{Array.isArray(mat.edital) && mat.edital.length > 0 && <span className="text-secondary"> — {mat.edital.length} item(s)</span>}</li>
                             ))}
                         </ul>
                     </div>
-                    {erroProjetoPadrao ? (
-                        <div>
-                            <strong>Erro:</strong> {erroProjetoPadrao}
-                        </div>
-                    ) : null}
+                    {erroProjetoPadrao && <div className="text-danger mb-2" style={{ fontSize: '0.82em' }}>{erroProjetoPadrao}</div>}
                     <div className="d-flex justify-content-end gap-2 mt-3">
-                        <button type="button" onClick={() => setShowProjetoPadraoModal(false)} className="btn btn-outline-primary-primary">
-                            Cancelar
-                        </button>
-                        <button type="button" onClick={handleSalvarProjetoPadrao} className="btn btn-primary-primary">
-                            Salvar Projeto Padrão
-                        </button>
+                        <button type="button" onClick={() => setShowProjetoPadraoModal(false)} className="btn btn-outline-primary-primary3">Cancelar</button>
+                        <button type="button" onClick={handleSalvarProjetoPadrao} className="btn btn-primary-primary3">Salvar Projeto Padrão</button>
                     </div>
                 </Modal.Body>
             </Modal>
             {showModal && (
                 <></>
             )}
-            <Modal className='modal-fundo' show={showModal} onHide={() => setShowModal(false)} centered>
+            <Modal className='modal-fundo' show={showModal} onHide={() => setShowModal(false)} centered backdrop="static">
                 <Modal.Body className='modal-estilo'>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="d-flex justify-content-between align-items-center mb-1">
                         <Modal.Title className='fw-bold fs-5 m-0'>Inserir nova matéria</Modal.Title>
-                        <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowModal(false)}></button>
                     </div>
+                    <p className="text-secondary mb-3" style={{ fontSize: '0.8em' }}>Digite uma matéria por linha (máx. 50 caracteres). Selecione uma cor para cada uma abaixo.</p>
                     <form className="form-modal needs-validation" noValidate onSubmit={e => {
                         e.preventDefault();
                         if (!materiasInput.trim()) {
@@ -699,7 +635,7 @@ function Materias() {
                         createMateria();
                     }}>
                         <textarea
-                            placeholder="Digite uma matéria por linha (máx. 50 caracteres cada)"
+                            placeholder="Uma matéria por linha..."
                             name='edital'
                             rows={5}
                             value={materiasInput}
@@ -743,10 +679,10 @@ function Materias() {
                             <input type="text" required value={materiasInput.trim() ? 'ok' : ''} readOnly />
                         </div>
                         <div className="d-flex justify-content-end gap-2 mt-3">
-                            <button type="button" onClick={() => setShowModal(false)} className="btn btn-outline-primary-primary">
+                            <button type="button" onClick={() => setShowModal(false)} className="btn btn-outline-primary-primary3">
                                 Cancelar
                             </button>
-                            <button type="submit" className="btn btn-primary-primary">
+                            <button type="submit" className="btn btn-primary-primary3">
                                 Cadastrar
                             </button>
                         </div>
@@ -756,12 +692,12 @@ function Materias() {
             {editModalId !== null && (
                 <></>
             )}
-            <Modal className='modal-fundo' show={editModalId !== null} onHide={() => { setEditModalId(null); setEditalInputs(""); }} centered>
+            <Modal className='modal-fundo' show={editModalId !== null} onHide={() => { setEditModalId(null); setEditalInputs(""); }} centered backdrop="static">
                 <Modal.Body className='modal-estilo'>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                        <Modal.Title className='fw-bold fs-5 m-0'>{editModalId && editModalId.includes('-') ? "Editar item do edital" : "Inserir novos itens no edital"}</Modal.Title>
-                        <button type="button" className="btn-close" aria-label="Close" onClick={() => { setEditModalId(null); setEditalInputs(""); }}></button>
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                        <Modal.Title className='fw-bold fs-5 m-0'>{editModalId && editModalId.includes('-') ? "Editar item do edital" : "Inserir itens no edital"}</Modal.Title>
                     </div>
+                    <p className="text-secondary mb-3" style={{ fontSize: '0.8em' }}>{editModalId && editModalId.includes('-') ? 'Edite o texto do item selecionado.' : 'Digite um item por linha para adicionar vários de uma vez.'}</p>
                     <form className="needs-validation" noValidate onSubmit={async e => {
                         e.preventDefault();
                         if (!editalInputs.trim()) {
@@ -789,7 +725,7 @@ function Materias() {
                         {editModalId && editModalId.includes('-') ? (
                             <input
                                 type="text"
-                                className="form-control p-3 rounded bg-dark text-light fs-5 mb-2"
+                                className="form-control linha mb-2"
                                 value={editalInputs}
                                 onChange={e => setEditalInputs(e.target.value)}
                                 placeholder="Digite o item do edital"
@@ -799,7 +735,7 @@ function Materias() {
                             <textarea
                                 value={editalInputs}
                                 onChange={e => setEditalInputs(e.target.value)}
-                                className="form-control p-3 rounded bg-dark text-light fs-5 mb-2"
+                                className="form-control linha mb-2"
                                 placeholder="Digite um item por linha"
                                 rows={5}
                                 required
@@ -812,12 +748,8 @@ function Materias() {
                             <input type="text" required value={editalInputs.trim() ? 'ok' : ''} readOnly />
                         </div>
                         <div className="d-flex justify-content-end gap-2 mt-3">
-                            <button type="button" onClick={() => { setEditModalId(null); setEditalInputs(""); }} className="btn btn-outline-primary-primary">
-                                Cancelar
-                            </button>
-                            <button type="submit" className="btn btn-primary-primary">
-                                Salvar
-                            </button>
+                            <button type="button" onClick={() => { setEditModalId(null); setEditalInputs(""); }} className="btn btn-outline-primary-primary3">Cancelar</button>
+                            <button type="submit" className="btn btn-primary-primary3">Salvar</button>
                         </div>
                     </form>
                 </Modal.Body>
@@ -825,14 +757,18 @@ function Materias() {
             {showEditModal && (
                 <></>
             )}
-            <Modal className='modal-fundo' show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+            <Modal className='modal-fundo' show={showEditModal} onHide={() => setShowEditModal(false)} centered backdrop="static">
                 <Modal.Body className='modal-estilo'>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                        <Modal.Title className='fw-bold fs-5 m-0'>Editar nome da matéria</Modal.Title>
-                        <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowEditModal(false)}></button>
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                        <Modal.Title className='fw-bold fs-5 m-0'>Editar matéria</Modal.Title>
                     </div>
-                    <input type="text" className="linha form-control mb-3" value={editMateriaNome} onChange={e => setEditMateriaNome(e.target.value.slice(0, 50))} maxLength={50} />
-                    <label className="fw-bold">Editar cor da matéria:</label>
+                    <p className="text-secondary mb-3" style={{ fontSize: '0.8em' }}>Altere o nome e a cor de identificação da matéria.</p>
+                    <div className="mb-3">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Nome</label>
+                        <input type="text" className="linha form-control" value={editMateriaNome} onChange={e => setEditMateriaNome(e.target.value.slice(0, 50))} maxLength={50} />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Cor</label>
                     <div style={{ position: 'relative', maxWidth: 260 }}>
                         <button type="button" className=" form-select d-flex align-items-center gap-2" style={{ width: '100%', minHeight: 38, padding: '0 8px', cursor: 'pointer' }} onClick={() => setShowColorDropdown(v => !v)}>
                             <div style={{ width: 24, height: 24, borderRadius: '6px', background: editMateriaCor || '#eee', border: '1px solid #888', marginRight: 8 }}></div>
@@ -852,11 +788,12 @@ function Materias() {
                             </div>
                         )}
                     </div>
+                    </div>
                     <div className="d-flex justify-content-end gap-2 mt-3">
-                        <button type="button" onClick={() => setShowEditModal(false)} className="btn btn-outline-primary-primary">
+                        <button type="button" onClick={() => setShowEditModal(false)} className="btn btn-outline-primary-primary3">
                             Cancelar
                         </button>
-                        <button type="button" onClick={updateMateriaNome} className="btn btn-primary-primary">
+                        <button type="button" onClick={updateMateriaNome} className="btn btn-primary-primary3">
                             Salvar
                         </button>
                     </div>

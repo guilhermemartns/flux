@@ -5,6 +5,8 @@ export const StudyTimerContext = createContext();
 export const StudyTimerProvider = ({ children }) => {
   const [isTimerOpen, setIsTimerOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [onAfterSave, setOnAfterSave] = useState(null);
   const [minimized, setMinimized] = useState(false);
   const [timer, setTimer] = useState(() => {
     const saved = localStorage.getItem('study-timer');
@@ -49,8 +51,9 @@ export const StudyTimerProvider = ({ children }) => {
   const closeTimer = () => setIsTimerOpen(false);
   const minimizeTimer = () => setMinimized(true);
   const restoreTimer = () => setMinimized(false);
-  const openForm = () => setIsFormOpen(true);
-  const closeForm = () => setIsFormOpen(false);
+  const openForm = () => { setEditData(null); setOnAfterSave(null); setIsFormOpen(true); };
+  const closeForm = () => { setIsFormOpen(false); setEditData(null); setOnAfterSave(null); };
+  const openFormWithEdit = (data, afterSave) => { setEditData(data); setOnAfterSave(() => afterSave || null); setIsFormOpen(true); };
 
   const startTimer = (mode = 'cronometro', inputSeconds = 0) => {
     if (mode === 'timer') {
@@ -70,7 +73,7 @@ export const StudyTimerProvider = ({ children }) => {
   return (
     <StudyTimerContext.Provider value={{
       isTimerOpen, openTimer, closeTimer, minimized, minimizeTimer, restoreTimer,
-      isFormOpen, openForm, closeForm,
+      isFormOpen, openForm, closeForm, openFormWithEdit, editData, onAfterSave,
       timer, setTimer,
       startTimer, pauseTimer, resumeTimer, stopTimer, resetTimer,
       setMode, setInputSeconds

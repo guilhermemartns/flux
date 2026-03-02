@@ -11,14 +11,15 @@ const formatTime = (seconds) => {
 };
 
 const StudySessionForm = () => {
-  const [dataSessao, setDataSessao] = useState(() => {
+  const { isFormOpen, closeForm, timer, resetTimer, setTimer, editData, onAfterSave } = useContext(StudyTimerContext);
+  const isEditMode = !!editData;
+
+  const todayStr = () => {
     const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  });
-  const { isFormOpen, closeForm, timer, resetTimer, setTimer } = useContext(StudyTimerContext);
+    return `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  };
+
+  const [dataSessao, setDataSessao] = useState(todayStr);
   const [categoria, setCategoria] = useState('');
   const [novaCategoria, setNovaCategoria] = useState('');
   const [disciplina, setDisciplina] = useState('');
@@ -45,9 +46,20 @@ const StudySessionForm = () => {
   // Atualizar tempoEdit sempre que o timer mudar ou o modal abrir
   useEffect(() => {
     if (isFormOpen) {
-      setTempoEdit(formatTime(timer.seconds));
+      if (isEditMode) {
+        // Pré-preencher com dados do registro a editar
+        const h = Math.floor((editData.tempo * 60) / 3600);
+        const m = Math.floor(((editData.tempo * 60) % 3600) / 60);
+        const s = (editData.tempo * 60) % 60;
+        setTempoEdit(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+        setDisciplina(editData.disciplina || '');
+        setCategoria(editData.categoria || '');
+        setDataSessao(editData.dataSessao ? editData.dataSessao.split('T')[0] : todayStr());
+      } else {
+        setTempoEdit(formatTime(timer.seconds));
+      }
     }
-  }, [isFormOpen, timer.seconds]);
+  }, [isFormOpen, editData]);
 
   if (!isFormOpen) return null;
 
@@ -87,9 +99,8 @@ const StudySessionForm = () => {
         return;
       }
       
-      let cicloId = null;
-      if (vincularCiclo) {
-        // Busca ciclo cadastrado
+      let cicloId = isEditMode ? (editData.cicloId || null) : null;
+      if (!isEditMode && vincularCiclo) {
         const cicloRes = await api.get('/ciclos', { params: { userId, projetoId } });
         const ciclo = cicloRes.data && cicloRes.data.length > 0 ? cicloRes.data[cicloRes.data.length - 1] : null;
         cicloId = ciclo ? ciclo.id : null;
@@ -105,22 +116,16 @@ const StudySessionForm = () => {
         dataSessao: dataSessao + 'T00:00:00.000Z',
         cicloId: cicloId || null
       };
-      
-      console.log('[StudySessionForm] ====== DEBUG PAYLOAD ======');
-      console.log('[StudySessionForm] userId:', userId, '| tipo:', typeof userId);
-      console.log('[StudySessionForm] projetoId:', projetoId, '| tipo:', typeof projetoId);
-      console.log('[StudySessionForm] materiaId:', materiaObj.id, '| tipo:', typeof materiaObj.id);
-      console.log('[StudySessionForm] tempo:', tempoMinutos, '| tipo:', typeof tempoMinutos);
-      console.log('[StudySessionForm] categoria:', categoriaFinal, '| tipo:', typeof categoriaFinal);
-      console.log('[StudySessionForm] disciplina:', disciplina, '| tipo:', typeof disciplina);
-      console.log('[StudySessionForm] Payload completo:', payload);
-      console.log('[StudySessionForm] ====== FIM DEBUG ======');
-      
-      const response = await api.post('/estudo', payload);
-      console.log('[StudySessionForm] Resposta da API:', response.data);
+
+      if (isEditMode) {
+        await api.put(`/estudo/${editData.id}`, payload);
+      } else {
+        await api.post('/estudo', payload);
+      }
       
       setSaved(true);
-      resetTimer();
+      if (!isEditMode) resetTimer();
+      if (onAfterSave) onAfterSave();
       setTimeout(() => {
         setSaved(false);
         closeForm();
@@ -132,107 +137,134 @@ const StudySessionForm = () => {
   };
 
   return (
-    <Modal show={true} onHide={closeForm} centered size="lg">
-      <Modal.Header closeButton>
-        <Modal.Title>Salvar Sessão de Estudo</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
+    <Modal show={true} onHide={closeForm} centered size="md" backdrop="static" className="modal-fundo">
+      <Modal.Body className="modal-estilo">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <Modal.Title className="fw-bold fs-5 m-0">{isEditMode ? 'Editar Sessão de Estudo' : 'Salvar Sessão de Estudo'}</Modal.Title>
+        </div>
         <form onSubmit={handleSubmit} id="study-session-form">
-          <div className="mb-3">
-            <label className="form-label">Tempo e Data da sessão</label>
-            <div className="d-flex align-items-center gap-2">
-              <input
-                type="text"
-                className="form-control input-dark linha"
-                style={{ padding: '0.4em 0.6em', borderRadius: '8px', background: '#f8fafc', color: '#222', fontWeight: 500, maxWidth: '120px' }}
-                value={tempoEdit}
-                onChange={e => {
-                  // Permite apenas números, máximo 6 dígitos
-                  let raw = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  let arr = raw.padStart(6, '0').split('');
-                  let h = arr[0] + arr[1];
-                  let m = arr[2] + arr[3];
-                  let s = arr[4] + arr[5];
-                  setTempoEdit(`${h}:${m}:${s}`);
-                }}
-                placeholder="hh:mm:ss"
-                required
-              />
+
+          {/* Linha 1: Disciplina + Categoria */}
+          <div className="d-flex gap-3 mb-3">
+            <div style={{ flex: 2 }}>
+              <label className="form-label fw-semibold" style={{ fontSize: '0.8em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Disciplina</label>
+              <select className="form-control linha" style={{ fontSize: '0.9em' }} value={disciplina} onChange={e => setDisciplina(e.target.value)} required>
+                <option value="" disabled>Selecione...</option>
+                {materias.map(m => (
+                  <option key={m.id} value={m.nome}>{m.nome}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label className="form-label fw-semibold" style={{ fontSize: '0.8em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Categoria</label>
+              <select className="form-control linha" style={{ fontSize: '0.9em' }} value={categoria} onChange={e => setCategoria(e.target.value)} required>
+                <option value="" disabled>Selecione...</option>
+                <option value="teoria">Teoria</option>
+                <option value="revisao">Revisão</option>
+                <option value="questoes">Questões</option>
+                <option value="simulado">Simulado</option>
+                <option value="nova">Outra...</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Nova categoria */}
+          {categoria === 'nova' && (
+            <div className="mb-3">
+              <input type="text" className="form-control linha" style={{ fontSize: '0.9em' }} value={novaCategoria} onChange={e => setNovaCategoria(e.target.value)} placeholder="Nome da nova categoria" required />
+            </div>
+          )}
+
+          {/* Linha 2: Tempo + Data + atalhos */}
+          <div className="d-flex gap-3 align-items-end mb-3">
+            <div>
+              <label className="form-label fw-semibold" style={{ fontSize: '0.8em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Tempo</label>
+              <div className="d-flex align-items-center gap-1" style={{ fontFamily: 'monospace' }}>
+                <input
+                  type="text" inputMode="numeric" maxLength={2}
+                  className="form-control linha text-center"
+                  style={{ fontSize: '0.9em', width: '48px', padding: '0.375rem 0.25rem' }}
+                  value={tempoEdit.split(':')[0] ?? '00'}
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 2);
+                    const parts = tempoEdit.split(':');
+                    setTempoEdit(`${val}:${parts[1]}:${parts[2]}`);
+                  }}
+                  onBlur={e => {
+                    const parts = tempoEdit.split(':');
+                    setTempoEdit(`${String(parts[0] || '0').padStart(2,'0')}:${parts[1]}:${parts[2]}`);
+                  }}
+                  placeholder="hh"
+                />
+                <span style={{ color: 'var(--text-light)' }}>:</span>
+                <input
+                  type="text" inputMode="numeric" maxLength={2}
+                  className="form-control linha text-center"
+                  style={{ fontSize: '0.9em', width: '48px', padding: '0.375rem 0.25rem' }}
+                  value={tempoEdit.split(':')[1] ?? '00'}
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 2);
+                    const parts = tempoEdit.split(':');
+                    setTempoEdit(`${parts[0]}:${val}:${parts[2]}`);
+                  }}
+                  onBlur={e => {
+                    const parts = tempoEdit.split(':');
+                    setTempoEdit(`${parts[0]}:${String(parts[1] || '0').padStart(2,'0')}:${parts[2]}`);
+                  }}
+                  placeholder="mm"
+                />
+                <span style={{ color: 'var(--text-light)' }}>:</span>
+                <input
+                  type="text" inputMode="numeric" maxLength={2}
+                  className="form-control linha text-center"
+                  style={{ fontSize: '0.9em', width: '48px', padding: '0.375rem 0.25rem' }}
+                  value={tempoEdit.split(':')[2] ?? '00'}
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 2);
+                    const parts = tempoEdit.split(':');
+                    setTempoEdit(`${parts[0]}:${parts[1]}:${val}`);
+                  }}
+                  onBlur={e => {
+                    const parts = tempoEdit.split(':');
+                    setTempoEdit(`${parts[0]}:${parts[1]}:${String(parts[2] || '0').padStart(2,'0')}`);
+                  }}
+                  placeholder="ss"
+                />
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label className="form-label fw-semibold" style={{ fontSize: '0.8em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Data</label>
               <input
                 type="date"
-                className="form-control input-dark linha"
-                style={{ padding: '0.4em 0.6em', borderRadius: '8px', background: '#f8fafc', color: '#222', fontWeight: 500 }}
+                className="form-control linha"
+                style={{ fontSize: '0.9em' }}
                 value={dataSessao}
                 onChange={e => setDataSessao(e.target.value)}
                 required
               />
-              <button type="button" className="btn btn-outline-primary-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => {
+            </div>
+            <div className="d-flex gap-1 pb-1">
+              <button type="button" className="btn btn-outline-primary-primary3" style={{ fontSize: '0.75em', padding: '0.3em 0.7em', whiteSpace: 'nowrap' }} onClick={() => {
                 const today = new Date();
-                const yyyy = today.getFullYear();
-                const mm = String(today.getMonth() + 1).padStart(2, '0');
-                const dd = String(today.getDate()).padStart(2, '0');
-                setDataSessao(`${yyyy}-${mm}-${dd}`);
+                setDataSessao(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`);
               }}>Hoje</button>
-              <button type="button" className="btn btn-outline-secondary" style={{ whiteSpace: 'nowrap' }} onClick={() => {
-                const yesterday = new Date();
-                yesterday.setDate(yesterday.getDate() - 1);
-                const yyyy = yesterday.getFullYear();
-                const mm = String(yesterday.getMonth() + 1).padStart(2, '0');
-                const dd = String(yesterday.getDate()).padStart(2, '0');
-                setDataSessao(`${yyyy}-${mm}-${dd}`);
+              <button type="button" className="btn btn-outline-primary-primary3" style={{ fontSize: '0.75em', padding: '0.3em 0.7em', whiteSpace: 'nowrap' }} onClick={() => {
+                const y = new Date(); y.setDate(y.getDate()-1);
+                setDataSessao(`${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`);
               }}>Ontem</button>
             </div>
           </div>
-          <div className="mb-3">
-            <label className="form-label">Categoria do estudo</label>
-            <select className="form-control input-dark linha" style={{ padding: '0.4em 0.6em', borderRadius: '8px', background: '#f8fafc', color: '#222', fontWeight: 500 }} value={categoria} onChange={e => setCategoria(e.target.value)} required>
-              <option value="" disabled></option>
-              <option value="teoria">Teoria</option>
-              <option value="revisao">Revisão</option>
-              <option value="questoes">Questões</option>
-              <option value="simulado">Simulado</option>
-              <option value="nova">Nova categoria...</option>
-            </select>
-            {categoria === 'nova' && (
-              <input type="text" className="form-control input-dark mt-2" style={{ padding: '0.4em 0.6em', borderRadius: '8px', background: '#f8fafc', color: '#222', fontWeight: 500 }} value={novaCategoria} onChange={e => setNovaCategoria(e.target.value)} placeholder="Digite a nova categoria" required />
-            )}
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Disciplina</label>
-            <select className="form-control input-dark linha" style={{ padding: '0.4em 0.6em', borderRadius: '8px', background: '#f8fafc', color: '#222', fontWeight: 500 }} value={disciplina} onChange={e => setDisciplina(e.target.value)} required>
-              <option value="" disabled></option>
-              {materias.map(m => (
-                <option key={m.id} value={m.nome}>{m.nome}</option>
-              ))}
-            </select>
-          </div>
-          {/* Opção de vincular ao ciclo oculta
-          <div className="mb-3">
-            <div className="form-check">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                id="vincularCiclo"
-                checked={vincularCiclo}
-                onChange={e => setVincularCiclo(e.target.checked)}
-              />
-              <label className="form-check-label" htmlFor="vincularCiclo">
-                Vincular tempo de estudo ao ciclo
-              </label>
-            </div>
-          </div>
-          */}
-          {saved && <div className="text-success mt-3">Sessão salva!</div>}
+
+          {saved && <div className="text-success" style={{ fontSize: '0.85em' }}>Sessão salva com sucesso!</div>}
         </form>
+        <div className="d-flex justify-content-end gap-2 mt-4">
+          <button className="btn btn-outline-primary-primary3" onClick={closeForm}>Cancelar</button>
+          <button className="btn btn-primary-primary3" type="submit" form="study-session-form">{isEditMode ? 'Salvar Alterações' : 'Salvar Sessão'}</button>
+        </div>
       </Modal.Body>
-      <Modal.Footer>
-        <button className='btn btn-outline-primary-primary' onClick={closeForm}>
-          Fechar
-        </button>
-        <button className='btn btn-primary-primary' type="submit" form="study-session-form">
-          Salvar
-        </button>
-      </Modal.Footer>
     </Modal>
   );
 };

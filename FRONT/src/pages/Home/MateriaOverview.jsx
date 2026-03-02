@@ -38,7 +38,7 @@ function MateriaOverview() {
   const [erroSortCol, setErroSortCol] = useState(null);
   const [erroSortAsc, setErroSortAsc] = useState(true);
   // Quantidade de simulados a exibir nos dados
-  const [simQtd, setSimQtd] = useState(5);
+  const [simQtd, setSimQtd] = useState('5'); // string: '1'-'5' or 'all'
   // Paginação dos itens do edital com erro
   const [erroPage, setErroPage] = useState(0);
   // Paginação dos itens do edital com branco
@@ -51,26 +51,29 @@ function MateriaOverview() {
         const res = await api.get(`/materias/${id}`);
         setMateria(res.data);
         if (res.data?.nome) setTitle(
-          <span className="d-flex align-items-center gap-2">
-            <span className='' style={{ color: 'var(--text-light)' }}><Link to="/dashboard" className="">Dashboard</Link>{' / '}</span>
-            <span className="fw-bold">{res.data.nome}</span>
+          <div className="d-flex align-items-center justify-content-between w-100">
+            <span>
+              <span style={{ color: 'var(--text-light)' }}><Link to="/dashboard">Dashboard</Link>{' / '}</span>
+              <span className="fw-bold">{res.data.nome}</span>
+            </span>
             <div
-              className=" badge bg-primary-primary text-dark d-flex align-items-center gap-2 px-2 py-1"
+              className="d-flex align-items-center gap-2"
               style={{ fontSize: '0.7rem', fontWeight: 'bold', animationDelay: '0.12s', animationDuration: '0.6s', animationFillMode: 'both' }}
             >
-              <span>ÚLTIMOS</span>
+              <span className="text-muted">Filtro:</span>
               <select
                 id="simQtd"
-                className="form-select text-dark form-select-sm text-start fw-bold"
-                style={{ width: '60px', fontSize: '0.75rem', padding: '1px 2px' }}
+                className="form-select text-dark form-select-sm fw-bold"
+                style={{ width: simQtd === 'all' ? '80px' : '60px', fontSize: '0.75rem', padding: '1px 4px' }}
                 value={simQtd}
-                onChange={e => setSimQtd(Number(e.target.value))}
+                onChange={e => setSimQtd(e.target.value)}
               >
-                {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
+                <option value="all">Todos</option>
+                {[1, 2, 3, 4, 5].map(n => <option key={n} value={String(n)}>{n}</option>)}
               </select>
-              <span>SIMULADOS</span>
+              <span className="text-muted">simulados</span>
             </div>
-          </span>
+          </div>
         );
       } catch (e) {
         setMateria(null);
@@ -168,16 +171,14 @@ function MateriaOverview() {
 
   // Filtra para mostrar todos os erros/brancos dos últimos N simulados
   function getUltimosSimulados(arr, n) {
-    // Ordena por dataSim (mais recente por último)
     const arrOrdenado = [...arr].sort((a, b) => {
       const da = a.dataSim ? new Date(a.dataSim).getTime() : 0;
       const db = b.dataSim ? new Date(b.dataSim).getTime() : 0;
       return da - db;
     });
-    // Pega os N simulados mais recentes
     const simuladosUnicos = Array.from(new Set(arrOrdenado.map(e => e.simulado).filter(Boolean)));
-    const ultimosSimulados = simuladosUnicos.slice(-n);
-    // Filtra todos os itens que pertencem a esses simulados
+    if (n === 'all') return arr;
+    const ultimosSimulados = simuladosUnicos.slice(-Number(n));
     return arr.filter(e => ultimosSimulados.includes(e.simulado));
   }
   const errosFiltrados = getUltimosSimulados(errosMateria, simQtd);
@@ -210,30 +211,48 @@ function MateriaOverview() {
   return (
     <div className="container-fluid app-container py-4">
       {/* Breadcrumb funcional está no título da página */}
-      <main className="d-flex flex-wrap gap-4">
-        <div className='card-padrao mapa-erros w-50 flex-grow-1 mb-4 d-flex flex-column'>
+      <main className="d-flex gap-4" style={{ alignItems: 'flex-start' }}>
+        <div className='card-padrao2 mapa-erros w-50 flex-grow-1 mb-4 d-flex flex-column'>
           <strong className="mb-3 text-center">MAPA DE ERROS</strong>
           {loadingErros ? (
             <div className="text-center text-secondary py-5">Carregando...</div>
           ) : (
             <>
-              <div className="d-flex flex-row gap-3 w-50 mb-2 ">
+              <div className="d-flex flex-row gap-3 w-100 mb-2">
                 <div className="flex-fill">
                   <div className="fw-bold text-center mb-2" style={{fontSize: '1rem'}}>Erros por Item do Edital</div>
-                  <ErrosBarChart erros={errosFiltrados} materia={materia} editalItens={itensEditalComErro} page={erroPage} totalPages={totalErroPages} />
-                  <div className="d-flex justify-content-center align-items-center gap-2 mt-2">
-                    <button className="btn btn-sm btn-outline-secondary" onClick={() => setErroPage(p => Math.max(0, p - 1))} disabled={erroPage === 0}>
-                      &#8592; Anterior
-                    </button>
-                    <span style={{fontSize: '0.9rem'}}>Página {erroPage + 1} de {totalErroPages || 1}</span>
-                    <button className="btn btn-sm btn-outline-secondary" onClick={() => setErroPage(p => Math.min(totalErroPages - 1, p + 1))} disabled={erroPage >= totalErroPages - 1}>
-                      Próximo &#8594;
-                    </button>
-                  </div>
+                  {errosFiltrados.length === 0 ? (
+                    <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-light)', fontSize: '0.88em', border: '1px dashed var(--border)', borderRadius: 8 }}>
+                      Nenhum erro registrado nesta matéria.
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '0.5rem' }}>
+                        <ErrosBarChart erros={errosFiltrados} materia={materia} editalItens={itensEditalComErro} page={erroPage} totalPages={totalErroPages} />
+                      </div>
+                      <div className="d-flex justify-content-center align-items-center gap-2 mt-2">
+                        <button className="btn btn-sm btn-outline-secondary" onClick={() => setErroPage(p => Math.max(0, p - 1))} disabled={erroPage === 0}>
+                          &#8592; Anterior
+                        </button>
+                        <span style={{fontSize: '0.9rem'}}>Página {erroPage + 1} de {totalErroPages || 1}</span>
+                        <button className="btn btn-sm btn-outline-secondary" onClick={() => setErroPage(p => Math.min(totalErroPages - 1, p + 1))} disabled={erroPage >= totalErroPages - 1}>
+                          Próximo &#8594;
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="flex-fill">
                   <div className="fw-bold text-center mb-2" style={{fontSize: '1rem'}}>Motivo dos Erros</div>
-                  <MotivoErroBarChart erros={errosFiltrados} materia={materia} />
+                  {errosFiltrados.length === 0 ? (
+                    <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-light)', fontSize: '0.88em', border: '1px dashed var(--border)', borderRadius: 8 }}>
+                      Nenhum erro registrado.
+                    </div>
+                  ) : (
+                    <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '0.5rem' }}>
+                      <MotivoErroBarChart erros={errosFiltrados} materia={materia} />
+                    </div>
+                  )}
                 </div>
               </div>
               {errosFiltrados.length === 0 ? (
@@ -283,9 +302,10 @@ function MateriaOverview() {
                           <td className="text-center p-1">{erro.numeroQuestao}</td>
                           <td className="text-center p-1">{erro.motivoErro}</td>
                           <td className="text-center p-1">{erro.editalItem ? erro.editalItem.slice(0, 30) + (erro.editalItem.length > 30 ? '...' : '') : ''}</td>
-                          <td className="text-center p-1">
+                          <td className="text-center p-1" style={{ backgroundColor: { questao_corrigida: 'rgba(52,199,89,0.18)', revisado: 'rgba(27,89,249,0.13)', nao_revisavel: 'rgba(150,150,150,0.15)', revisar_depois: 'rgba(255,149,0,0.18)' }[erro.acao] || 'transparent', transition: 'background-color 0.25s' }}>
                             <select
                               className="form-select form-select-sm"
+                              style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}
                               value={erro.acao || ''}
                               onChange={async e => {
                                 const novoAcao = e.target.value;
@@ -298,11 +318,11 @@ function MateriaOverview() {
                                 }
                               }}
                             >
-                              <option value="">Selecione ação...</option>
-                              <option value="questao_corrigida">Questão corrigida</option>
-                              <option value="revisado">Revisado</option>
-                              <option value="nao_revisavel">Não revisável</option>
-                              <option value="revisar_depois">Revisar depois</option>
+                              <option value="">— sem ação —</option>
+                              <option value="questao_corrigida">✅ Questão corrigida</option>
+                              <option value="revisado">🔵 Revisado</option>
+                              <option value="nao_revisavel">⚫ Não revisável</option>
+                              <option value="revisar_depois">🟠 Revisar depois</option>
                             </select>
                           </td>
                         </tr>
@@ -313,29 +333,47 @@ function MateriaOverview() {
             </>
           )}
         </div>
-        <div className='card-padrao mapa-brancos w-50 flex-grow-1 mb-4 d-flex flex-column'>
+        <div className='card-padrao2 mapa-brancos w-50 flex-grow-1 mb-4 d-flex flex-column'>
           <strong className="mb-3 text-center">MAPA DE BRANCOS</strong>
           {loadingBrancos ? (
             <div className="text-center text-secondary py-5">Carregando...</div>
           ) : (
             <>
-              <div className="d-flex flex-row gap-3 w-50 mb-2">
+              <div className="d-flex flex-row gap-3 w-100 mb-2">
                 <div className="flex-fill">
                   <div className="fw-bold text-center mb-2" style={{fontSize: '1rem'}}>Brancos por Item do Edital</div>
-                  <BrancosBarChart brancos={brancosFiltrados} materia={materia} editalItens={itensEditalComBranco} page={brancoPage} totalPages={totalBrancoPages} />
-                  <div className="d-flex justify-content-center align-items-center gap-2 mt-2">
-                    <button className="btn btn-sm btn-outline-secondary" onClick={() => setBrancoPage(p => Math.max(0, p - 1))} disabled={brancoPage === 0}>
-                      &#8592; Anterior
-                    </button>
-                    <span style={{fontSize: '0.9rem'}}>Página {brancoPage + 1} de {totalBrancoPages || 1}</span>
-                    <button className="btn btn-sm btn-outline-secondary" onClick={() => setBrancoPage(p => Math.min(totalBrancoPages - 1, p + 1))} disabled={brancoPage >= totalBrancoPages - 1}>
-                      Próximo &#8594;
-                    </button>
-                  </div>
+                  {brancosFiltrados.length === 0 ? (
+                    <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-light)', fontSize: '0.88em', border: '1px dashed var(--border)', borderRadius: 8 }}>
+                      Nenhuma questão em branco registrada.
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '0.5rem' }}>
+                        <BrancosBarChart brancos={brancosFiltrados} materia={materia} editalItens={itensEditalComBranco} page={brancoPage} totalPages={totalBrancoPages} />
+                      </div>
+                      <div className="d-flex justify-content-center align-items-center gap-2 mt-2">
+                        <button className="btn btn-sm btn-outline-secondary" onClick={() => setBrancoPage(p => Math.max(0, p - 1))} disabled={brancoPage === 0}>
+                          &#8592; Anterior
+                        </button>
+                        <span style={{fontSize: '0.9rem'}}>Página {brancoPage + 1} de {totalBrancoPages || 1}</span>
+                        <button className="btn btn-sm btn-outline-secondary" onClick={() => setBrancoPage(p => Math.min(totalBrancoPages - 1, p + 1))} disabled={brancoPage >= totalBrancoPages - 1}>
+                          Próximo &#8594;
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="flex-fill">
                   <div className="fw-bold text-center mb-2" style={{fontSize: '1rem'}}>Motivo dos Brancos</div>
-                  <MotivoBrancoBarChart brancos={brancosFiltrados} materia={materia} />
+                  {brancosFiltrados.length === 0 ? (
+                    <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-light)', fontSize: '0.88em', border: '1px dashed var(--border)', borderRadius: 8 }}>
+                      Nenhuma questão em branco registrada.
+                    </div>
+                  ) : (
+                    <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '0.5rem' }}>
+                      <MotivoBrancoBarChart brancos={brancosFiltrados} materia={materia} />
+                    </div>
+                  )}
                 </div>
               </div>
               {brancosFiltrados.length === 0 ? (
@@ -385,9 +423,10 @@ function MateriaOverview() {
                           <td className="text-center p-1">{branco.numeroQuestao}</td>
                           <td className="text-center p-1">{branco.motivoBranco || '-'}</td>
                           <td className="text-center p-1">{branco.editalItem ? branco.editalItem.slice(0, 30) + (branco.editalItem.length > 30 ? '...' : '') : ''}</td>
-                          <td className="text-center p-1">
+                          <td className="text-center p-1" style={{ backgroundColor: { questao_corrigida: 'rgba(52,199,89,0.18)', revisado: 'rgba(27,89,249,0.13)', nao_revisavel: 'rgba(150,150,150,0.15)', revisar_depois: 'rgba(255,149,0,0.18)' }[branco.acao] || 'transparent', transition: 'background-color 0.25s' }}>
                             <select
                               className="form-select form-select-sm"
+                              style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}
                               value={branco.acao || ''}
                               onChange={async e => {
                                 const novoAcao = e.target.value;
@@ -400,11 +439,11 @@ function MateriaOverview() {
                                 }
                               }}
                             >
-                              <option value="">Selecione ação...</option>
-                              <option value="questao_corrigida">Questão corrigida</option>
-                              <option value="revisado">Revisado</option>
-                              <option value="nao_revisavel">Não revisável</option>
-                              <option value="revisar_depois">Revisar depois</option>
+                              <option value="">— sem ação —</option>
+                              <option value="questao_corrigida">✅ Questão corrigida</option>
+                              <option value="revisado">🔵 Revisado</option>
+                              <option value="nao_revisavel">⚫ Não revisável</option>
+                              <option value="revisar_depois">🟠 Revisar depois</option>
                             </select>
                           </td>
                         </tr>

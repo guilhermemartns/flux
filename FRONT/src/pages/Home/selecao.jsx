@@ -91,8 +91,10 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
   useEffect(() => {
     async function loadMaterias() {
       try {
-        const response = await api.get('/edital');
-        setMateriasCadastradas(response.data);
+        const userId = JSON.parse(localStorage.getItem('user'))?.id || '';
+        const projetoId = localStorage.getItem('projetoSelecionado') || '';
+        const response = await api.get('/edital', { params: { userId, projetoId } });
+        setMateriasCadastradas(response.data.filter(m => m.projetoId === projetoId && m.nome && m.nome.trim() !== ''));
         // Carregar itens do edital de cada matéria
         const materiasEditalTemp = {};
         for (const materia of response.data) {

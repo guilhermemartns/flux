@@ -14,26 +14,26 @@ const StudyTimerMini = () => {
   const { timer, openTimer, minimized, pauseTimer, resumeTimer, stopTimer, restoreTimer, closeTimer } = useContext(StudyTimerContext);
   if ((timer.seconds === 0) || !minimized) return null;
   return (
-    <div className="fixed-bottom w-100 bg-black bg-opacity-10 shadow px-4 py-2" style={{ zIndex: 9999, pointerEvents: 'auto', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
-      <div className="d-flex align-items-center justify-content-center gap-4">
+    <div className="fixed-bottom w-100 shadow-sm px-4 py-2" style={{ zIndex: 9999, pointerEvents: 'auto', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'var(--background-light)', borderTop: '1px solid var(--border)' }}>
+      <div className="d-flex align-items-center justify-content-center gap-3">
         {timer.running ? (
-          <button className="btn btn-link p-0 fs-6" onClick={pauseTimer} title="Pausar">
-            <FontAwesomeIcon icon={faPause} className="text-primary" />
+          <button className="btn btn-link p-0" onClick={pauseTimer} title="Pausar" style={{ fontSize: '0.9em', color: 'var(--text-dark)', lineHeight: 1 }}>
+            <FontAwesomeIcon icon={faPause} />
           </button>
         ) : (
-          <button className="btn btn-link p-0 fs-6"  onClick={resumeTimer} title="Retomar">
-            <FontAwesomeIcon icon={faPlay} className="text-primary" />
+          <button className="btn btn-link p-0" onClick={resumeTimer} title="Retomar" style={{ fontSize: '0.9em', color: 'var(--text-dark)', lineHeight: 1 }}>
+            <FontAwesomeIcon icon={faPlay} />
           </button>
         )}
-        <button className="btn btn-link p-0 fs-6" onClick={stopTimer} title="Salvar/Parar">
-          <FontAwesomeIcon icon={faStop} className="text-primary" />
+        <button className="btn btn-link p-0" onClick={stopTimer} title="Salvar/Parar" style={{ fontSize: '0.9em', color: '#ef4444', lineHeight: 1 }}>
+          <FontAwesomeIcon icon={faStop} />
         </button>
-        <span className="fw-bold text-primary fs-4" style={{ cursor: 'pointer' }} onClick={openTimer}>{formatTime(timer.seconds)}</span>
-        <button className="btn btn-link p-0 fs-5" onClick={openTimer} title="Maximizar cronômetro">
-          <FontAwesomeIcon icon={faExpand} className="text-primary" />
+        <span className="fw-bold fs-5" style={{ cursor: 'pointer', fontFamily: "'Inter', 'SF Mono', monospace", letterSpacing: '1px', color: 'var(--text-dark)' }} onClick={openTimer}>{formatTime(timer.seconds)}</span>
+        <button className="btn btn-link p-0" onClick={openTimer} title="Maximizar cronômetro" style={{ fontSize: '0.85em', color: 'var(--text-light)', lineHeight: 1 }}>
+          <FontAwesomeIcon icon={faExpand} />
         </button>
-        <button className="btn btn-link p-0 fs-5"  onClick={closeTimer} title="Fechar cronômetro">
-          <FontAwesomeIcon icon={faTimes} className="text-primary" />
+        <button className="btn btn-link p-0" onClick={closeTimer} title="Fechar cronômetro" style={{ fontSize: '0.85em', color: 'var(--text-light)', lineHeight: 1 }}>
+          <FontAwesomeIcon icon={faTimes} />
         </button>
       </div>
     </div>

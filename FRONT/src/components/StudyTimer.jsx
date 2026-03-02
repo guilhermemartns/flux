@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlay, faPause, faStop, faClock, faBookOpen, faCalendarCheck, faCircle, faCheckCircle, faPlayCircle, faRotateRight, faExpand, faCompress, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faPause, faStop, faClock, faBookOpen, faCalendarCheck, faCircle, faCheckCircle, faPlayCircle, faRotateRight, faExpand, faCompress } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StudyTimerContext } from './StudyTimerContext';
 
@@ -214,29 +214,30 @@ const StudyTimer = () => {
       className="study-timer mt-3"
       style={{
         background: isMaximized 
-          ? 'transparent'
-          : 'linear-gradient(135deg, var(--primary-primary) 20%, var(--primary-primary-dark) 100%)',
-        borderRadius: isMaximized ? '2em' : '1em',
-        padding: isMaximized ? '3em' : '0.8em',
+          ? '#111'
+          : 'var(--background-light)',
+        borderRadius: isMaximized ? '1.5rem' : '1rem',
+        padding: isMaximized ? '3em 2.5em' : '1.2em 1em',
         marginTop: isMaximized ? '1em' : '0',
-        color: 'var(--text-dark)',
+        color: isMaximized ? '#f5f5f5' : 'var(--text-dark)',
         position: 'relative',
         overflow: 'hidden',
         display: 'block',
-        maxWidth: isMaximized ? '600px' : 'auto'
+        maxWidth: isMaximized ? '520px' : 'auto',
+        border: isMaximized ? '1px solid #2a2a2a' : '1px solid var(--border)',
       }}
     >
-      {/* Header do cronômetro */}
-      <div className="d-flex align-items-center justify-content-between mb-2 ">
+      {/* Header */}
+      <div className="d-flex align-items-center justify-content-between" style={{ marginBottom: isMaximized ? '1.5em' : '0.6em' }}>
         <div className="d-flex align-items-center gap-2">
           <motion.div
             animate={isRunning && !isPaused ? {
-              color: ['#ffffff', '#ef4444', '#ffffff']
+              opacity: [1, 0.4, 1]
             } : {
-              color: '#ffffff'
+              opacity: 0.6
             }}
             transition={isRunning && !isPaused ? {
-              duration: 1.5,
+              duration: 2,
               repeat: Infinity,
               ease: "easeInOut"
             } : {
@@ -245,27 +246,32 @@ const StudyTimer = () => {
           >
             <FontAwesomeIcon 
               icon={faClock} 
-              style={{ opacity: 0.8 }} 
+              style={{ fontSize: isMaximized ? '1em' : '0.75em', color: 'var(--primary-primary3)' }} 
             />
           </motion.div>
-          <span style={{ fontWeight: 600, fontSize: isMaximized ? '1.2em' : '0.8em' }}>REGISTRE SEU ESTUDO</span>
+          <span style={{ fontWeight: 600, fontSize: isMaximized ? '1em' : '0.7em', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-light)' }}>Cronômetro</span>
         </div>
         <div className="d-flex align-items-center gap-2">
           {todayStudyTime > 0 && (
-            <div style={{ fontSize: '0.65em', opacity: 0.8 }}>
+            <span style={{
+              fontSize: isMaximized ? '0.75em' : '0.6em',
+              color: 'var(--text-light)',
+              background: 'var(--transparente)',
+              padding: '0.15em 0.5em',
+              borderRadius: '0.4em',
+              fontWeight: 500
+            }}>
               Hoje: {formatTimeCompact(todayStudyTime)}
-            </div>
+            </span>
           )}
           <motion.div
-            whileHover={{ scale: 1.2 }}
+            whileHover={{ scale: 1.15 }}
             whileTap={{ scale: 0.9 }}
             onClick={toggleMaximize}
             style={{
-              color: '#ffffff',
-              fontSize: '1em',
+              color: 'var(--text-light)',
+              fontSize: isMaximized ? '0.9em' : '0.75em',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              opacity: 0.8
             }}
             title={isMaximized ? 'Minimizar' : 'Maximizar'}
           >
@@ -275,19 +281,18 @@ const StudyTimer = () => {
       </div>
 
       {/* Display do tempo */}
-      <div className="text-center mb-2">
+      <div className="text-center" style={{ marginBottom: isMaximized ? '1.5em' : '0.6em' }}>
         <motion.div 
-          animate={{ scale: isRunning && !isPaused ? [1, 1.02, 1] : 1 }}
-          transition={{ duration: 1, repeat: isRunning && !isPaused ? Infinity : 0 }}
+          animate={{ scale: isRunning && !isPaused ? [1, 1.01, 1] : 1 }}
+          transition={{ duration: 1.5, repeat: isRunning && !isPaused ? Infinity : 0 }}
           style={{ 
-            fontSize: isMaximized ? '6em' : '2.2em', 
-            fontWeight: 'bold', 
-            fontFamily: 'Inter',
-            letterSpacing: '2px',
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '0.5em',
-            marginBottom: '0.3em',
-            padding: isMaximized ? '0.1em 0.3em' : '0.15em 0.3em'
+            fontSize: isMaximized ? '5.5em' : '2.4em', 
+            fontWeight: 700, 
+            fontFamily: "'Inter', 'SF Mono', 'Roboto Mono', monospace",
+            letterSpacing: isMaximized ? '4px' : '1px',
+            color: isMaximized ? '#ffffff' : 'var(--text-dark)',
+            lineHeight: 1.1,
+            padding: isMaximized ? '0.15em 0' : '0.1em 0',
           }}
         >
           {formatTime(time)}
@@ -296,46 +301,47 @@ const StudyTimer = () => {
         {/* Contador de tempo pausado */}
         {isPaused && pausedTime > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={{ opacity: 0, y: -5 }}
             style={{
-              fontSize: '1em',
-              fontWeight: '500',
-              fontFamily: 'monospace',
-              color: 'rgba(255,255,255,0.9)',
-              marginBottom: '0.3em'
+              fontSize: isMaximized ? '1em' : '0.72em',
+              fontWeight: 500,
+              fontFamily: "'Inter', monospace",
+              color: 'var(--text-light)',
+              marginTop: '0.3em',
             }}
-            className="d-flex align-items-center justify-content-center gap-2"
+            className="d-flex align-items-center justify-content-center gap-1"
           >
-            <FontAwesomeIcon icon={faPause} style={{ color: 'rgba(255,255,255,0.9)' }} />
+            <FontAwesomeIcon icon={faPause} style={{ fontSize: '0.8em' }} />
             Pausado: {formatTime(pausedTime)}
           </motion.div>
         )}
         
-        <div style={{ fontSize: '0.7em', opacity: 0.8 }}>
+        {/* Status indicator */}
+        <div style={{ fontSize: isMaximized ? '0.8em' : '0.65em', marginTop: '0.3em' }}>
           {isRunning && !isPaused ? (
             <motion.span
               animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
+              transition={{ duration: 2, repeat: Infinity }}
               className="d-flex align-items-center justify-content-center gap-1"
+              style={{ color: '#22c55e', fontWeight: 500 }}
             >
-              <FontAwesomeIcon icon={faPlayCircle} style={{ color: 'var(--text-dark)' }} />
-              Estudando...
+              <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+              Estudando
             </motion.span>
             ) : isPaused && pausedTime === 0 ? (
-              <span className="d-flex align-items-center justify-content-center gap-1">
-                <FontAwesomeIcon icon={faPause} style={{ color: 'var(--text-dark)' }} />
+              <span className="d-flex align-items-center justify-content-center gap-1" style={{ color: '#f59e0b', fontWeight: 500 }}>
+                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }} />
                 Pausado
               </span>
             ) : time > 0 && !isPaused ? (
-              <span className="d-flex align-items-center justify-content-center gap-1">
-                <FontAwesomeIcon icon={faCheckCircle} style={{ color: 'var(--text-dark)' }} />
+              <span className="d-flex align-items-center justify-content-center gap-1" style={{ color: 'var(--text-light)', fontWeight: 500 }}>
+                <FontAwesomeIcon icon={faCheckCircle} style={{ fontSize: '0.85em' }} />
                 Sessão finalizada
               </span>
             ) : !isRunning && time === 0 ? (
-              <span className="d-flex align-items-center justify-content-center gap-1">
-                <FontAwesomeIcon icon={faClock} style={{ color: 'var(--text-dark)' }} />
+              <span className="d-flex align-items-center justify-content-center gap-1" style={{ color: 'var(--text-light)', fontWeight: 500 }}>
                 Pronto para iniciar
               </span>
             ) : null}
@@ -343,97 +349,125 @@ const StudyTimer = () => {
       </div>
 
       {/* Botões de controle */}
-      <div className={`d-flex justify-content-center ${isMaximized ? 'gap-5' : 'gap-2'}`}>
-        {/* Ícone de finalizar (só aparece se há tempo) */}
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: time > 0 ? 1 : 0, opacity: time > 0 ? 1 : 0 }}
-          exit={{ scale: 0, opacity: 0 }}
-          whileHover={{ scale: 1.2 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleStop}
-          style={{
-            color: '#dc3545',
-            fontSize: isMaximized ? '3em' : '1.3em',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <FontAwesomeIcon icon={faStop} />
-        </motion.div>
+      <div className={`d-flex justify-content-center align-items-center ${isMaximized ? 'gap-4' : 'gap-3'}`}>
+        {/* Botão de finalizar (salvar) */}
+        <AnimatePresence>
+          {time > 0 && (
+            <motion.button
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              onClick={handleStop}
+              title="Salvar e parar"
+              style={{
+                width: isMaximized ? 52 : 34,
+                height: isMaximized ? 52 : 34,
+                borderRadius: '50%',
+                border: '1.5px solid #ef4444',
+                background: 'transparent',
+                color: '#ef4444',
+                fontSize: isMaximized ? '1.2em' : '0.85em',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.2s, color 0.2s',
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+              onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ef4444'; }}
+            >
+              <FontAwesomeIcon icon={faStop} />
+            </motion.button>
+          )}
+        </AnimatePresence>
 
-        {/* Ícone play/pause - AGORA NO CENTRO */}
-        <motion.div
-          whileHover={{ scale: 1.2 }}
-          whileTap={{ scale: 0.9 }}
+        {/* Botão play/pause — principal */}
+        <motion.button
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
           onClick={isRunning && !isPaused ? handlePause : handleStart}
+          title={isRunning && !isPaused ? 'Pausar' : 'Iniciar'}
           style={{
+            width: isMaximized ? 68 : 44,
+            height: isMaximized ? 68 : 44,
+            borderRadius: '50%',
+            border: 'none',
+            background: 'var(--primary-primary3)',
             color: '#fff',
-            fontSize: isMaximized ? '3em' : '1.3em',
+            fontSize: isMaximized ? '1.5em' : '1em',
             cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 10px rgba(125,187,255,0.25)',
+            transition: 'box-shadow 0.2s',
           }}
         >
           <FontAwesomeIcon 
             icon={isRunning && !isPaused ? faPause : faPlay} 
+            style={{ marginLeft: isRunning && !isPaused ? 0 : '2px' }}
           />
-        </motion.div>
+        </motion.button>
 
-        {/* Ícone de reiniciar (só aparece se há tempo ou se está pausado) */}
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: (time > 0 || isPaused) ? 1 : 0, opacity: (time > 0 || isPaused) ? 1 : 0 }}
-          exit={{ scale: 0, opacity: 0 }}
-          whileHover={{ scale: 1.2 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleRestart}
-          style={{
-            color: '#ffffff',
-            fontSize: isMaximized ? '3em' : '1.5em',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <FontAwesomeIcon icon={faRotateRight} />
-        </motion.div>
+        {/* Botão de reiniciar */}
+        <AnimatePresence>
+          {(time > 0 || isPaused) && (
+            <motion.button
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              onClick={handleRestart}
+              title="Reiniciar"
+              style={{
+                width: isMaximized ? 52 : 34,
+                height: isMaximized ? 52 : 34,
+                borderRadius: '50%',
+                border: '1.5px solid var(--text-light)',
+                background: 'transparent',
+                color: 'var(--text-light)',
+                fontSize: isMaximized ? '1.1em' : '0.8em',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.2s, color 0.2s, border-color 0.2s',
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = 'var(--text-light)'; e.currentTarget.style.color = 'var(--background-light)'; }}
+              onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-light)'; }}
+            >
+              <FontAwesomeIcon icon={faRotateRight} />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
 
-        {/* Botão para adicionar estudo manual */}
-        <motion.div
-          whileHover={{ scale: 1.2 }}
-          whileTap={{ scale: 0.9 }}
+      {/* Link registrar estudo manual */}
+      <div className="text-center" style={{ marginTop: isMaximized ? '1.5em' : '0.75em' }}>
+        <button
           onClick={handleAddManualStudy}
           title="Adicionar estudo manual (não cronometrado)"
           style={{
-            color: '#28a745',
-            fontSize: isMaximized ? '3em' : '1.3em',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            color: 'var(--text-light)',
+            fontSize: isMaximized ? '0.78em' : '0.63em',
+            fontWeight: 400,
             cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            textDecoration: 'none',
+            letterSpacing: '0.01em',
+            transition: 'color 0.15s',
           }}
+          onMouseOver={e => { e.currentTarget.style.color = 'var(--primary-primary3)'; e.currentTarget.style.textDecoration = 'underline'; }}
+          onMouseOut={e => { e.currentTarget.style.color = 'var(--text-light)'; e.currentTarget.style.textDecoration = 'none'; }}
         >
-          <FontAwesomeIcon icon={faPlus} />
-        </motion.div>
+          Registrar sessão manual
+        </button>
       </div>
-
-      {/* Remover a meta de estudo (opcional) */}
-      {/* 
-      {todayStudyTime > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mt-3 text-center"
-          style={{
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '0.5em',
-            padding: '0.5em',
-            fontSize: '0.75em'
-          }}
-        >
-          <FontAwesomeIcon icon={faCalendarCheck} className="me-1" />
-          Meta diária: {formatTimeCompact(todayStudyTime + time)}
-        </motion.div>
-      )}
-      */}
     </div>
   );
 
@@ -443,7 +477,7 @@ const StudyTimer = () => {
       <AnimatePresence>
         {isMaximized && (
           <>
-            {/* Backdrop blur */}
+            {/* Backdrop escuro */}
             <motion.div 
               key="backdrop"
               initial={{ opacity: 0 }}
@@ -456,9 +490,7 @@ const StudyTimer = () => {
                 left: 0,
                 width: '100vw',
                 height: '100vh',
-                background: 'rgba(0,0,0,0.3)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
+                background: 'rgba(8,8,8,0.92)',
                 zIndex: 9998
               }}
             />

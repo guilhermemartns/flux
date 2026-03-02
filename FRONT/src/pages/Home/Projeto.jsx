@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import api from '../../services/api';
-import { FaTrash } from 'react-icons/fa';
-import { faFolderOpen, faPenToSquare } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Edit2, Archive, Folder, Trash } from 'react-feather';
 import { useAuth } from '../../auth.jsx';
 import Swal from 'sweetalert2';
 import { toast, ToastContainer } from 'react-toastify';
@@ -197,26 +195,7 @@ const Projeto = () => {
   }
 
   async function handleDeleteProjeto(id) {
-    const result = await Swal.fire({
-      title: 'Deseja apagar este projeto?',
-      text: ' Todos os dados relacionados a este projeto serão perdidos. Essa ação não pode ser desfeita.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sim, apagar',
-      cancelButtonText: 'Cancelar',
-      reverseButtons: true,
-      customClass: {
-        container: 'alert-fundo',
-        popup: 'text-white',
-        title: 'text-white',
-        content: 'text-white',
-        confirmButton: 'btn m-2 btn-primary-primary',
-        cancelButton: 'btn btn-outline-primary-primary',
-      },
-      buttonsStyling: false,
-      background: 'transparent',
-    });
-    if (!result.isConfirmed) return;
+    if (!window.confirm('Deseja apagar este projeto? Todos os dados relacionados serão perdidos.')) return;
     try {
       await api.delete(`/projetos/${id}`);
       await fetchProjetos();
@@ -285,8 +264,8 @@ const Projeto = () => {
           {showNovoProjetoForm && (
             <React.Fragment>
               <div className="col-12 mb-3">
-                <div className="card-padrao card-padrao-hover fadein d-flex align-items-center gap-3 p-3 mb-2 w-25" style={{ cursor: 'pointer', minHeight: 60 }} onClick={() => setShowAddModal(true)}>
-                  <FontAwesomeIcon icon={faPenToSquare} className="fs-4 text-primary-primary" />
+                <div className="card-padrao2 card-padrao-hover fadein d-flex align-items-center gap-3 p-3 mb-2 w-25" style={{ cursor: 'pointer', minHeight: 60 }} onClick={() => setShowAddModal(true)}>
+                  <Edit2 className="text-primary-primary" size={20} />
                   <span className="fw-bold fs-6">Criar projeto personalizado</span>
                 </div>
               </div>
@@ -316,7 +295,7 @@ const Projeto = () => {
                       return (
                         <div className="materia-padrao col-12" key={p.id}>
                           <div
-                            className={`card-padrao fadein card-padrao-hover pointer position-relative`}
+                            className={`card-padrao2 fadein card-padrao-hover pointer position-relative`}
                             onClick={() => {
                               setProjetosPadraoSelecionados(sel => {
                                 if (selecionado) {
@@ -329,7 +308,7 @@ const Projeto = () => {
                                 }
                               });
                             }}
-                            style={{ minHeight: '72px', height: '72px', width: '100%', transition: 'box-shadow 0.3s, border 0.3s', boxShadow: selecionado ? '0 0 0 4px #71dd8c' : undefined, display: 'flex', alignItems: 'stretch' }}
+                            style={{ minHeight: '72px', height: '72px', width: '100%', transition: 'box-shadow 0.3s, border 0.3s',  display: 'flex', alignItems: 'stretch' }}
                           >
                             {/* Imagem ou ícone */}
                             <div style={{ flex: '0 0 56px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 56, padding: '0 8px 8px 8px' }}>
@@ -340,7 +319,7 @@ const Projeto = () => {
                                   style={{ width: 40, height: 40, borderRadius: '8px', objectFit: 'contain', marginRight: 4 }}
                                 />
                               ) : (
-                                <FontAwesomeIcon icon={faArchive} className="fs-4 text-primary-primary" />
+                                <Archive className="fs-4 text-primary-primary" size={20} />
                               )}
                             </div>
                             {/* Informações */}
@@ -354,9 +333,9 @@ const Projeto = () => {
                                 </div>
                                 <div style={{ flex: '0 0 auto', marginLeft: 'auto' }}>
                                   {selecionado ? (
-                                    <span className="badge bg-primary-primary ms-1 text-dark">Selecionado</span>
+                                    <span className="badge bg-primary-primary4 text-primary-primary5 ms-1 ">Selecionado</span>
                                   ) : (
-                                    <span className="badge bg-secondary ms-1 ">Não selecionado</span>
+                                    <span className="badge  bg-secondary ms-1 text-white">Não selecionado</span>
                                   )}
                                 </div>
                               </div>
@@ -382,7 +361,7 @@ const Projeto = () => {
                     <div className="text-secondary text-center">Nenhum projeto selecionado.</div>
                   ) : (
                     projetosPadraoSelecionados.map(p => (
-                      <div className="card-padrao fadein w-100" key={p.id}>
+                      <div className="card-padrao2 fadein w-100" key={p.id}>
                         <div className="d-flex align-items-center gap-3">
                           {p.imagem ? (
                             <img
@@ -391,7 +370,7 @@ const Projeto = () => {
                               style={{ width: 48, height: 48, borderRadius: '8px', objectFit: 'contain', marginRight: 4 }}
                             />
                           ) : (
-                            <FontAwesomeIcon icon={faArchive} className="fs-2 text-primary-primary" />
+                            <Archive className="fs-2 text-primary-primary" size={32} />
                           )}
                           <div className="d-flex flex-column flex-grow-1" style={{ minWidth: 0 }}>
                             <span className="fw-bold fs-6 titulo" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '360px' }}>
@@ -418,7 +397,7 @@ const Projeto = () => {
                     ))
                   )}
                   <button
-                    className="btn btn-primary-primary mt-3"
+                    className="btn btn-primary-primary3 mt-3"
                     disabled={projetosPadraoSelecionados.length === 0}
                     onClick={() => {
                       if (!user) {
@@ -435,14 +414,14 @@ const Projeto = () => {
                   >Prosseguir</button>
 
       {/* Modal para nome do projeto mesclado */}
-      <Modal className='modal-fundo' show={showMergeModal} onHide={() => setShowMergeModal(false)} centered>
+      <Modal className='modal-fundo' show={showMergeModal} onHide={() => setShowMergeModal(false)} centered backdrop="static">
         <Modal.Body className='modal-estilo'>
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <Modal.Title className='fw-bold fs-5 m-0'>
-              {nomeProjetoMesclado}
-            </Modal.Title>
-            <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowMergeModal(false)}></button>
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <Modal.Title className='fw-bold fs-5 m-0'>Criar projeto mesclado</Modal.Title>
           </div>
+          <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>
+            As matérias dos projetos selecionados serão combinadas em um único projeto. Defina um nome curto para identificá-lo.
+          </p>
           <form className="needs-validation" noValidate onSubmit={async e => {
             e.preventDefault();
             if (!nomeProjetoMesclado.trim()) return;
@@ -476,7 +455,7 @@ const Projeto = () => {
               toast.error('Erro ao criar projeto.');
             }
           }}>
-            <label className="small mb-1">Nome do novo projeto:</label>
+            <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Nome do projeto</label>
             <input
               type="text"
               value={nomeProjetoMesclado}
@@ -485,8 +464,8 @@ const Projeto = () => {
               required
             />
             <div className="d-flex justify-content-end gap-2 mt-3">
-              <button type="button" className="btn btn-outline-primary-primary" onClick={() => setShowMergeModal(false)}>Cancelar</button>
-              <button type="submit" className="btn btn-primary-primary">Criar</button>
+              <button type="button" className="btn btn-outline-primary-primary3" onClick={() => setShowMergeModal(false)}>Cancelar</button>
+              <button type="submit" className="btn btn-primary-primary3">Criar</button>
             </div>
           </form>
         </Modal.Body>
@@ -499,12 +478,11 @@ const Projeto = () => {
           {!showNovoProjetoForm && projetos.length > 0 && projetos.map((p, idx) => (
             <div className="col-12 col-sm-6 col-md-4 col-lg-3" key={p.id}>
               <div
-                className={"card-padrao-hover fadein pointer position-relative"}
+                className={"card-padrao2 card-padrao-hover fadein pointer position-relative"}
                 style={{
                   minHeight: '160px',
                   height: '100%',
                   borderRadius: '18px',
-                  background: 'var(--background-dark)',
                   padding: 0,
                   animationDelay: delays[idx] || '0s',
                   cursor: 'pointer',
@@ -513,7 +491,6 @@ const Projeto = () => {
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   transition: 'box-shadow 0.3s, border 0.3s',
-                  boxShadow: projetoSelecionado === p.id ? '0 0 0 4px #71dd8c' : undefined
                 }}
                 onClick={e => {
                   if (
@@ -544,7 +521,7 @@ const Projeto = () => {
                     onClick={e => { e.stopPropagation(); handleEditarProjeto(p.id, p.nome); }}
                     title="Editar projeto"
                   >
-                    <FontAwesomeIcon icon={faPenToSquare} className="fs-6" />
+                    <Edit2 className="fs-6" size={16} />
                   </button>
                   <button
                     className="d-flex align-items-center justify-content-center"
@@ -564,13 +541,13 @@ const Projeto = () => {
                     onClick={e => { e.stopPropagation(); handleDeleteProjeto(p.id); }}
                     title="Apagar projeto"
                   >
-                    <FaTrash className="fs-6" />
+                    <Trash className="fs-6" size={16} />
                   </button>
                 </div>
                 {/* Badge de selecionado no canto inferior direito */}
                 {projetoSelecionado === p.id && (
                   <div style={{ position: 'absolute', bottom: 10, right: 10, zIndex: 10 }}>
-                    <span className="badge bg-primary-primary text-dark fadein" style={{ fontSize: 10, padding: '4px 10px', borderRadius: 12 }}>Selecionado</span>
+                    <span className="badge bg-primary-primary4 text-primary-primary5 fadein" style={{ fontSize: 10, padding: '4px 10px' }}>Selecionado</span>
                   </div>
                 )}
                 {/* Novo layout: ícone/imagem à esquerda do título e descrição */}
@@ -606,12 +583,12 @@ const Projeto = () => {
                         onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/40?text=Sem+Imagem'; }}
                       />
                     ) : (
-                      <FontAwesomeIcon icon={faFolderOpen} className="text-primary-primary" style={{ width: 24, height: 24, fontSize: 24, display: 'block', margin: '0 auto' }} />
+                      <Folder className="text-primary-primary" size={24} style={{ display: 'block', margin: '0 auto' }} />
                     )}
                   </div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div className="d-flex align-items-center gap-2 mb-1">
-                      <span className="fw-bold fs-5 " style={{ color: '#fff', letterSpacing: 0.2 }}>{p.nome.length > 20 ? `${p.nome.slice(0, 20)}...` : p.nome}</span>
+                      <span className="fw-bold fs-5 " style={{ color: 'var(--primary-primary)', letterSpacing: 0.2 }}>{p.nome.length > 20 ? `${p.nome.slice(0, 20)}...` : p.nome}</span>
                     </div>
                     {p.descricao && (
                       <div className="mb-1 text-secondary" style={{ wordBreak: 'break-word', maxWidth: 320, color: 'var(--text-light)', fontSize: '10px', lineHeight: 1.3 }}>
@@ -641,12 +618,12 @@ const Projeto = () => {
                     opacity: projetos.length >= 3 ? 0.5 : 1, 
                     pointerEvents: projetos.length >= 3 ? 'none' : 'auto'
                   }}
-                  className="card-padrao-vazio p-3 d-flex flex-column justify-content-center align-items-center shadow-sm position-relative"
+                  className="card-padrao-vazio p-3 d-flex flex-column justify-content-center align-items-center  position-relative"
                   onClick={() => {
                     if (projetos.length < 3) setShowNovoProjetoForm(true);
                   }}
                 >
-                  <span className="fw-bold fs-6 text-primary-primary text-center"> + Adicionar Novo Projeto</span>
+                  <span className="fw-bold fs-6 text-secondary text-center"> + Adicionar Novo Projeto</span>
                   <span className="fs-6 text-secondary mt-2 text-center" >{projetos.length >= 3 ? 'Limite de 3 projetos atingido' : 'Clique para cadastrar um novo projeto'}</span>
                 </div>
               </div>
@@ -657,12 +634,12 @@ const Projeto = () => {
         {/* ...nenhuma badge extra... */}
       </main>
       {/* Modal de edição do nome do projeto */}
-      <Modal className='modal-fundo' show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+      <Modal className='modal-fundo' show={showEditModal} onHide={() => setShowEditModal(false)} centered backdrop="static">
         <Modal.Body className='modal-estilo'>
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <Modal.Title className='fw-bold fs-5 m-0'>Editar nome do projeto</Modal.Title>
-            <button  type="button" className="btn-close" aria-label="Close" onClick={() => setShowEditModal(false)}></button>
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <Modal.Title className='fw-bold fs-5 m-0'>Editar Projeto</Modal.Title>
           </div>
+          <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>Altere o nome de identificação do projeto. Use iniciais ou siglas curtas (máx. 7 caracteres).</p>
           <form className="needs-validation" noValidate onSubmit={async e => {
             e.preventDefault();
             if (!novoNomeProjeto.trim() || projetos.some(p => p.nome === novoNomeProjeto && p.id !== editandoId)) {
@@ -671,12 +648,13 @@ const Projeto = () => {
             }
             await handleSalvarNomeProjeto(editandoId);
           }}>
+            <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Nome</label>
             <input
               type="text"
               className="linha form-control w-100 mb-2"
               value={novoNomeProjeto}
               onChange={e => setNovoNomeProjeto(e.target.value.slice(0, 7))}
-              placeholder="Novo nome do projeto"
+              placeholder="Ex: PF, TRF, PCSP"
               required
               maxLength={9}
             />
@@ -684,10 +662,10 @@ const Projeto = () => {
               <div className="text-danger small mb-2">Já existe um projeto com esse nome.</div>
             )}
             <div className="d-flex justify-content-end gap-2 mt-3">
-              <button type="button" onClick={() => setShowEditModal(false)} className="btn btn-outline-primary-primary">
+              <button type="button" onClick={() => setShowEditModal(false)} className="btn btn-outline-primary-primary3">
                 Cancelar
               </button>
-              <button type="submit" className="btn btn-primary-primary" disabled={projetos.some(p => p.nome === novoNomeProjeto && p.id !== editandoId)}>
+              <button type="submit" className="btn btn-primary-primary3" disabled={projetos.some(p => p.nome === novoNomeProjeto && p.id !== editandoId)}>
                 Salvar
               </button>
             </div>
@@ -695,19 +673,19 @@ const Projeto = () => {
         </Modal.Body>
       </Modal>
       {/* Modal para criar plano personalizado (nome do novo projeto) */}
-      <Modal className='modal-fundo' show={showAddModal} onHide={() => setShowAddModal(false)} centered>
+      <Modal className='modal-fundo' show={showAddModal} onHide={() => setShowAddModal(false)} centered backdrop="static">
         <Modal.Body className='modal-estilo'>
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <Modal.Title className='fw-bold fs-5 m-0 '>Criar projeto personalizado</Modal.Title>
-            <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowAddModal(false)}></button>
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <Modal.Title className='fw-bold fs-5 m-0'>Criar projeto personalizado</Modal.Title>
           </div>
+          <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>Crie um projeto do zero para organizar suas matérias. Use iniciais ou siglas curtas para facilitar a identificação (máx. 9 caracteres).</p>
           <form className="needs-validation" noValidate onSubmit={handleAddProjeto}>
-            <label className="small mb-1">Nome do novo projeto</label>
+            <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Nome do projeto</label>
             <input
               type="text"
               value={novoProjeto}
               onChange={e => setNovoProjeto(e.target.value.slice(0, 9))}
-              placeholder="Iniciais do projeto. Ex: PF"
+              placeholder="Ex: PF, PCSP, TRF"
               className="form-control linha mb-2"
               maxLength={9}
               required
@@ -716,8 +694,8 @@ const Projeto = () => {
               <div className="text-danger small mb-2">Já existe um projeto com esse nome.</div>
             )}
             <div className="d-flex justify-content-end gap-2 mt-3">
-              <button type="button" className="btn btn-outline-primary-primary" onClick={() => setShowAddModal(false)}>Cancelar</button>
-              <button type="submit" className="btn btn-primary-primary" disabled={projetos.some(p => p.nome === novoProjeto)}>Adicionar</button>
+              <button type="button" className="btn btn-outline-primary-primary3" onClick={() => setShowAddModal(false)}>Cancelar</button>
+              <button type="submit" className="btn btn-primary-primary3" disabled={projetos.some(p => p.nome === novoProjeto)}>Adicionar</button>
             </div>
           </form>
         </Modal.Body>

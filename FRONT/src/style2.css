@@ -5,6 +5,9 @@
   animation: fadein-cascade 0.4s ease forwards;
 }
 
+
+
+
 @keyframes fadein-cascade {
   to {
     opacity: 1;
@@ -94,11 +97,6 @@ ul {
 }
 
 
-.btn-close {
-  filter: invert(1) grayscale(1) brightness(2) !important;
-  background-color: transparent !important;
-  opacity: 1 !important;
-}
 
 
 /*btn-primary*/
@@ -133,8 +131,7 @@ ul {
 }
 
 .btn-primary-primary3:hover {
-  background-color: var(--primary-primary3-hover) !important;
-  color: white !important;
+  background-color: #0061c9 !important;
 }
 
 
@@ -224,6 +221,10 @@ ul {
   color: var(--primary-primary) !important;
 }
 
+.text-primary-primary5 {
+  color: var(--primary-primary5) !important;
+}
+
 .text-primary-primary2 {
   color: var(--primary-primary2) !important;
 }
@@ -249,11 +250,23 @@ body, #root, .app-container, .card-padrao, .modal-content, .navbar {
 
 
 
+/*=========================GRID=========================*/
+
+
+.grid-tempo {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(6, auto);
+  gap: 1rem;
+}
+
 
 
 /*=========================VARIAVEIS DE CORES=========================*/
 :root {
 
+  --background: #f5f5f5;
+  --background-light: #ffffff;
 
   --text-light-light: #7e7e7e;
   /*404e42*/
@@ -267,11 +280,7 @@ body, #root, .app-container, .card-padrao, .modal-content, .navbar {
   --text-dark: #f5f5f5;
   /*fff*/
   /*2d3748 */
-  --background-dark: #232325;
-  --background: #181820;
   /*506152*/
-  /* f5f8fb*/
-  --background-light: #2e2d33;
   /*404e42*/
   /* ffffff*/
   --background-l-dark: #d8d8d8;
@@ -323,10 +332,11 @@ body, #root, .app-container, .card-padrao, .modal-content, .navbar {
   --background-light: #ffffff;
   --primary: #242424;
   --primary-light: #b7d9ff;
-  --primary-primary: #d9f7d7;
+  --primary-primary: #000;
   --primary-primary2: #b899eb;
-  --primary-primary3: #7dbbff;
-  --primary-primary4: #6be6d3;
+  --primary-primary3: #007aff;
+  --primary-primary4: #d9f7d7;
+  --primary-primary5: #04c40a;
   --primary-primary-hover: #1f5940;
   --primary-transparente: #99f1bf1f;
   --text: #fff;
@@ -488,8 +498,7 @@ h1, h2, h3, h4, h5, h6 {
 .card-padrao {
   padding: 0.9em !important;
   border-radius: 1em !important;
-  box-shadow: rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px;
-  background: #ffffff;
+  background: #fefefe;
   transition: border-color 0.3s, box-shadow 0.3s;
 
 }
@@ -498,22 +507,32 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.9em !important;
   border-radius: 1em !important;
   box-shadow: none;
-  background: var(--background-light);
+  background: #fefefe;
   transition: border-color 0.3s, box-shadow 0.3s;
-  
+  padding-left: 1.5em !important;
+  border: 1px solid var(--border) !important;
+
+}
+.card-padrao3 {
+  padding: 0.9em !important;
+  border-radius: 1em !important;
+  box-shadow: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  padding-left: 1.5em !important;
   border: 1px solid var(--border) !important;
 
 }
 
 
+
 .card-padrao-selecionado {
-  border-color: var(--primary-primary) !important;
+  border-color: #007aff !important;
 }
 
 .card-padrao-vazio {
   background: none !important;
   border-radius: 1em !important;
-  border: 2px dashed var(--primary-primary);
+  border: 1px dashed #7d7d7d !important;
   transition: background 0.3s !important;
 
 }
@@ -530,7 +549,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .card-padrao-hover:hover {
-  box-shadow: 0 0 0 4px #71dd8c !important;
+  box-shadow: 0 0 0 2px #007aff !important;
 }
 
 
@@ -635,10 +654,6 @@ h1, h2, h3, h4, h5, h6 {
   to { opacity: 1; }
 }
 
-.modal-fundo {
-  animation: modalFadeIn 0.1s ease-out forwards;
-  backdrop-filter: blur(8px);
-}
 
 .alert-fundo {
   backdrop-filter: blur(6px);
@@ -814,4 +829,18 @@ hr {
   padding-left: 0.5em;
   margin-bottom: 0.5em;
   display: block;
+}
+
+.scrollbar-transparent::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollbar-transparent::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-transparent::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+}
+.scrollbar-transparent::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.35);
 }

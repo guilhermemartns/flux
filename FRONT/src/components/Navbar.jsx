@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 // import HCaptcha from 'react-hcaptcha';
 import { useAuth } from '../auth.jsx';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faCamera } from '@fortawesome/free-solid-svg-icons';
+import { faCamera, faCrown } from '@fortawesome/free-solid-svg-icons';
+import { User } from 'react-feather';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Modal from 'react-bootstrap/Modal';
 import { usePageTitle } from './PageTitleContext';
@@ -152,117 +153,125 @@ const Navbar = () => {
           {/* Linha 1: Usuário, foto, dropdown */}
           <div className="d-flex align-items-center justify-content-end" style={{ width: '100%' }}>
             {user && (
-              <div className="d-flex align-items-center gap-1 position-relative">
-                <div className="rounded-circle bg-light border border-secondary overflow-hidden d-flex align-items-center justify-content-center" style={{ width: 38, height: 38 }}>
-                  {user.foto ? (
+              <div className="d-flex align-items-center gap-2 position-relative">
+                <div className="rounded-circle overflow-hidden d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 34, height: 34, border: '1px solid var(--border)', background: 'var(--bg-card)' }}>
+                  {user.role === 'admin' ? (
+                    <FontAwesomeIcon icon={faCrown} style={{ color: '#ffc107', fontSize: '1rem' }} />
+                  ) : user.foto ? (
                     <img src={user.foto} alt="Foto" className="w-100 h-100 object-fit-cover" />
                   ) : (
-                    <FontAwesomeIcon icon={faUser} className="text-secondary fs-4" />
+                    <User size={16} className="text-secondary" />
                   )}
                 </div>
                 <Dropdown align="end">
-                  <Dropdown.Toggle  id="dropdown-user" className="  fs-6 fw-bold " style={{ color: 'var(--text-light)', background: 'none', border: 'none', boxShadow: 'none' }}>
-                    {user.nome}
+                  <Dropdown.Toggle id="dropdown-user" className="fs-6 fw-semibold p-0" style={{ color: 'var(--text-light)', background: 'none', border: 'none', boxShadow: 'none', letterSpacing: '0.01em' }}>
+                    {user.apelido || user.nome}
                   </Dropdown.Toggle>
                   <Dropdown.Menu>
                     <Dropdown.Item onClick={() => setShowPerfilModal(true)}>Meu perfil</Dropdown.Item>
-                    <Dropdown.Item onClick={() => setShowPreferenciasModal(true)}>Preferências</Dropdown.Item>
+                    {/* <Dropdown.Item onClick={() => setShowPreferenciasModal(true)}>Preferências</Dropdown.Item> */}
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={() => { localStorage.clear(); window.location.replace('/login'); }}>Sair</Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
-                {/* Modal Meu perfil - layout customizado */}
-                <Modal className="modal-fundo" show={showPerfilModal} onHide={() => setShowPerfilModal(false)} centered size="lg">
-                  <Modal.Body className="p-0 position-relative" >
-                    {/* Botão de fechar no canto superior direito */}
-                    <button type="button" className="btn-close position-absolute top-0 end-0 m-3" aria-label="Fechar" style={{ zIndex: 10 }} onClick={() => setShowPerfilModal(false)}></button>
-                    <div className="w-100 px-4 pt-4 pb-2 text-center">
-                      <h4 className="text-dark fw-bold mb-3">Meu perfil</h4>
-                      <div className="d-flex flex-column align-items-center mb-3">
-                        <div className="rounded-circle border border-secondary overflow-hidden d-flex align-items-center justify-content-center position-relative group mb-2" style={{ width: 100, height: 100, background: '#222', cursor: 'pointer' }}>
-                          {fotoPreview ? (
-                            <img src={fotoPreview} alt="Foto" className="w-100 h-100 object-fit-cover" />
-                          ) : (
-                            <FontAwesomeIcon icon={faUser} className="text-secondary fs-1" />
-                          )}
-                          <label htmlFor="input-foto-perfil" className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.25)', opacity: 0, transition: 'opacity 0.2s', cursor: 'pointer', borderRadius: '50%' }}
-                            onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                            onMouseLeave={e => e.currentTarget.style.opacity = 0}
-                          >
-                            <FontAwesomeIcon icon={faCamera} className="text-light fs-2" />
-                            <input id="input-foto-perfil" type="file" accept="image/*" onChange={handleFotoChange} style={{ display: 'none' }} />
-                          </label>
-                        </div>
+                {/* Modal Meu perfil - layout compacto */}
+                <Modal className="modal-fundo" show={showPerfilModal} onHide={() => setShowPerfilModal(false)} centered backdrop="static" size="md">
+                  <Modal.Body className="modal-estilo">
+                    {/* Título */}
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <span className="fw-bold">Meu Perfil</span>
+                      <button type="button" className="btn-icon" onClick={() => setShowPerfilModal(false)}>✕</button>
+                    </div>
+                    <p className="text-secondary mb-3" style={{ fontSize: '0.8em' }}>Atualize seus dados pessoais e foto de perfil.</p>
+
+                    {/* Avatar */}
+                    <div className="d-flex align-items-center gap-3 mb-3">
+                      <div className="rounded-circle overflow-hidden d-flex align-items-center justify-content-center position-relative flex-shrink-0" style={{ width: 56, height: 56, border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer' }}>
+                        {fotoPreview ? (
+                          <img src={fotoPreview} alt="Foto" className="w-100 h-100 object-fit-cover" />
+                        ) : (
+                          <User size={26} className="text-secondary" />
+                        )}
+                        <label htmlFor="input-foto-perfil" className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.35)', opacity: 0, transition: 'opacity 0.2s', cursor: 'pointer', borderRadius: '50%' }}
+                          onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                          onMouseLeave={e => e.currentTarget.style.opacity = 0}
+                        >
+                          <FontAwesomeIcon icon={faCamera} className="text-light" />
+                          <input id="input-foto-perfil" type="file" accept="image/*" onChange={handleFotoChange} style={{ display: 'none' }} />
+                        </label>
+                      </div>
+                      <div>
+                        <div className="fw-semibold" style={{ fontSize: '0.95em' }}>{perfil.nome} {perfil.sobrenome}</div>
+                        <div className="text-secondary" style={{ fontSize: '0.78em' }}>{perfil.email}</div>
                       </div>
                     </div>
-                    <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 420 }}>
-                      {/* Lateral direita */}
-                      <div className="flex-fill px-4 pb-4 pt-2" >
-                        <form className="row gx-4 gy-2 mb-3">
-                          <div className="col-6">
-                            <label className="form-label text-light">Nome</label>
-                            <input type="text" className="form-control linha" name="nome" value={perfil.nome} onChange={handlePerfilChange} />
-                          </div>
-                          <div className="col-6">
-                            <label className="form-label text-light">Sobrenome</label>
-                            <input type="text" className="form-control linha" name="sobrenome" value={perfil.sobrenome} onChange={handlePerfilChange} />
-                          </div>
-                          <div className="col-6">
-                            <label className="form-label text-light">Apelido</label>
-                            <input type="text" className="form-control linha" name="apelido" value={perfil.apelido} onChange={handlePerfilChange} />
-                          </div>
-                          <div className="col-6">
-                            <label className="form-label text-light">Email</label>
-                            <input type="email" className="form-control linha" name="email" value={perfil.email} onChange={handlePerfilChange} />
-                          </div>
-                          <div className="col-6">
-                            <label className="form-label text-light">Sexo</label>
-                            <select className="form-select border-0 border-bottom linha" name="sexo" value={perfil.sexo} onChange={handlePerfilChange}>
-                              <option value="">Selecione</option>
-                              <option value="M">Masculino</option>
-                              <option value="F">Feminino</option>
-                              <option value="O">Outro</option>
-                            </select>
-                          </div>
-                          <div className="col-6">
-                            <label className="form-label text-light">Nascimento</label>
-                            <input type="date" className="form-control linha" name="nascimento" value={perfil.nascimento} onChange={handlePerfilChange} />
-                          </div>
-                          <div className="col-8">
-                            <label className="form-label text-light">Cidade</label>
-                            <input type="text" className="form-control linha" name="cidade" value={perfil.cidade} onChange={handlePerfilChange} />
-                          </div>
-                          <div className="col-4">
-                            <label className="form-label text-light">UF</label>
-                            <input type="text" className="form-control linha" name="uf" value={perfil.uf} onChange={handlePerfilChange} maxLength={2} />
-                          </div>
-                          <div className="col-12 d-flex justify-content-end gap-2 mt-2">
-                            <button type="button" className="btn btn-primary-primary px-3 py-1" onClick={handleSalvarPerfil}>Salvar</button>
-                          </div>
-                        </form>
-                        {/* Formulário de alteração de senha integrado */}
-                        <form className="row gx-4 gy-2 mt-2 mb-2" onSubmit={handleAlterarSenha}>
-                          <div className="col-12 text-light fw-bold mb-2" style={{ fontSize: '1rem' }}>Alterar senha</div>
-                          <div className="col-6">
-                            <label className="form-label text-light">Senha antiga</label>
-                            <input type="password" className="form-control linha" name="senhaAntiga" value={senhaForm.senhaAntiga} onChange={handleSenhaChange} />
-                          </div>
-                          <div className="col-6"></div>
-                          <div className="col-6">
-                            <label className="form-label text-light">Nova senha</label>
-                            <input type="password" className="form-control linha" name="novaSenha" value={senhaForm.novaSenha} onChange={handleSenhaChange} />
-                          </div>
-                          <div className="col-6">
-                            <label className="form-label text-light">Repita nova senha</label>
-                            <input type="password" className="form-control linha" name="repitaNovaSenha" value={senhaForm.repitaNovaSenha} onChange={handleSenhaChange} />
-                          </div>
-                          <div className="col-12 d-flex justify-content-end gap-2 mt-2">
-                            <button type="submit" className="btn btn-primary-primary px-3 py-1">Alterar senha</button>
-                          </div>
-                          {senhaMsg && <div className="col-12 text-danger mt-2">{senhaMsg}</div>}
-                        </form>
+
+                    {/* Dados pessoais */}
+                    <form className="row gx-2 gy-2 mb-3">
+                      <div className="col-6">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Nome</label>
+                        <input type="text" className="form-control linha" name="nome" value={perfil.nome} onChange={handlePerfilChange} />
                       </div>
-                    </div>
+                      <div className="col-6">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Sobrenome</label>
+                        <input type="text" className="form-control linha" name="sobrenome" value={perfil.sobrenome} onChange={handlePerfilChange} />
+                      </div>
+                      <div className="col-6">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Apelido</label>
+                        <input type="text" className="form-control linha" name="apelido" value={perfil.apelido} onChange={handlePerfilChange} />
+                      </div>
+                      <div className="col-6">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Email</label>
+                        <input type="email" className="form-control linha" name="email" value={perfil.email} onChange={handlePerfilChange} />
+                      </div>
+                      <div className="col-4">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Sexo</label>
+                        <select className="form-select linha" name="sexo" value={perfil.sexo} onChange={handlePerfilChange}>
+                          <option value="">—</option>
+                          <option value="M">Masculino</option>
+                          <option value="F">Feminino</option>
+                          <option value="O">Outro</option>
+                        </select>
+                      </div>
+                      <div className="col-4">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Nascimento</label>
+                        <input type="date" className="form-control linha" name="nascimento" value={perfil.nascimento} onChange={handlePerfilChange} />
+                      </div>
+                      <div className="col-3">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Cidade</label>
+                        <input type="text" className="form-control linha" name="cidade" value={perfil.cidade} onChange={handlePerfilChange} />
+                      </div>
+                      <div className="col-1">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>UF</label>
+                        <input type="text" className="form-control linha" name="uf" value={perfil.uf} onChange={handlePerfilChange} maxLength={2} />
+                      </div>
+                      <div className="col-12 d-flex justify-content-end mt-3">
+                        <button type="button" className="btn btn-primary-primary3 btn-sm px-3" onClick={handleSalvarPerfil}>Salvar dados</button>
+                      </div>
+                    </form>
+
+                    <hr className="my-2" />
+
+                    {/* Alterar senha */}
+                    <form className="row gx-2 gy-2" onSubmit={handleAlterarSenha}>
+                      <div className="col-12 fw-semibold mb-0" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Alterar Senha</div>
+                      <div className="col-4">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Senha atual</label>
+                        <input type="password" className="form-control linha" name="senhaAntiga" value={senhaForm.senhaAntiga} onChange={handleSenhaChange} />
+                      </div>
+                      <div className="col-4">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Nova senha</label>
+                        <input type="password" className="form-control linha" name="novaSenha" value={senhaForm.novaSenha} onChange={handleSenhaChange} />
+                      </div>
+                      <div className="col-4">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Repita</label>
+                        <input type="password" className="form-control linha" name="repitaNovaSenha" value={senhaForm.repitaNovaSenha} onChange={handleSenhaChange} />
+                      </div>
+                      <div className="col-12 d-flex justify-content-end mt-3">
+                        <button type="submit" className="btn btn-outline-primary-primary3 btn-sm px-3">Alterar senha</button>
+                      </div>
+                      {senhaMsg && <div className="col-12 text-danger mt-1" style={{ fontSize: '0.8rem' }}>{senhaMsg}</div>}
+                    </form>
                   </Modal.Body>
                 </Modal>
                 {/* Modal Preferências */}
