@@ -17,7 +17,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Token'],
 }));
-app.options('*', cors());
+app.options('/{*path}', cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Arquivos estáticos de uploads (não persiste no Vercel, mantido para compatibilidade local)
