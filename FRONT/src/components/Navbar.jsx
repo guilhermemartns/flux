@@ -12,7 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const Navbar = () => {
   const { user } = useAuth();
-  const { title } = usePageTitle();
+  const { title, titleExtra } = usePageTitle();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showPerfilModal, setShowPerfilModal] = useState(false);
   const [showPreferenciasModal, setShowPreferenciasModal] = useState(false);
@@ -288,10 +288,11 @@ const Navbar = () => {
             )}
           </div>
           {/* Linha 2: Título da página */}
-          <div className="d-flex align-items-center" style={{ width: '100%' }}>
+          <div className="d-flex align-items-center gap-2" style={{ width: 'auto' }}>
             {title && (
-              <h5 className="titulo fs-5">{title}</h5>
+              <h5 className="titulo fs-5 m-0">{title}</h5>
             )}
+            {titleExtra && titleExtra}
           </div>
         </div>
       </nav>

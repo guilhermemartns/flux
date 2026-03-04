@@ -241,7 +241,7 @@ const Home = () => {
   const [recordeDias, setRecordeDias] = useState(0);
   const [metaSemanal, setMetaSemanal] = useState(10);
   const [showModalMeta, setShowModalMeta] = useState(false);
-  const [metaSemanalHoras, setMetaSemanalHoras] = useState(Math.floor(metaSemanal));
+  const [metaSemanalHoras, setMetaSemanalHoras] = useState(10);
   const [metaSemanalMinutos, setMetaSemanalMinutos] = useState(0);
   const [diasMigrados, setDiasMigrados] = useState(0); // Novo state para dias migrados
 
@@ -250,10 +250,6 @@ const Home = () => {
   const [horasParaMigrar, setHorasParaMigrar] = useState('');
   const [minutosParaMigrar, setMinutosParaMigrar] = useState('');
   const [migracaoHorasUsada, setMigracaoHorasUsada] = useState(false);
-
-  useEffect(() => {
-    setMetaSemanal(metaSemanalHoras + metaSemanalMinutos / 60);
-  }, [metaSemanalHoras, metaSemanalMinutos]);
 
   async function fetchHistoricoEstudo() {
       try {
@@ -384,11 +380,13 @@ const Home = () => {
       const usuario = JSON.parse(localStorage.getItem('user'));
       const projetoId = localStorage.getItem('projetoSelecionado') || '';
       if (!usuario || !projetoId) return;
+      const novaMetaSemanal = metaSemanalHoras + metaSemanalMinutos / 60;
       await api.put('/meta-semanal', {
         userId: usuario.id,
         projetoId,
-        metaSemanal: metaSemanal
+        metaSemanal: novaMetaSemanal
       });
+      setMetaSemanal(novaMetaSemanal);
       setShowModalMeta(false);
     } catch (err) {
       alert('Erro ao salvar meta semanal.');
@@ -1022,7 +1020,11 @@ const Home = () => {
 
               <div className="d-flex align-items-center mb-3" style={{ width: '100%' }}>
                 <div className="card-title-padrao m-0">Meta Semanal</div>
-                <button className="btn btn-sm btn-link p-0 text-primary-primary" style={{ marginLeft: 'auto' }} onClick={() => setShowModalMeta(true)}>
+                <button className="btn btn-sm btn-link p-0 text-primary-primary" style={{ marginLeft: 'auto' }} onClick={() => {
+                  setMetaSemanalHoras(Math.floor(metaSemanal));
+                  setMetaSemanalMinutos(Math.round((metaSemanal % 1) * 60));
+                  setShowModalMeta(true);
+                }}>
                   <Edit2 size={14} />
                 </button>
               </div>
@@ -1193,7 +1195,11 @@ const Home = () => {
                       </div>
                       <p className="text-secondary" style={{ fontSize: '0.75em' }}>Dica: comece com metas realistas e aumente gradualmente conforme sua rotina.</p>
                       <div className="d-flex justify-content-end gap-2 mt-3">
-                        <button className="btn btn-outline-primary-primary3" onClick={() => setShowModalMeta(false)}>Cancelar</button>
+                        <button className="btn btn-outline-primary-primary3" onClick={() => {
+                          setMetaSemanalHoras(Math.floor(metaSemanal));
+                          setMetaSemanalMinutos(Math.round((metaSemanal % 1) * 60));
+                          setShowModalMeta(false);
+                        }}>Cancelar</button>
                         <button className="btn btn-primary-primary3" onClick={handleSalvarMetaSemanal}>Salvar</button>
                       </div>
                     </Modal.Body>

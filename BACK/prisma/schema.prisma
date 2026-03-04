@@ -222,7 +222,7 @@ model FilaRevisao {
   materiaNome         String
   simuladoId          String    @db.ObjectId
   numeroQuestao       Int
-  tipo                String    // "erro" | "branco"
+  tipo                String    // "erro" | "branco" | "chute"
   status              String    @default("pendente") // "pendente" | "dominado" | "arquivado"
   totalErros          Int       @default(1)
   acertosConsecutivos Int       @default(0)

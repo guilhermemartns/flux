@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { usePageTitle } from '../../components/PageTitleContext';
 import api from '../../services/api';
 import { useAuth } from '../../auth.jsx';
-import { CheckCircle, XCircle, Archive, Trash2, Edit2, AlertCircle, Award, Filter, X as XIcon } from 'react-feather';
+import { CheckCircle, XCircle, Archive, Trash2, Edit2, AlertCircle, Award, Filter, X as XIcon, HelpCircle } from 'react-feather';
 import Modal from 'react-bootstrap/Modal';
 
 const STATUS_LABELS = {
@@ -14,10 +14,11 @@ const STATUS_LABELS = {
 const TIPO_LABELS = {
   erro:   { label: 'Erro',   color: '#FF2D55' },
   branco: { label: 'Branco', color: '#FF9500' },
+  chute:  { label: 'Chute',  color: '#AF52DE' },
 };
 
 export default function FilaRevisao() {
-  const { setTitle } = usePageTitle();
+  const { setTitle, setTitleExtra } = usePageTitle();
   const { user } = useAuth();
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,10 +39,11 @@ export default function FilaRevisao() {
   const filterPanelRef = useRef(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [materias, setMaterias] = useState([]);
-  const [novoItem, setNovoItem] = useState({ materiaNome: '', numeroQuestao: '', tipo: 'erro', editalItem: '', motivoErro: '', anotacao: '' });
+  const [novoItem, setNovoItem] = useState({ materiaNome: '', numeroQuestao: '', tipo: 'erro', editalItem: '', motivoErro: '', anotacao: '', chute: false });
 
   const projetoId = localStorage.getItem('projetoSelecionado') || '';
   const userId = user?.id || '';
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const fetchItens = useCallback(async () => {
     if (!userId || !projetoId) return;
@@ -75,7 +77,17 @@ export default function FilaRevisao() {
   useEffect(() => {
     setTitle('Fila de Revisão');
     document.title = 'FLUX | Fila de Revisão';
-  }, [setTitle]);
+    setTitleExtra(
+      <button
+        className="btn p-0 d-flex align-items-center gap-1"
+        style={{ color: 'var(--text-light)', fontSize: '0.78em', fontWeight: 500, border: 'none', background: 'none', lineHeight: 1 }}
+        onClick={() => setShowHelpModal(true)}
+      >
+        <HelpCircle size={14} />
+      </button>
+    );
+    return () => setTitleExtra(null);
+  }, [setTitle, setTitleExtra]);
 
   useEffect(() => { fetchItens(); fetchCounts(); fetchMaterias(); }, [fetchItens, fetchCounts, fetchMaterias]);
 
@@ -180,7 +192,7 @@ export default function FilaRevisao() {
       anotacao: novoItem.anotacao,
     });
     setShowAddModal(false);
-    setNovoItem({ materiaNome: '', numeroQuestao: '', tipo: 'erro', editalItem: '', motivoErro: '', anotacao: '' });
+    setNovoItem({ materiaNome: '', numeroQuestao: '', tipo: 'erro', editalItem: '', motivoErro: '', anotacao: '', chute: false });
     fetchItens(); fetchCounts();
   }
 
@@ -234,7 +246,48 @@ export default function FilaRevisao() {
     <div className="app-container">
     <div className="container-fluid px-3 pt-2 pb-4" style={{ maxWidth: 1100 }}>
 
-      {/* Cards de contagem */}
+      {/* Modal de ajuda */}
+      <Modal show={showHelpModal} onHide={() => setShowHelpModal(false)} centered className="modal-fundo">
+        <Modal.Body className="modal-estilo">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Modal.Title className="fw-bold fs-5 m-0" style={{ color: 'var(--text-middle)' }}>Como funciona a Fila de Revisão?</Modal.Title>
+            <button className="btn p-0" style={{ background: 'none', border: 'none', color: 'var(--text-light)' }} onClick={() => setShowHelpModal(false)}><XIcon size={18} /></button>
+          </div>
+
+          <div className="d-flex flex-column gap-3" style={{ fontSize: '0.88em' }}>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>📥 Como as questões entram?</div>
+              <p className="m-0" style={{ color: 'var(--text-light)' }}>Ao salvar um simulado, questões <span style={{ color: '#FF2D55', fontWeight: 600 }}>erradas</span>, <span style={{ color: '#FF9500', fontWeight: 600 }}>em branco</span> e <span style={{ color: '#AF52DE', fontWeight: 600 }}>chutadas (mesmo acertando)</span> são automaticamente adicionadas como <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>Pendentes</span>. Questões acertadas sem chute são removidas da fila.</p>
+            </div>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>🔄 Status das questões</div>
+              <ul className="m-0 ps-3 d-flex flex-column gap-1" style={{ color: 'var(--text-light)' }}>
+                <li><span style={{ color: '#FF2D55', fontWeight: 600 }}>Pendente</span> — precisa revisar</li>
+                <li><span style={{ color: '#34C759', fontWeight: 600 }}>Dominado</span> — acertou na revisão consecutivamente</li>
+                <li><span style={{ color: '#8e8e93', fontWeight: 600 }}>Arquivado</span> — removido da fila ativa sem dominar</li>
+              </ul>
+            </div>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>✅ Acertei / ❌ Errei</div>
+              <p className="m-0" style={{ color: 'var(--text-light)' }}>Ao revisar uma questão, clique <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>Acertei</span> para registrar um acerto consecutivo — ao acertar seguidas vezes, a questão vira <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>Dominada</span>. Clicando <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>Errei</span>, o contador de acertos consecutivos é zerado.</p>
+            </div>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>📝 Tipos</div>
+              <ul className="m-0 ps-3 d-flex flex-column gap-1" style={{ color: 'var(--text-light)' }}>
+                <li><span style={{ color: '#FF2D55', fontWeight: 600 }}>Erro</span> — respondeu errado</li>
+                <li><span style={{ color: '#FF9500', fontWeight: 600 }}>Branco</span> — não respondeu</li>
+                <li><span style={{ color: '#AF52DE', fontWeight: 600 }}>Chute</span> — acertou mas por sorte (marcado como chute)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="d-flex justify-content-end mt-4">
+            <button className="btn btn-primary-primary3" onClick={() => setShowHelpModal(false)}>Entendi</button>
+          </div>
+        </Modal.Body>
+      </Modal>
+
+      {/* Cards de contagem por status */}
       <div className="d-flex gap-3 mt-3 flex-wrap">
         {[
           { key: 'pendente', label: 'Pendentes', count: counts.pendentes, icon: <AlertCircle size={20} />, color: '#FF2D55' },
@@ -245,7 +298,7 @@ export default function FilaRevisao() {
             key={key}
             className="card-padrao2 pointer d-flex align-items-center gap-3 px-4 py-3"
             style={{ flex: '1 1 140px', border: filtroStatus === key ? `1.5px solid ${color}` : '1.5px solid transparent', cursor: 'pointer', transition: 'border 0.15s' }}
-            onClick={() => setFiltroStatus(filtroStatus === key ? '' : key)}
+            onClick={() => setFiltroStatus(key)}
           >
             <span style={{ color }}>{icon}</span>
             <div>
@@ -254,6 +307,34 @@ export default function FilaRevisao() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Cards de filtro por tipo */}
+      <div className="d-flex gap-2 mt-2 flex-wrap">
+        {[
+          { key: 'erro',   label: 'Erros',   color: '#FF2D55', bg: 'rgba(255,45,85,0.10)' },
+          { key: 'branco', label: 'Brancos', color: '#FF9500', bg: 'rgba(255,149,0,0.10)' },
+          { key: 'chute',  label: 'Chutes',  color: '#AF52DE', bg: 'rgba(175,82,222,0.10)' },
+        ].map(({ key, label, color, bg }) => {
+          const count = itens.filter(i => i.tipo === key).length;
+          const active = filtroTipo === key;
+          return (
+            <div
+              key={key}
+              className="d-flex align-items-center gap-2 px-3 py-2"
+              style={{
+                background: active ? bg : 'var(--background-l-light)',
+                border: `1.5px solid ${active ? color : 'var(--border)'}`,
+                borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s',
+                userSelect: 'none',
+              }}
+              onClick={() => { setFiltroTipo(active ? '' : key); if (key !== 'erro') setFiltroMotivoErro(''); }}
+            >
+              <span style={{ fontSize: '1.1em', fontWeight: 700, color, lineHeight: 1 }}>{count}</span>
+              <span style={{ fontSize: '0.78em', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: active ? color : 'var(--text-light)' }}>{label}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Filtros */}
@@ -311,7 +392,7 @@ export default function FilaRevisao() {
                   <div>
                     <div style={labelStyle} className="mb-1">Tipo</div>
                     <div className="d-flex gap-1 flex-wrap">
-                      {[{ v: '', l: 'Todos' }, { v: 'erro', l: 'Erro' }, { v: 'branco', l: 'Branco' }].map(({ v, l }) => (
+                      {[{ v: '', l: 'Todos' }, { v: 'erro', l: 'Erro' }, { v: 'branco', l: 'Branco' }, { v: 'chute', l: 'Chute' }].map(({ v, l }) => (
                         <button key={v} onClick={() => { setFiltroTipo(v); if (v !== 'erro') setFiltroMotivoErro(''); }}
                           className="btn btn-sm"
                           style={{ fontSize: '0.8em', fontWeight: 600, background: filtroTipo === v ? 'var(--primary, #0070FF)' : 'transparent', color: filtroTipo === v ? '#fff' : 'var(--text-secondary, #555)', border: '1px solid var(--border)', borderRadius: 8 }}>
@@ -690,6 +771,7 @@ export default function FilaRevisao() {
                 <select className="form-control linha mt-1" value={novoItem.tipo} onChange={e => setNovoItem({ ...novoItem, tipo: e.target.value })}>
                   <option value="erro">Erro</option>
                   <option value="branco">Branco</option>
+                  <option value="chute">Chute</option>
                 </select>
               </div>
               <div className="col-6">

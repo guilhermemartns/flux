@@ -282,6 +282,7 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
             numero: q.numero,
             anulada: q.anulada,
             acertou: q.resposta !== '' && q.resposta !== 'S' && q.acertou, // branco ('' ou 'S') nunca é acerto
+            chute: q.chute || false,
             tipo: (q.resposta === '' || q.resposta === 'S') ? 'branco' : 'erro',
             materia: q.materia || '',
             materiaId: q.materiaId || '',

@@ -24,7 +24,9 @@ const StudySessionForm = () => {
   const [novaCategoria, setNovaCategoria] = useState('');
   const [disciplina, setDisciplina] = useState('');
   const [saved, setSaved] = useState(false);
-  const [tempoEdit, setTempoEdit] = useState(formatTime(timer.seconds));
+  const [tempoH, setTempoH] = useState(Math.floor(timer.seconds / 3600));
+  const [tempoM, setTempoM] = useState(Math.floor((timer.seconds % 3600) / 60));
+  const [tempoS, setTempoS] = useState(timer.seconds % 60);
   const [materias, setMaterias] = useState([]);
   const [vincularCiclo, setVincularCiclo] = useState(true);
   useEffect(() => {
@@ -47,16 +49,17 @@ const StudySessionForm = () => {
   useEffect(() => {
     if (isFormOpen) {
       if (isEditMode) {
-        // Pré-preencher com dados do registro a editar
-        const h = Math.floor((editData.tempo * 60) / 3600);
-        const m = Math.floor(((editData.tempo * 60) % 3600) / 60);
-        const s = (editData.tempo * 60) % 60;
-        setTempoEdit(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+        const totalSec = editData.tempo * 60;
+        setTempoH(Math.floor(totalSec / 3600));
+        setTempoM(Math.floor((totalSec % 3600) / 60));
+        setTempoS(totalSec % 60);
         setDisciplina(editData.disciplina || '');
         setCategoria(editData.categoria || '');
         setDataSessao(editData.dataSessao ? editData.dataSessao.split('T')[0] : todayStr());
       } else {
-        setTempoEdit(formatTime(timer.seconds));
+        setTempoH(Math.floor(timer.seconds / 3600));
+        setTempoM(Math.floor((timer.seconds % 3600) / 60));
+        setTempoS(timer.seconds % 60);
       }
     }
   }, [isFormOpen, editData]);
@@ -67,9 +70,12 @@ const StudySessionForm = () => {
     e.preventDefault();
     // Usa novaCategoria se selecionado
     const categoriaFinal = categoria === 'nova' ? novaCategoria : categoria;
-    // Converter tempoEdit (hh:mm:ss) para minutos
-    const [h, m, s] = tempoEdit.split(':').map(v => parseInt(v, 10) || 0);
-    const tempoMinutos = h * 60 + m + Math.floor(s / 60);
+    // Converter h/m/s para minutos (segundos arredondados para cima)
+    const h = parseInt(tempoH, 10) || 0;
+    const m = parseInt(tempoM, 10) || 0;
+    const s = parseInt(tempoS, 10) || 0;
+    const totalSegundos = h * 3600 + m * 60 + s;
+    const tempoMinutos = Math.ceil(totalSegundos / 60);
     setTimer(prev => ({ ...prev, seconds: tempoMinutos * 60 }));
     try {
       const userObj = localStorage.getItem('user');
@@ -96,6 +102,10 @@ const StudySessionForm = () => {
       }
       if (!categoria) {
         alert('Erro: Categoria não selecionada.');
+        return;
+      }
+      if (tempoMinutos <= 0) {
+        alert('Erro: O tempo de estudo deve ser maior que zero.');
         return;
       }
       
@@ -181,56 +191,32 @@ const StudySessionForm = () => {
               <label className="form-label fw-semibold" style={{ fontSize: '0.8em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Tempo</label>
               <div className="d-flex align-items-center gap-1" style={{ fontFamily: 'monospace' }}>
                 <input
-                  type="text" inputMode="numeric" maxLength={2}
+                  type="number" min="0" max="99"
                   className="form-control linha text-center"
-                  style={{ fontSize: '0.9em', width: '48px', padding: '0.375rem 0.25rem' }}
-                  value={tempoEdit.split(':')[0] ?? '00'}
+                  style={{ fontSize: '0.9em', width: '54px', padding: '0.375rem 0.25rem' }}
+                  value={tempoH}
                   onFocus={e => e.target.select()}
-                  onChange={e => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 2);
-                    const parts = tempoEdit.split(':');
-                    setTempoEdit(`${val}:${parts[1]}:${parts[2]}`);
-                  }}
-                  onBlur={e => {
-                    const parts = tempoEdit.split(':');
-                    setTempoEdit(`${String(parts[0] || '0').padStart(2,'0')}:${parts[1]}:${parts[2]}`);
-                  }}
+                  onChange={e => setTempoH(Math.max(0, parseInt(e.target.value, 10) || 0))}
                   placeholder="hh"
                 />
                 <span style={{ color: 'var(--text-light)' }}>:</span>
                 <input
-                  type="text" inputMode="numeric" maxLength={2}
+                  type="number" min="0" max="59"
                   className="form-control linha text-center"
-                  style={{ fontSize: '0.9em', width: '48px', padding: '0.375rem 0.25rem' }}
-                  value={tempoEdit.split(':')[1] ?? '00'}
+                  style={{ fontSize: '0.9em', width: '54px', padding: '0.375rem 0.25rem' }}
+                  value={tempoM}
                   onFocus={e => e.target.select()}
-                  onChange={e => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 2);
-                    const parts = tempoEdit.split(':');
-                    setTempoEdit(`${parts[0]}:${val}:${parts[2]}`);
-                  }}
-                  onBlur={e => {
-                    const parts = tempoEdit.split(':');
-                    setTempoEdit(`${parts[0]}:${String(parts[1] || '0').padStart(2,'0')}:${parts[2]}`);
-                  }}
+                  onChange={e => setTempoM(Math.min(59, Math.max(0, parseInt(e.target.value, 10) || 0)))}
                   placeholder="mm"
                 />
                 <span style={{ color: 'var(--text-light)' }}>:</span>
                 <input
-                  type="text" inputMode="numeric" maxLength={2}
+                  type="number" min="0" max="59"
                   className="form-control linha text-center"
-                  style={{ fontSize: '0.9em', width: '48px', padding: '0.375rem 0.25rem' }}
-                  value={tempoEdit.split(':')[2] ?? '00'}
+                  style={{ fontSize: '0.9em', width: '54px', padding: '0.375rem 0.25rem' }}
+                  value={tempoS}
                   onFocus={e => e.target.select()}
-                  onChange={e => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 2);
-                    const parts = tempoEdit.split(':');
-                    setTempoEdit(`${parts[0]}:${parts[1]}:${val}`);
-                  }}
-                  onBlur={e => {
-                    const parts = tempoEdit.split(':');
-                    setTempoEdit(`${parts[0]}:${parts[1]}:${String(parts[2] || '0').padStart(2,'0')}`);
-                  }}
+                  onChange={e => setTempoS(Math.min(59, Math.max(0, parseInt(e.target.value, 10) || 0)))}
                   placeholder="ss"
                 />
               </div>

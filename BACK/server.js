@@ -1149,6 +1149,154 @@ app.get('/dashboard/resumos', async (req, res) => {
   }
 });
 
+// ROTA GET - Análise de fraquezas (insights)
+app.get('/dashboard/analise', async (req, res) => {
+  try {
+    const { userId, projetoId } = req.query;
+    if (!userId || !projetoId) return res.status(400).json({ error: 'userId e projetoId obrigatórios' });
+
+    const [respostas, simulados, filaItens] = await Promise.all([
+      prisma.resposta.findMany({ where: { userId, projetoId } }),
+      prisma.simulado.findMany({ where: { userId, projetoId }, orderBy: { numSim: 'asc' } }),
+      prisma.filaRevisao.findMany({ where: { userId, projetoId } }),
+    ]);
+
+    // 1. Top edital items com mais erros
+    const editalMap = {};
+    respostas.forEach(r => {
+      if (r.acertou === false && r.editalItem) {
+        editalMap[r.editalItem] = (editalMap[r.editalItem] || 0) + 1;
+      }
+    });
+    const topEditalErros = Object.entries(editalMap)
+      .map(([item, erros]) => ({ item, erros }))
+      .sort((a, b) => b.erros - a.erros)
+      .slice(0, 12);
+
+    // 2. Motivos de erro
+    const motivoMap = {};
+    respostas.forEach(r => {
+      if (r.acertou === false) {
+        const m = r.motivoErro || 'Não informado';
+        motivoMap[m] = (motivoMap[m] || 0) + 1;
+      }
+    });
+    const motivosErro = Object.entries(motivoMap)
+      .map(([motivo, count]) => ({ motivo, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // 3. Análise de chute por matéria
+    const chuteMatMap = {};
+    respostas.forEach(r => {
+      const mat = r.materia || 'Sem matéria';
+      if (!chuteMatMap[mat]) chuteMatMap[mat] = { totalAcertos: 0, chutesAcertos: 0, totalChutes: 0, totalErros: 0 };
+      if (r.acertou === true) {
+        chuteMatMap[mat].totalAcertos++;
+        if (r.chute) chuteMatMap[mat].chutesAcertos++;
+      }
+      if (r.chute) chuteMatMap[mat].totalChutes++;
+      if (r.acertou === false) chuteMatMap[mat].totalErros++;
+    });
+    const chuteStats = Object.entries(chuteMatMap)
+      .map(([materia, s]) => ({
+        materia,
+        totalAcertos: s.totalAcertos,
+        chutesAcertos: s.chutesAcertos,
+        pctChute: s.totalAcertos > 0 ? Math.round((s.chutesAcertos / s.totalAcertos) * 100) : 0,
+        totalChutes: s.totalChutes,
+        totalErros: s.totalErros,
+      }))
+      .filter(s => s.totalAcertos + s.totalErros > 0)
+      .sort((a, b) => b.pctChute - a.pctChute);
+
+    // 4. Evolução % acertos por simulado (geral + por matéria top 5)
+    const evolucaoSimulados = simulados.map(sim => {
+      const resps = respostas.filter(r => r.simuladoId === sim.id);
+      const total = resps.length;
+      const acertos = resps.filter(r => r.acertou === true).length;
+      const erros = resps.filter(r => r.acertou === false).length;
+      const brancos = resps.filter(r => !r.resposta || r.resposta === 'S').length;
+      const pct = total > 0 ? Math.round((acertos / total) * 100) : null;
+      const liquido = total > 0 ? (((acertos - erros) / total) * 100).toFixed(1) : null;
+
+      // Por matéria
+      const porMateria = {};
+      resps.forEach(r => {
+        const mat = r.materia || 'Sem matéria';
+        if (!porMateria[mat]) porMateria[mat] = { acertos: 0, erros: 0, brancos: 0 };
+        if (r.acertou === true) porMateria[mat].acertos++;
+        else if (r.acertou === false) porMateria[mat].erros++;
+        else porMateria[mat].brancos++;
+      });
+
+      return { numSim: sim.numSim, dataSim: sim.dataSim, pctAcertos: pct, pctLiquido: Number(liquido), total, acertos, erros, brancos, porMateria };
+    });
+
+    // 5. Retenção por matéria (da fila de revisão)
+    const retencaoMap = {};
+    filaItens.forEach(f => {
+      const mat = f.materiaNome || 'Sem matéria';
+      if (!retencaoMap[mat]) retencaoMap[mat] = { totalErros: 0, itens: 0, pendentes: 0 };
+      retencaoMap[mat].totalErros += f.totalErros;
+      retencaoMap[mat].itens++;
+      if (f.status === 'pendente') retencaoMap[mat].pendentes++;
+    });
+    const retencaoFila = Object.entries(retencaoMap)
+      .map(([materia, s]) => ({ materia, ...s, mediaErros: (s.totalErros / s.itens).toFixed(1) }))
+      .sort((a, b) => b.totalErros - a.totalErros);
+
+    // 6. Desempenho geral por matéria (todos os simulados)
+    const desempenhoMatMap = {};
+    respostas.forEach(r => {
+      const mat = r.materia || 'Sem matéria';
+      if (!desempenhoMatMap[mat]) desempenhoMatMap[mat] = { acertos: 0, erros: 0, brancos: 0 };
+      if (r.acertou === true) desempenhoMatMap[mat].acertos++;
+      else if (r.acertou === false) desempenhoMatMap[mat].erros++;
+      else desempenhoMatMap[mat].brancos++;
+    });
+    const desempenhoMaterias = Object.entries(desempenhoMatMap)
+      .map(([materia, s]) => {
+        const tot = s.acertos + s.erros + s.brancos;
+        return { materia, ...s, total: tot, pctAcertos: tot > 0 ? Math.round((s.acertos / tot) * 100) : 0, pctLiquido: tot > 0 ? Number(((s.acertos - s.erros) / tot * 100).toFixed(1)) : 0 };
+      })
+      .sort((a, b) => a.pctLiquido - b.pctLiquido);
+
+    // 7. Erros por tópico do edital, por matéria
+    const editalErrosByMateriaRaw = {};
+    const motivosErroByMateriaRaw = {};
+    respostas.forEach(r => {
+      if (r.acertou === false) {
+        const mat = r.materia || 'Sem matéria';
+        if (r.editalItem) {
+          if (!editalErrosByMateriaRaw[mat]) editalErrosByMateriaRaw[mat] = {};
+          editalErrosByMateriaRaw[mat][r.editalItem] = (editalErrosByMateriaRaw[mat][r.editalItem] || 0) + 1;
+        }
+        const motivo = r.motivoErro || 'Não informado';
+        if (!motivosErroByMateriaRaw[mat]) motivosErroByMateriaRaw[mat] = {};
+        motivosErroByMateriaRaw[mat][motivo] = (motivosErroByMateriaRaw[mat][motivo] || 0) + 1;
+      }
+    });
+    const editalErrosByMateria = {};
+    Object.keys(editalErrosByMateriaRaw).forEach(mat => {
+      editalErrosByMateria[mat] = Object.entries(editalErrosByMateriaRaw[mat])
+        .map(([item, erros]) => ({ item, erros }))
+        .sort((a, b) => b.erros - a.erros)
+        .slice(0, 10);
+    });
+    const motivosErroByMateria = {};
+    Object.keys(motivosErroByMateriaRaw).forEach(mat => {
+      motivosErroByMateria[mat] = Object.entries(motivosErroByMateriaRaw[mat])
+        .map(([motivo, count]) => ({ motivo, count }))
+        .sort((a, b) => b.count - a.count);
+    });
+
+    res.json({ topEditalErros, motivosErro, chuteStats, evolucaoSimulados, retencaoFila, desempenhoMaterias, editalErrosByMateria, motivosErroByMateria });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao gerar análise.' });
+  }
+});
+
 // ROTA GET - Buscar edital da matéria
 app.get('/materias/:id/edital', async (req, res) => {
   try {
@@ -2079,17 +2227,26 @@ app.post('/fila-revisao/sync', async (req, res) => {
       const existente = await prisma.filaRevisao.findFirst({ where: { userId, simuladoId, numeroQuestao: q.numero } });
       const acertou = q.acertou;
       const anulada = q.anulada;
+      const ehChute = q.chute || false;
 
-      if (anulada || acertou) {
-        // Acertou ou anulada: remove da fila apenas se estiver pendente
+      if (anulada) {
+        // Anulada: remove da fila se pendente
         if (existente && existente.status === 'pendente') {
           await prisma.filaRevisao.delete({ where: { id: existente.id } });
         }
         continue;
       }
 
-      // Errou ou branco
-      const tipo = q.tipo;  // 'erro' | 'branco'
+      if (acertou && !ehChute) {
+        // Acertou sem chute: remove da fila se pendente
+        if (existente && existente.status === 'pendente') {
+          await prisma.filaRevisao.delete({ where: { id: existente.id } });
+        }
+        continue;
+      }
+
+      // Errou, branco ou chute (acertou mas chutou) — entra/permanece na fila
+      const tipo = ehChute ? 'chute' : (q.tipo || 'erro');  // 'erro' | 'branco' | 'chute'
       const materiaId = (q.materiaId && q.materiaId.trim() !== '') ? q.materiaId : FALLBACK_ID;
       const materiaNome = q.materia || '';
       const editalItem = q.editalItem || '';

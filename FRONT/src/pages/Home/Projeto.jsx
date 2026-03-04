@@ -104,6 +104,10 @@ const Projeto = () => {
 
   async function handleSalvarNomeProjeto(id) {
     if (!novoNomeProjeto.trim()) return;
+    if (projetos.some(p => p.id !== id && p.nome.toLowerCase() === novoNomeProjeto.trim().toLowerCase())) {
+      toast.error('Já existe um projeto com esse nome.');
+      return;
+    }
     try {
       await api.put(`/projetos/${id}`, { nome: novoNomeProjeto });
       setEditandoId(null);
@@ -171,7 +175,11 @@ const Projeto = () => {
       toast.error('Limite de 3 projetos por usuário atingido. Exclua um projeto para criar outro.');
       return;
     }
-    if (!novoProjeto || projetos.some(p => p.nome === novoProjeto)) return;
+    if (!novoProjeto.trim()) return;
+    if (projetos.some(p => p.nome.toLowerCase() === novoProjeto.trim().toLowerCase())) {
+      toast.error('Já existe um projeto com esse nome.');
+      return;
+    }
     try {
       const res = await api.post('/projetos', { nome: novoProjeto, userId: user.id });
       setNovoProjeto('');
@@ -300,11 +308,8 @@ const Projeto = () => {
                               setProjetosPadraoSelecionados(sel => {
                                 if (selecionado) {
                                   return sel.filter(proj => proj.id !== p.id);
-                                } else if (sel.length < 2) {
-                                  return [...sel, p];
                                 } else {
-                                  toast.info('Selecione no máximo 2 projetos padrão.');
-                                  return sel;
+                                  return [p];
                                 }
                               });
                             }}
@@ -328,7 +333,6 @@ const Projeto = () => {
                                 <div className="d-flex align-items-center gap-2" style={{ flex: '1 1 auto', minWidth: 0 }}>
                                   <span className="fw-bold fs-6 titulo" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '360px' }}>
                                     {p.nome.length > 20 ? `${p.nome.slice(0, 20)}...` : p.nome}
-                                    {p.cargo ? ` - ${p.cargo}` : ''}
                                   </span>
                                 </div>
                                 <div style={{ flex: '0 0 auto', marginLeft: 'auto' }}>
@@ -340,6 +344,12 @@ const Projeto = () => {
                                 </div>
                               </div>
                               <div className="mb-1 text-secondary small d-flex flex-row align-items-center gap-3" style={{ lineHeight: 1.3 }}>
+                                {p.cargo && (
+                                  <span style={{ wordBreak: 'break-word', display: 'inline-block' }}>{p.cargo}</span>
+                                )}
+                                {p.descricao && (
+                                  <span style={{ wordBreak: 'break-word', display: 'inline-block', color: 'var(--text-light)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.descricao}</span>
+                                )}
                                 {p.ano && (
                                   <span style={{ wordBreak: 'break-word', maxWidth: '80px', display: 'inline-block' }}>Ano: {p.ano}</span>
                                 )}
@@ -356,7 +366,7 @@ const Projeto = () => {
                 </div>
                 {/* Coluna direita: projetos padrão selecionados SEMPRE visível */}
                 <div className="d-flex  flex-column align-items-end gap-3 w-25" style={{   overflowY: 'auto'}}>
-                  <div className="fw-bold mb-2 ">Projetos padrão selecionados:</div>
+                  <div className="fw-bold mb-2 ">Projeto padrão selecionado:</div>
                   {projetosPadraoSelecionados.length === 0 ? (
                     <div className="text-secondary text-center">Nenhum projeto selecionado.</div>
                   ) : (
@@ -405,11 +415,8 @@ const Projeto = () => {
                         return;
                       }
                       if (projetosPadraoSelecionados.length === 0) return;
-                      // Abrir modal de confirmação de nome do projeto mesclado
                       setShowMergeModal(true);
-                      setNomeProjetoMesclado(
-                        projetosPadraoSelecionados.map(p => p.nome).join(' + ')
-                      );
+                      setNomeProjetoMesclado(projetosPadraoSelecionados[0].nome);
                     }}
                   >Prosseguir</button>
 
@@ -417,42 +424,39 @@ const Projeto = () => {
       <Modal className='modal-fundo' show={showMergeModal} onHide={() => setShowMergeModal(false)} centered backdrop="static">
         <Modal.Body className='modal-estilo'>
           <div className="d-flex justify-content-between align-items-center mb-1">
-            <Modal.Title className='fw-bold fs-5 m-0'>Criar projeto mesclado</Modal.Title>
+            <Modal.Title className='fw-bold fs-5 m-0'>Criar projeto</Modal.Title>
           </div>
           <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>
-            As matérias dos projetos selecionados serão combinadas em um único projeto. Defina um nome curto para identificá-lo.
+            O projeto padrão selecionado será copiado para a sua conta. Defina um nome para identificá-lo.
           </p>
           <form className="needs-validation" noValidate onSubmit={async e => {
             e.preventDefault();
             if (!nomeProjetoMesclado.trim()) return;
+            if (projetos.some(p => p.nome.toLowerCase() === nomeProjetoMesclado.trim().toLowerCase())) {
+              toast.error('Já existe um projeto com esse nome.');
+              return;
+            }
             try {
-              const ids = projetosPadraoSelecionados.map(p => p.id);
-              // Corrigir: enviar array de imagens
-              const imagens = projetosPadraoSelecionados.map(p => p.imagem).filter(Boolean).flatMap(img => Array.isArray(img) ? img : [img]);
-              const res = await api.post('/projetos/mesclar-padrao', {
-                userId: user.id,
-                projetosPadrao: ids,
-                nome: nomeProjetoMesclado,
-                descricao: projetosPadraoSelecionados.map(p => p.nome).join(' + '),
-                imagem: imagens
-              });
-              if (res.data && res.data.id) {
-                setProjetosPadraoSelecionados([]);
-                setShowNovoProjetoForm(false);
-                setProjetoSelecionado(res.data.id);
-                localStorage.setItem('projetoSelecionado', res.data.id);
-                localStorage.setItem('projetoSelecionadoNome', res.data.nome);
-                setProjetoSelecionadoNome(res.data.nome);
-                window.dispatchEvent(new Event('storage'));
-                window.dispatchEvent(new Event('projetosAtualizados'));
-                window.dispatchEvent(new Event('projetoNomeAtualizado'));
-                fetchProjetos();
-                setShowMergeModal(false);
-              } else {
-                toast.error('Erro ao criar projeto.');
+              const projetoPadraoId = projetosPadraoSelecionados[0].id;
+              const res = await api.post('/projetos', { nome: nomeProjetoMesclado.trim(), userId: user.id });
+              if (!res.data || !res.data.id) {
+                toast.error('Erro ao criar novo projeto.');
+                return;
               }
+              await api.post(`/usuarios/${user.id}/copiar-projeto-padrao/${projetoPadraoId}`, { projetoId: res.data.id });
+              setProjetosPadraoSelecionados([]);
+              setShowNovoProjetoForm(false);
+              setProjetoSelecionado(res.data.id);
+              localStorage.setItem('projetoSelecionado', res.data.id);
+              localStorage.setItem('projetoSelecionadoNome', nomeProjetoMesclado.trim());
+              setProjetoSelecionadoNome(nomeProjetoMesclado.trim());
+              window.dispatchEvent(new Event('storage'));
+              window.dispatchEvent(new Event('projetosAtualizados'));
+              window.dispatchEvent(new Event('projetoNomeAtualizado'));
+              fetchProjetos();
+              setShowMergeModal(false);
             } catch (err) {
-              toast.error('Erro ao criar projeto.');
+              toast.error('Erro ao criar projeto ou copiar edital padrão.');
             }
           }}>
             <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Nome do projeto</label>

@@ -532,14 +532,14 @@ h1, h2, h3, h4, h5, h6 {
 .card-padrao-vazio {
   background: none !important;
   border-radius: 1em !important;
-  border: 1px dashed #7d7d7d !important;
-  transition: background 0.3s !important;
+  border: 2px dashed #7d7d7d !important;
+  transition: background 1s !important;
 
 }
 
 .card-padrao-vazio:hover {
   transition: box-shadow 0.3s, border 0.3s !important;
-  background: var(--background-light) !important;
+  background: #0000000a !important;
 
   transition: 0.3s !important;
 }
