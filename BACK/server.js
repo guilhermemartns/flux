@@ -1836,14 +1836,15 @@ app.post('/estudo', async (req, res) => {
   console.log('[POST /estudo] Body completo:', req.body);
   console.log('[POST /estudo] ====== FIM ======');
   
-  if (!userId || !projetoId || !materiaId || !tempo || !categoria || !disciplina) {
+  const isSimulado = (categoria || '').toLowerCase() === 'simulado';
+  if (!userId || !projetoId || !tempo || !categoria || (!isSimulado && (!materiaId || !disciplina))) {
     const missing = [];
     if (!userId) missing.push('userId');
     if (!projetoId) missing.push('projetoId');
-    if (!materiaId) missing.push('materiaId');
+    if (!isSimulado && !materiaId) missing.push('materiaId');
     if (!tempo) missing.push('tempo');
     if (!categoria) missing.push('categoria');
-    if (!disciplina) missing.push('disciplina');
+    if (!isSimulado && !disciplina) missing.push('disciplina');
     
     const errorMsg = `Campos obrigatórios ausentes: ${missing.join(', ')}`;
     console.log('[POST /estudo] ERRO:', errorMsg);
@@ -1859,10 +1860,10 @@ app.post('/estudo', async (req, res) => {
       data: {
         userId,
         projetoId,
-        materiaId,
+        materiaId: materiaId || null,
         tempo: Number(tempo),
         categoria,
-        disciplina,
+        disciplina: disciplina || '',
         dataSessao: dataSessao ? new Date(dataSessao) : new Date(),
         cicloId: cicloId || null,
         cicloVersao

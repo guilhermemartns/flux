@@ -1,7 +1,9 @@
 import Sidebar from './components/sidebar.jsx';
 import React, { useEffect, useState, useContext } from 'react';
 import api from '../../services/api';
-import { Trash, Upload, Edit2, Calendar, Award, CheckCircle, XCircle } from 'react-feather';
+import { Trash, Upload, Edit2, Calendar, Award, CheckCircle } from 'react-feather';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleCheck, faCircleXmark } from '@fortawesome/free-solid-svg-icons';
 import FireIcon from '../../components/FireIcon';
 import { useNavigate } from 'react-router-dom';
 import { Line, Radar } from 'react-chartjs-2';
@@ -316,9 +318,10 @@ const Home = () => {
         }
 
         // Se há dias reais consecutivos, eles se somam à migração
-        // Mas apenas se a sequência atual for maior que a migração sozinha
+        // Sequência só conta a partir de 2 dias consecutivos
         if (diasReaisConsecutivos > 0) {
-          diasConsecutivos = Math.max(diasMigradosStorage, diasMigradosStorage + diasReaisConsecutivos);
+          const total = diasMigradosStorage + diasReaisConsecutivos;
+          diasConsecutivos = total >= 2 ? total : 0;
         }
 
         // Atualiza o recorde se a sequência atual for maior
@@ -853,9 +856,9 @@ const Home = () => {
                         icone = <FireIcon isActive={true} size={18} />;
                       } else if (estudou) {
                         titulo = dentroMigracao ? 'Dia migrado' : 'Estudou';
-                        icone = <FireIcon isActive={false} size={18} />;
+                        icone = <FontAwesomeIcon icon={faCircleCheck} style={{ color: '#71dd8c', fontSize: 16 }} />;
                       } else {
-                        icone = <XCircle size={15} color="#be9da4" strokeWidth={2} />;
+                        icone = <FontAwesomeIcon icon={faCircleXmark} style={{ color: '#ff4757', fontSize: 14 }} />;
                       }
                       const title = `${titulo} - ${day}/${m}/${y}`;
                       return (
@@ -911,8 +914,8 @@ const Home = () => {
                     <div style={{ fontSize: '0.75em', color: 'var(--text-light)', fontWeight: 600, marginTop: '0.2rem' }}>Sequência atual</div>
                   </div>
                   <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }}></div>
-                  <div className="d-flex flex-column align-items-center text-center" style={{ flex: 1 }}>
-                    <div className='d-flex align-items-center gap-1' style={{ fontSize: '1.5em', color: '#ffc107', fontWeight: 700, lineHeight: 1 }}><Award size={18} />{recordeDias} <span style={{ fontSize: '0.5em', fontWeight: 500 }}>dias</span></div>
+                  <div className="d-flex flex-column align-items-start text-start" style={{ flex: 1 }}>
+                    <div className='d-flex align-items-center gap-1' style={{ fontSize: '1.5em', color: '#222', fontWeight: 700, lineHeight: 1 }}><Award size={18} />{recordeDias} <span style={{ fontSize: '0.5em', fontWeight: 500 }}>dias<br/>seguidos</span></div>
                     <div style={{ fontSize: '0.75em', color: 'var(--text-light)', fontWeight: 600, marginTop: '0.2rem' }}>Melhor recorde</div>
                   </div>
                 </div>
@@ -1530,6 +1533,80 @@ const Home = () => {
           {/* Seção: Radar tipos de estudo + Tabela tempo por matéria */}
           <div className="d-flex w-100 align-items-stretch gap-3 fadein" style={{ animationDelay: '0.4s' }}>
 
+          {/* Tabela tempo por matéria */}
+          <div className="card-padrao2" style={{ flex: 1, padding: '0.75rem', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <div className="card-title-padrao">Tempo por Matéria</div>
+            <div className="card-content" style={{ paddingTop: 0, flex: 1 }}>
+              {(() => {
+                const hoje = new Date();
+                const diaSemanaHoje = hoje.getDay();
+                const diff = (diaSemanaHoje - inicioDaSemana + 7) % 7;
+                const inicioSemana = new Date(hoje);
+                inicioSemana.setDate(hoje.getDate() - diff);
+                inicioSemana.setHours(0, 0, 0, 0);
+                const fimSemana = new Date(inicioSemana);
+                fimSemana.setDate(inicioSemana.getDate() + 7);
+                const totalPorMateria = {};
+                const semanaPorMateria = {};
+                let totalSimulado = 0, semanaSimulado = 0;
+                historicoEstudo.forEach(e => {
+                  const isSimulado = (e.categoria || '').toLowerCase() === 'simulado';
+                  const dataSessao = new Date(e.dataSessao);
+                  const naSemana = dataSessao >= inicioSemana && dataSessao < fimSemana;
+                  if (isSimulado) {
+                    totalSimulado += (e.tempo || 0);
+                    if (naSemana) semanaSimulado += (e.tempo || 0);
+                  } else {
+                    const mat = e.disciplina || e.categoria || 'Sem matéria';
+                    totalPorMateria[mat] = (totalPorMateria[mat] || 0) + (e.tempo || 0);
+                    if (naSemana) semanaPorMateria[mat] = (semanaPorMateria[mat] || 0) + (e.tempo || 0);
+                  }
+                });
+                // Usa todasMateriasList para mostrar todas as matérias, mesmo sem estudo
+                const allMats = todasMateriasList.length > 0
+                  ? todasMateriasList
+                  : Object.keys(totalPorMateria).sort((a, b) => totalPorMateria[b] - totalPorMateria[a]);
+                const fmt = min => `${Math.floor(min / 60)}h ${Math.round(min % 60)}min`;
+                if (allMats.length === 0) {
+                  return <div className="text-secondary small text-center py-3">Nenhuma matéria no projeto.</div>;
+                }
+                return (
+                  <div style={{ overflowY: 'auto', maxHeight: 160 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82em' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                          <th style={{ padding: '4px 8px', color: 'var(--text-light)', fontWeight: 600, textAlign: 'left' }}>Matéria</th>
+                          <th style={{ padding: '4px 8px', color: 'var(--text-light)', fontWeight: 600, textAlign: 'right' }}>Esta semana</th>
+                          <th style={{ padding: '4px 8px', color: 'var(--text-light)', fontWeight: 600, textAlign: 'right' }}>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allMats.map(mat => (
+                          <tr key={mat} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '5px 8px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: materiasCoresMap[mat] || '#1b59f9', flexShrink: 0, display: 'inline-block' }} />
+                              {mat}
+                            </td>
+                            <td style={{ padding: '5px 8px', textAlign: 'right', color: (semanaPorMateria[mat] || 0) > 0 ? 'var(--primary-primary)' : 'var(--text-light)' }}>{fmt(semanaPorMateria[mat] || 0)}</td>
+                            <td style={{ padding: '5px 8px', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 600 }}>{fmt(totalPorMateria[mat] || 0)}</td>
+                          </tr>
+                        ))}
+                        <tr style={{ borderTop: '1px solid var(--border)', background: 'rgba(255,149,0,0.06)' }}>
+                          <td style={{ padding: '5px 8px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF9500', flexShrink: 0, display: 'inline-block' }} />
+                            Simulados
+                          </td>
+                          <td style={{ padding: '5px 8px', textAlign: 'right', color: semanaSimulado > 0 ? 'var(--primary-primary)' : 'var(--text-light)' }}>{fmt(semanaSimulado)}</td>
+                          <td style={{ padding: '5px 8px', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 600 }}>{fmt(totalSimulado)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
           {/* Gráfico teia - proporção por tipo de estudo */}
           <div className="card-padrao2" style={{ flex: '0 0 220px', padding: '0.75rem', position: 'relative', display: 'flex', flexDirection: 'column' }}>
             <div className="card-title-padrao">Tipos de Estudo</div>
@@ -1602,80 +1679,6 @@ const Home = () => {
                       ))}
                     </div>
                   </>
-                );
-              })()}
-            </div>
-          </div>
-
-          {/* Tabela tempo por matéria */}
-          <div className="card-padrao2" style={{ flex: 1, padding: '0.75rem', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-            <div className="card-title-padrao">Tempo por Matéria</div>
-            <div className="card-content" style={{ paddingTop: 0, flex: 1 }}>
-              {(() => {
-                const hoje = new Date();
-                const diaSemanaHoje = hoje.getDay();
-                const diff = (diaSemanaHoje - inicioDaSemana + 7) % 7;
-                const inicioSemana = new Date(hoje);
-                inicioSemana.setDate(hoje.getDate() - diff);
-                inicioSemana.setHours(0, 0, 0, 0);
-                const fimSemana = new Date(inicioSemana);
-                fimSemana.setDate(inicioSemana.getDate() + 7);
-                const totalPorMateria = {};
-                const semanaPorMateria = {};
-                let totalSimulado = 0, semanaSimulado = 0;
-                historicoEstudo.forEach(e => {
-                  const isSimulado = (e.categoria || '').toLowerCase() === 'simulado';
-                  const dataSessao = new Date(e.dataSessao);
-                  const naSemana = dataSessao >= inicioSemana && dataSessao < fimSemana;
-                  if (isSimulado) {
-                    totalSimulado += (e.tempo || 0);
-                    if (naSemana) semanaSimulado += (e.tempo || 0);
-                  } else {
-                    const mat = e.disciplina || e.categoria || 'Sem matéria';
-                    totalPorMateria[mat] = (totalPorMateria[mat] || 0) + (e.tempo || 0);
-                    if (naSemana) semanaPorMateria[mat] = (semanaPorMateria[mat] || 0) + (e.tempo || 0);
-                  }
-                });
-                // Usa todasMateriasList para mostrar todas as matérias, mesmo sem estudo
-                const allMats = todasMateriasList.length > 0
-                  ? todasMateriasList
-                  : Object.keys(totalPorMateria).sort((a, b) => totalPorMateria[b] - totalPorMateria[a]);
-                const fmt = min => `${Math.floor(min / 60)}h ${Math.round(min % 60)}min`;
-                if (allMats.length === 0) {
-                  return <div className="text-secondary small text-center py-3">Nenhuma matéria no projeto.</div>;
-                }
-                return (
-                  <div style={{ overflowY: 'auto', maxHeight: 160 }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82em' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                          <th style={{ padding: '4px 8px', color: 'var(--text-light)', fontWeight: 600, textAlign: 'left' }}>Matéria</th>
-                          <th style={{ padding: '4px 8px', color: 'var(--text-light)', fontWeight: 600, textAlign: 'right' }}>Esta semana</th>
-                          <th style={{ padding: '4px 8px', color: 'var(--text-light)', fontWeight: 600, textAlign: 'right' }}>Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {allMats.map(mat => (
-                          <tr key={mat} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '5px 8px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: materiasCoresMap[mat] || '#1b59f9', flexShrink: 0, display: 'inline-block' }} />
-                              {mat}
-                            </td>
-                            <td style={{ padding: '5px 8px', textAlign: 'right', color: (semanaPorMateria[mat] || 0) > 0 ? 'var(--primary-primary)' : 'var(--text-light)' }}>{fmt(semanaPorMateria[mat] || 0)}</td>
-                            <td style={{ padding: '5px 8px', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 600 }}>{fmt(totalPorMateria[mat] || 0)}</td>
-                          </tr>
-                        ))}
-                        <tr style={{ borderTop: '1px solid var(--border)', background: 'rgba(255,149,0,0.06)' }}>
-                          <td style={{ padding: '5px 8px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF9500', flexShrink: 0, display: 'inline-block' }} />
-                            Simulados
-                          </td>
-                          <td style={{ padding: '5px 8px', textAlign: 'right', color: semanaSimulado > 0 ? 'var(--primary-primary)' : 'var(--text-light)' }}>{fmt(semanaSimulado)}</td>
-                          <td style={{ padding: '5px 8px', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 600 }}>{fmt(totalSimulado)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
                 );
               })()}
             </div>

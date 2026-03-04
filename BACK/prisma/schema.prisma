@@ -176,8 +176,8 @@ model Estudo {
   user         User     @relation(fields: [userId], references: [id])
   projetoId    String   @db.ObjectId
   projeto      Projeto  @relation(fields: [projetoId], references: [id])
-  materiaId    String   @db.ObjectId
-  materia      Materia  @relation(fields: [materiaId], references: [id])
+  materiaId    String?  @db.ObjectId
+  materia      Materia? @relation(fields: [materiaId], references: [id])
   tempo        Int
   categoria    String
   disciplina   String

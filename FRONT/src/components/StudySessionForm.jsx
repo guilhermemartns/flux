@@ -252,7 +252,12 @@ const StudySessionForm = () => {
         </form>
         <div className="d-flex justify-content-end gap-2 mt-4">
           <button className="btn btn-outline-primary-primary3" onClick={closeForm}>Cancelar</button>
-          <button className="btn btn-primary-primary3" type="submit" form="study-session-form">{isEditMode ? 'Salvar Alterações' : 'Salvar Sessão'}</button>
+          <button
+            className="btn btn-primary-primary3"
+            type="submit"
+            form="study-session-form"
+            disabled={categoria !== 'simulado' && !disciplina}
+          >{isEditMode ? 'Salvar Alterações' : 'Salvar Sessão'}</button>
         </div>
       </Modal.Body>
     </Modal>
