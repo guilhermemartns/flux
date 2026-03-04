@@ -42,10 +42,14 @@ const projetoMesclarRouter = require('./routes/projetoMesclar');
 app.use('/projetos', projetoMesclarRouter);
 
 // ...existing code...
-// Cria pasta uploads se não existir
+// Cria pasta uploads se não existir (apenas em ambiente local)
 const uploadsDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+  }
+} catch (e) {
+  // Ignora erro em ambientes read-only como o Vercel
 }
 
 // Configuração do multer para upload de imagem (memoryStorage para compatibilidade com Vercel)
