@@ -45,7 +45,8 @@ const Home = () => {
   const [simulados, setSimulados] = useState([]);
   const [resumos, setResumos] = useState({});
   const [loading, setLoading] = useState(true);
-  const [temProjetosCadastrados, setTemProjetosCadastrados] = useState(true); // Assume que tem projetos até verificar
+  const [temProjetosCadastrados, setTemProjetosCadastrados] = useState(false); // Começa como false para evitar flash
+  const [loadingInit, setLoadingInit] = useState(true); // Aguarda verificação inicial
 
   // Recupera projeto selecionado do localStorage (id)
   const [projetoSelecionado, setProjetoSelecionado] = useState(() => localStorage.getItem('projetoSelecionado') || '');
@@ -100,6 +101,8 @@ const Home = () => {
       } catch (error) {
         console.error('Erro ao verificar projetos:', error);
         setTemProjetosCadastrados(false);
+      } finally {
+        setLoadingInit(false);
       }
     }
 
@@ -651,6 +654,14 @@ const Home = () => {
   }
 
   // Adicione esta verificação antes do return:
+  if (loadingInit) {
+    return (
+      <div style={{ width: '100%', height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Spinner animation="border" role="status" />
+      </div>
+    );
+  }
+
   if (!temProjetosCadastrados) {
     // Função para disparar confete centralizado no botão e aguardar animação antes de redirecionar
     const handleIniciarProjeto = (e) => {
@@ -678,7 +689,7 @@ const Home = () => {
 
         <div className="text-center">
 
-          <div className="mb-3 fadein-slideup" style={{ fontSize: '2.5rem', fontWeight: 100, color: 'var(--text-light)', margin: '0 auto', display: 'block', letterSpacing: '3px' }}>@meuflux</div>
+          <img src="/logo.png" alt="Flux" className="mb-4 fadein-slideup" style={{ height: '54px', width: 'auto', display: 'block', margin: '0 auto 1rem' }} />
           <h2 className="mb-4 text-primary-primary fadein-slideup">Bem-vindo ao Flux!</h2>
           <div className="mb-3 fs-5  d-flex justify-content-center align-items-center gap-2 fadein-slideup">
             {fraseDoDia || ''}
@@ -1590,8 +1601,8 @@ const Home = () => {
             </div>
 
             <div className="card-padrao2 fadein text-center d-flex flex-column" style={{ height: '100%', flex: '0 0 calc(30% - 1rem)', width: 'calc(30% - 1rem)', animationDelay: '0.15s', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', fontSize: '0.75rem', fontWeight: 300, letterSpacing: '0.5px', color: 'var(--text-light)' }}>
-                @meuflux
+              <div style={{ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)' }}>
+                <img src="/logo.png" alt="Flux" style={{ height: '22px', width: 'auto', opacity: 0.7 }} />
               </div>
 
               <div className="d-flex flex-column justify-content-center align-items-center h-100">

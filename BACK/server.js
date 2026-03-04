@@ -773,8 +773,11 @@ app.delete('/projetos/:id', async (req, res) => {
       await prisma.cicloEstudo.deleteMany({ where: { materiaId: { in: materiaIds } } });
       await prisma.editalProgresso.deleteMany({ where: { materiaId: { in: materiaIds } } });
     }
-    // Apaga respostas vinculadas ao projeto
+    // Apaga respostas vinculadas ao projeto e às matérias
     await prisma.resposta.deleteMany({ where: { projetoId: id } });
+    if (materiaIds.length > 0) {
+      await prisma.resposta.deleteMany({ where: { materiaId: { in: materiaIds } } });
+    }
     // Apaga respostas vinculadas a simulados do projeto
     const simulados = await prisma.simulado.findMany({ where: { projetoId: id } });
     const simuladoIds = simulados.map(s => s.id);

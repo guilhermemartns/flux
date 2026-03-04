@@ -31,6 +31,8 @@ const Projeto = () => {
   const [carreiraSelecionada, setCarreiraSelecionada] = useState('');
   const [carreiras, setCarreiras] = useState([]);
   const [loadingCarreiras, setLoadingCarreiras] = useState(false);
+  const [loadingCriarProjeto, setLoadingCriarProjeto] = useState(false);
+  const [loadingCriarMesclado, setLoadingCriarMesclado] = useState(false);
   const [loading, setLoading] = useState(true);
   const [delays, setDelays] = useState([]);
 
@@ -180,6 +182,7 @@ const Projeto = () => {
       toast.error('Já existe um projeto com esse nome.');
       return;
     }
+    setLoadingCriarProjeto(true);
     try {
       const res = await api.post('/projetos', { nome: novoProjeto, userId: user.id });
       setNovoProjeto('');
@@ -199,6 +202,8 @@ const Projeto = () => {
       fetchProjetos();
     } catch (err) {
       toast.error('Erro ao criar projeto.');
+    } finally {
+      setLoadingCriarProjeto(false);
     }
   }
 
@@ -297,7 +302,12 @@ const Projeto = () => {
               <div className="d-flex flex-row w-100 gap-3">
                 {/* Coluna esquerda: cards de projetos padrão */}
                 <div className="d-flex flex-column flex-grow-1 gap-3">
-                  {carreiraSelecionada && projetosPadrao.length > 0 ? (
+                  {loadingProjetosPadrao ? (
+                    <div className="d-flex justify-content-center align-items-center mt-4 w-100" style={{ minHeight: 80 }}>
+                      <span className="spinner-border spinner-border-sm text-secondary me-2" role="status" aria-hidden="true"></span>
+                      <span className="text-secondary small">Carregando projetos...</span>
+                    </div>
+                  ) : carreiraSelecionada && projetosPadrao.length > 0 ? (
                     projetosPadrao.map(p => {
                       const selecionado = projetosPadraoSelecionados.some(sel => sel.id === p.id);
                       return (
@@ -434,6 +444,7 @@ const Projeto = () => {
               toast.error('Já existe um projeto com esse nome.');
               return;
             }
+            setLoadingCriarMesclado(true);
             try {
               const projetoPadraoId = projetosPadraoSelecionados[0].id;
               const res = await api.post('/projetos', { nome: nomeProjetoMesclado.trim(), userId: user.id });
@@ -455,6 +466,8 @@ const Projeto = () => {
               setShowMergeModal(false);
             } catch (err) {
               toast.error('Erro ao criar projeto ou copiar edital padrão.');
+            } finally {
+              setLoadingCriarMesclado(false);
             }
           }}>
             <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Nome do projeto</label>
@@ -467,7 +480,9 @@ const Projeto = () => {
             />
             <div className="d-flex justify-content-end gap-2 mt-3">
               <button type="button" className="btn btn-outline-primary-primary3" onClick={() => setShowMergeModal(false)}>Cancelar</button>
-              <button type="submit" className="btn btn-primary-primary3">Criar</button>
+              <button type="submit" className="btn btn-primary-primary3" disabled={loadingCriarMesclado}>
+                {loadingCriarMesclado ? <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Criando...</> : 'Criar'}
+              </button>
             </div>
           </form>
         </Modal.Body>
@@ -697,7 +712,9 @@ const Projeto = () => {
             )}
             <div className="d-flex justify-content-end gap-2 mt-3">
               <button type="button" className="btn btn-outline-primary-primary3" onClick={() => setShowAddModal(false)}>Cancelar</button>
-              <button type="submit" className="btn btn-primary-primary3" disabled={projetos.some(p => p.nome === novoProjeto)}>Adicionar</button>
+              <button type="submit" className="btn btn-primary-primary3" disabled={loadingCriarProjeto || projetos.some(p => p.nome === novoProjeto)}>
+                {loadingCriarProjeto ? <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Criando...</> : 'Adicionar'}
+              </button>
             </div>
           </form>
         </Modal.Body>
