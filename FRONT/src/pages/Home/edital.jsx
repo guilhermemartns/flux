@@ -397,9 +397,9 @@ function Materias() {
         <>
             {!projetoSelecionado ? (
                 <div className="app-container d-flex flex-column justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-                    <div className="text-center">
+                    <div className="d-flex flex-column align-items-center text-center">
                         <Folder size={48} className="mb-3 text-secondary" />
-                        <h4 className="mb-3 text-center  fs-6">
+                        <h4 className="mb-3 text-secondary fs-6">
                             Nenhum projeto selecionado.<br />
                             Selecione ou crie um projeto para acessar o edital.
                         </h4>

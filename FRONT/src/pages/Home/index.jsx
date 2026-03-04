@@ -1,11 +1,11 @@
 import Sidebar from './components/sidebar.jsx';
 import React, { useEffect, useState, useContext } from 'react';
 import api from '../../services/api';
-import { Trash, Upload, Edit2, Zap, Calendar, Award } from 'react-feather';
+import { Trash, Upload, Edit2, Calendar, Award, CheckCircle, XCircle } from 'react-feather';
 import FireIcon from '../../components/FireIcon';
 import { useNavigate } from 'react-router-dom';
-import { Line } from 'react-chartjs-2';
-import { Chart, CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip, Title } from 'chart.js';
+import { Line, Radar } from 'react-chartjs-2';
+import { Chart, CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip, Title, RadialLinearScale, Filler } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 import { Bar } from 'react-chartjs-2';
 import { Badge, Modal, Spinner } from 'react-bootstrap';
@@ -14,7 +14,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import confetti from 'canvas-confetti';
 import { StudyTimerContext } from '../../components/StudyTimerContext';
-Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip, Title);
+Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip, Title, RadialLinearScale, Filler);
 
 
 // Função para ler o estado inicial da sidebar do localStorage
@@ -246,6 +246,8 @@ const Home = () => {
   const [showModalMeta, setShowModalMeta] = useState(false);
   const [metaSemanalHoras, setMetaSemanalHoras] = useState(10);
   const [metaSemanalMinutos, setMetaSemanalMinutos] = useState(0);
+  const [inicioDaSemana, setInicioDaSemana] = useState(() => { const v = parseInt(localStorage.getItem('inicioDaSemana')); return isNaN(v) ? 1 : v; });
+  const [inicioDaSemanaInput, setInicioDaSemanaInput] = useState(() => { const v = parseInt(localStorage.getItem('inicioDaSemana')); return isNaN(v) ? 1 : v; });
   const [diasMigrados, setDiasMigrados] = useState(0); // Novo state para dias migrados
 
   // Estados para migração de horas
@@ -364,6 +366,7 @@ const Home = () => {
   const [resumoPeriodo, setResumoPeriodo] = useState('dia');
 
   const [materiasCoresMap, setMateriasCoresMap] = useState({});
+  const [todasMateriasList, setTodasMateriasList] = useState([]);
   useEffect(() => {
     async function fetchMateriasCores() {
       const projetoId = localStorage.getItem('projetoSelecionado') || '';
@@ -373,6 +376,7 @@ const Home = () => {
       const map = {};
       res.data.forEach(m => { if (m.nome) map[m.nome] = m.cor || '#0d6efd'; });
       setMateriasCoresMap(map);
+      setTodasMateriasList(res.data.map(m => m.nome).filter(Boolean));
     }
     fetchMateriasCores();
   }, []);
@@ -390,6 +394,8 @@ const Home = () => {
         metaSemanal: novaMetaSemanal
       });
       setMetaSemanal(novaMetaSemanal);
+      localStorage.setItem('inicioDaSemana', String(inicioDaSemanaInput));
+      setInicioDaSemana(inicioDaSemanaInput);
       setShowModalMeta(false);
     } catch (err) {
       alert('Erro ao salvar meta semanal.');
@@ -693,7 +699,7 @@ const Home = () => {
           <h2 className="mb-4 text-primary-primary fadein-slideup">Bem-vindo ao Flux!</h2>
           <div className="mb-3 fs-5  d-flex justify-content-center align-items-center gap-2 fadein-slideup">
             {fraseDoDia || ''}
-            <Zap size={16} className="ms-2 text-primary-primary2" />
+            <FireIcon isActive={true} size={16} />
           </div>
           <div className="mb-4 fs-6  fadein-slideup" style={{ color: 'var(--text-light)' }}>
             <p>
@@ -786,7 +792,8 @@ const Home = () => {
                   {(() => {
                     const totalIcons = 30;
                     const hoje = new Date();
-                    // Criar set de datas de estudo reais apenas (usando datas locais)
+                    hoje.setHours(0, 0, 0, 0);
+                    // Criar set de datas de estudo reais
                     const datasEstudoReais = new Set(historicoEstudo.map(e => {
                       try {
                         if (typeof e.dataSessao === 'string' && e.dataSessao.includes('T')) {
@@ -805,32 +812,51 @@ const Home = () => {
                     const usuario = JSON.parse(localStorage.getItem('user'));
                     const projetoId = localStorage.getItem('projetoSelecionado');
                     const diasMigradosStorage = parseInt(localStorage.getItem(`diasMigrados_${usuario?.id}_${projetoId}`)) || 0;
+                    // Montar lista de todas as 30 datas em ordem
+                    const allDates = [...Array(totalIcons)].map((_, i) => {
+                      const d = new Date(hoje);
+                      d.setDate(hoje.getDate() - (totalIcons - 1 - i));
+                      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                    });
+                    // Identificar sequências de 2+ dias consecutivos estudados
+                    const streakDates = new Set();
+                    let runStart = -1;
+                    for (let i = 0; i <= totalIcons; i++) {
+                      const isStudied = i < totalIcons && (datasEstudoReais.has(allDates[i]) || (totalIcons - 1 - i) < diasMigradosStorage);
+                      if (isStudied) {
+                        if (runStart === -1) runStart = i;
+                      } else {
+                        if (runStart !== -1) {
+                          if (i - runStart >= 2) {
+                            for (let j = runStart; j < i; j++) streakDates.add(allDates[j]);
+                          }
+                          runStart = -1;
+                        }
+                      }
+                    }
                     return [...Array(totalIcons)].map((_, i) => {
                       const data = new Date(hoje);
-                      data.setHours(0, 0, 0, 0);
                       data.setDate(hoje.getDate() - (totalIcons - 1 - i));
                       const y = data.getFullYear();
                       const m = String(data.getMonth() + 1).padStart(2, '0');
                       const day = String(data.getDate()).padStart(2, '0');
                       const dataStr = `${y}-${m}-${day}`;
-                      // Verifica se estudou realmente neste dia
+                      const diasAtras = totalIcons - 1 - i;
                       const estudouReal = datasEstudoReais.has(dataStr);
-                      // Verifica se este dia está dentro do período de migração
-                      const diasAtras = totalIcons - 1 - i; // Quantos dias atrás esta div representa
                       const dentroMigracao = diasAtras < diasMigradosStorage;
-                      // Um dia é considerado "estudado" se realmente estudou OU se está dentro da migração
                       const estudou = estudouReal || dentroMigracao;
-                      // Determinar a cor e título baseado no tipo 
-                      let cor = '#be9da4'; // Padrão: não estudou
+                      const emStreak = streakDates.has(dataStr);
                       let titulo = 'Não estudou';
-                      if (estudouReal) {
-                        cor = 'var(--primary-primary)'; // Verde: estudou realmente
-                        titulo = 'Estudou';
-                      } else if (dentroMigracao) {
-                        cor = 'var(--primary-primary-dark)'; // Verde mais escuro: dia migrado
-                        titulo = 'Dia migrado (não faltou)';
+                      let icone;
+                      if (emStreak) {
+                        titulo = 'Streak! Dia consecutivo';
+                        icone = <FireIcon isActive={true} size={18} />;
+                      } else if (estudou) {
+                        titulo = dentroMigracao ? 'Dia migrado' : 'Estudou';
+                        icone = <FireIcon isActive={false} size={18} />;
+                      } else {
+                        icone = <XCircle size={15} color="#be9da4" strokeWidth={2} />;
                       }
-                      // Adiciona o dia no title
                       const title = `${titulo} - ${day}/${m}/${y}`;
                       return (
                         <div
@@ -851,7 +877,7 @@ const Home = () => {
                             borderRadius: i === 0 ? '6px 0 0 6px' : i === totalIcons - 1 ? '0 6px 6px 0' : 0,
                           }}
                         >
-                          <FireIcon isActive={estudou} size={18} />
+                          {icone}
                         </div>
                       );
                     });
@@ -881,7 +907,7 @@ const Home = () => {
                   </div>
                   <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }}></div>
                   <div className="d-flex flex-column align-items-center text-center" style={{ flex: 1 }}>
-                    <div className='d-flex align-items-center gap-1' style={{ fontSize: '2.4em', color: 'var(--primary-primary)', fontWeight: 700, lineHeight: 1 }}><Zap size={22} />{diasSemFalhar} <span style={{ fontSize: '0.5em', fontWeight: 500 }}>dias</span></div>
+                    <div className='d-flex align-items-center gap-1' style={{ fontSize: '2.4em', color: 'var(--primary-primary)', fontWeight: 700, lineHeight: 1 }}><FireIcon isActive={true} size={22} />{diasSemFalhar} <span style={{ fontSize: '0.5em', fontWeight: 500 }}>dias</span></div>
                     <div style={{ fontSize: '0.75em', color: 'var(--text-light)', fontWeight: 600, marginTop: '0.2rem' }}>Sequência atual</div>
                   </div>
                   <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', alignSelf: 'stretch' }}></div>
@@ -1034,6 +1060,7 @@ const Home = () => {
                 <button className="btn btn-sm btn-link p-0 text-primary-primary" style={{ marginLeft: 'auto' }} onClick={() => {
                   setMetaSemanalHoras(Math.floor(metaSemanal));
                   setMetaSemanalMinutos(Math.round((metaSemanal % 1) * 60));
+                  setInicioDaSemanaInput(inicioDaSemana);
                   setShowModalMeta(true);
                 }}>
                   <Edit2 size={14} />
@@ -1044,11 +1071,15 @@ const Home = () => {
                   {(() => {
                     const hoje = new Date();
                     const dias = [];
-                    // Começar de hoje (i=0) e voltar 6 dias (i=6), totalizando 7 dias
+                    // Calcula o início da semana conforme preferência do usuário
+                    const diaSemanaHoje = hoje.getDay(); // 0=Dom, 1=Seg...
+                    const diff = (diaSemanaHoje - inicioDaSemana + 7) % 7;
+                    const inicioSemana = new Date(hoje);
+                    inicioSemana.setDate(hoje.getDate() - diff);
                     for (let i = 0; i < 7; i++) {
-                      const d = new Date(hoje);
-                      d.setDate(hoje.getDate() - i);
-                      dias.unshift(d); // Adiciona no início para manter ordem cronológica
+                      const d = new Date(inicioSemana);
+                      d.setDate(inicioSemana.getDate() + i);
+                      dias.push(d);
                     }
                     function formatDateForComparison(date) {
                       if (typeof date === 'string') {
@@ -1092,6 +1123,13 @@ const Home = () => {
                           plugins: {
                             legend: { display: false },
                             tooltip: {
+                              enabled: true,
+                              backgroundColor: 'rgba(30,30,30,0.95)',
+                              titleColor: '#fff',
+                              bodyColor: '#71dd8c',
+                              borderColor: 'rgba(255,255,255,0.12)',
+                              borderWidth: 1,
+                              padding: 8,
                               callbacks: {
                                 title: function (context) {
                                   return labelsCompletos[context[0].dataIndex];
@@ -1099,11 +1137,12 @@ const Home = () => {
                                 label: function (context) {
                                   const horas = Math.floor(context.parsed.y);
                                   const minutos = Math.round((context.parsed.y - horas) * 60);
-                                  return `Horas: ${horas}h ${minutos}min`;
+                                  return `${horas}h ${minutos}min`;
                                 }
                               }
                             }
                           },
+                          interaction: { mode: 'index', intersect: false },
                           scales: {
                             x: { grid: { display: true, color: 'rgba(255,255,255,0.08)' }, ticks: { color: 'var(--text-light)', font: { size: 9 } } },
                             y: { grid: { display: false }, ticks: { color: 'var(--text-light)', font: { size: 9 }, stepSize: 1, precision: 0, callback: (v) => Number.isInteger(v) ? v : '' } }
@@ -1123,14 +1162,18 @@ const Home = () => {
                   <span className="fw-bold">Progresso:</span>
                   {(() => {
                     const hoje = new Date();
-                    const dias = [];
-                    for (let i = 0; i < 7; i++) {
-                      const d = new Date(hoje);
-                      d.setDate(hoje.getDate() - i);
-                      dias.push(d.toDateString());
-                    }
-                    const estudos7dias = historicoEstudo.filter(e => dias.includes(new Date(e.dataSessao).toDateString()));
-                    const totalMin = estudos7dias.reduce((acc, est) => acc + (est.tempo || 0), 0);
+                    const diaSemanaHoje = hoje.getDay();
+                    const diff = (diaSemanaHoje - inicioDaSemana + 7) % 7;
+                    const inicioSemana = new Date(hoje);
+                    inicioSemana.setDate(hoje.getDate() - diff);
+                    inicioSemana.setHours(0, 0, 0, 0);
+                    const fimSemana = new Date(inicioSemana);
+                    fimSemana.setDate(inicioSemana.getDate() + 7);
+                    const estudosSemana = historicoEstudo.filter(e => {
+                      const d = new Date(e.dataSessao);
+                      return d >= inicioSemana && d < fimSemana;
+                    });
+                    const totalMin = estudosSemana.reduce((acc, est) => acc + (est.tempo || 0), 0);
                     const totalHoras = totalMin / 60;
                     const progresso = Math.min((totalHoras / metaSemanal) * 100, 100);
                     return (
@@ -1149,14 +1192,18 @@ const Home = () => {
                   <span className="ms-2">
                     {(() => {
                       const hoje = new Date();
-                      const dias = [];
-                      for (let i = 0; i < 7; i++) {
-                        const d = new Date(hoje);
-                        d.setDate(hoje.getDate() - i);
-                        dias.push(d.toDateString());
-                      }
-                      const estudos7dias = historicoEstudo.filter(e => dias.includes(new Date(e.dataSessao).toDateString()));
-                      const totalMin = estudos7dias.reduce((acc, est) => acc + (est.tempo || 0), 0);
+                      const diaSemanaHoje = hoje.getDay();
+                      const diff = (diaSemanaHoje - inicioDaSemana + 7) % 7;
+                      const inicioSemana = new Date(hoje);
+                      inicioSemana.setDate(hoje.getDate() - diff);
+                      inicioSemana.setHours(0, 0, 0, 0);
+                      const fimSemana = new Date(inicioSemana);
+                      fimSemana.setDate(inicioSemana.getDate() + 7);
+                      const estudosSemana = historicoEstudo.filter(e => {
+                        const d = new Date(e.dataSessao);
+                        return d >= inicioSemana && d < fimSemana;
+                      });
+                      const totalMin = estudosSemana.reduce((acc, est) => acc + (est.tempo || 0), 0);
                       const horasEstudadas = Math.floor(totalMin / 60);
                       const minutosEstudados = Math.round(totalMin % 60);
                       const metaMin = Math.round(metaSemanal * 60);
@@ -1174,9 +1221,24 @@ const Home = () => {
                       <div className="d-flex justify-content-between align-items-center mb-1">
                         <Modal.Title className="fw-bold fs-5 m-0">Meta Semanal</Modal.Title>
                       </div>
-                      <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>
-                        Defina quantas horas você quer estudar por semana. O progresso é exibido no card da barra semanal e reinicia toda segunda-feira.
+                      <p className="text-secondary mb-3" style={{ fontSize: '0.8em' }}>
+                        Defina quantas horas você quer estudar por semana.
                       </p>
+                      <div className="mb-3">
+                        <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Início da semana</label>
+                        <div className="d-flex gap-2">
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${inicioDaSemanaInput === 1 ? 'btn-primary-primary' : 'btn-outline-primary-primary'}`}
+                            onClick={() => setInicioDaSemanaInput(1)}
+                          >Segunda-feira</button>
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${inicioDaSemanaInput === 0 ? 'btn-primary-primary' : 'btn-outline-primary-primary'}`}
+                            onClick={() => setInicioDaSemanaInput(0)}
+                          >Domingo</button>
+                        </div>
+                      </div>
                       <div className="d-flex gap-3 align-items-end mb-3">
                         <div>
                           <label className="form-label fw-semibold" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Horas</label>
@@ -1209,6 +1271,7 @@ const Home = () => {
                         <button className="btn btn-outline-primary-primary3" onClick={() => {
                           setMetaSemanalHoras(Math.floor(metaSemanal));
                           setMetaSemanalMinutos(Math.round((metaSemanal % 1) * 60));
+                          setInicioDaSemanaInput(inicioDaSemana);
                           setShowModalMeta(false);
                         }}>Cancelar</button>
                         <button className="btn btn-primary-primary3" onClick={handleSalvarMetaSemanal}>Salvar</button>
@@ -1414,6 +1477,12 @@ const Home = () => {
                               plugins: {
                                 legend: { display: false },
                                 tooltip: {
+                                  backgroundColor: 'rgba(30,30,30,0.95)',
+                                  titleColor: '#fff',
+                                  bodyColor: '#ccc',
+                                  borderColor: 'rgba(255,255,255,0.12)',
+                                  borderWidth: 1,
+                                  padding: 8,
                                   callbacks: {
                                     label: function (context) {
                                       const idx = context.dataIndex;
@@ -1455,6 +1524,162 @@ const Home = () => {
             </div>
 
 
+
+          </div>
+
+          {/* Seção: Radar tipos de estudo + Tabela tempo por matéria */}
+          <div className="d-flex w-100 align-items-stretch gap-3 fadein" style={{ animationDelay: '0.4s' }}>
+
+          {/* Gráfico teia - proporção por tipo de estudo */}
+          <div className="card-padrao2" style={{ flex: '0 0 220px', padding: '0.75rem', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <div className="card-title-padrao">Tipos de Estudo</div>
+            <div className="card-content d-flex align-items-center justify-content-center flex-column" style={{ flex: 1 }}>
+              {(() => {
+                const cats = { Teoria: 0, 'Revisão': 0, 'Questões': 0, Simulado: 0, Outros: 0 };
+                historicoEstudo.forEach(e => {
+                  const c = (e.categoria || '').toLowerCase();
+                  if (c === 'teoria') cats.Teoria += (e.tempo || 0);
+                  else if (c === 'revisao' || c === 'revisão') cats['Revisão'] += (e.tempo || 0);
+                  else if (c === 'questoes' || c === 'questões') cats['Questões'] += (e.tempo || 0);
+                  else if (c === 'simulado') cats.Simulado += (e.tempo || 0);
+                  else cats.Outros += (e.tempo || 0);
+                });
+                const labels = Object.keys(cats);
+                const data = Object.values(cats);
+                const total = data.reduce((a, b) => a + b, 0);
+                if (total === 0) return <div className="text-secondary small text-center">Sem dados ainda.</div>;
+                return (
+                  <>
+                    <div style={{ width: '100%', maxWidth: 170, margin: '0 auto' }}>
+                      <Radar
+                        data={{
+                          labels,
+                          datasets: [{
+                            label: 'Minutos',
+                            data,
+                            backgroundColor: 'rgba(27,89,249,0.15)',
+                            borderColor: '#1b59f9',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#1b59f9',
+                            pointRadius: 4,
+                            fill: true,
+                          }]
+                        }}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: true,
+                          scales: {
+                            r: {
+                              ticks: { display: false, backdropColor: 'transparent' },
+                              grid: { color: 'rgba(255,255,255,0.12)' },
+                              angleLines: { color: 'rgba(255,255,255,0.12)' },
+                              pointLabels: { color: 'var(--text-light)', font: { size: 10 } },
+                            }
+                          },
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                              backgroundColor: 'rgba(30,30,30,0.95)',
+                              titleColor: '#fff',
+                              bodyColor: '#ccc',
+                              borderColor: 'rgba(255,255,255,0.12)',
+                              borderWidth: 1,
+                              padding: 8,
+                              callbacks: {
+                                label: ctx => ` ${Math.floor(ctx.raw / 60)}h ${Math.round(ctx.raw % 60)}min`
+                              }
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="d-flex flex-wrap justify-content-center gap-2 mt-1">
+                      {labels.map((l, i) => data[i] > 0 && (
+                        <span key={l} style={{ fontSize: '0.68em', color: 'var(--text-light)' }}>
+                          <span style={{ color: '#1b59f9', marginRight: 2 }}>●</span>
+                          {l}: {Math.round(data[i] / total * 100)}%
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Tabela tempo por matéria */}
+          <div className="card-padrao2" style={{ flex: 1, padding: '0.75rem', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <div className="card-title-padrao">Tempo por Matéria</div>
+            <div className="card-content" style={{ paddingTop: 0, flex: 1 }}>
+              {(() => {
+                const hoje = new Date();
+                const diaSemanaHoje = hoje.getDay();
+                const diff = (diaSemanaHoje - inicioDaSemana + 7) % 7;
+                const inicioSemana = new Date(hoje);
+                inicioSemana.setDate(hoje.getDate() - diff);
+                inicioSemana.setHours(0, 0, 0, 0);
+                const fimSemana = new Date(inicioSemana);
+                fimSemana.setDate(inicioSemana.getDate() + 7);
+                const totalPorMateria = {};
+                const semanaPorMateria = {};
+                let totalSimulado = 0, semanaSimulado = 0;
+                historicoEstudo.forEach(e => {
+                  const isSimulado = (e.categoria || '').toLowerCase() === 'simulado';
+                  const dataSessao = new Date(e.dataSessao);
+                  const naSemana = dataSessao >= inicioSemana && dataSessao < fimSemana;
+                  if (isSimulado) {
+                    totalSimulado += (e.tempo || 0);
+                    if (naSemana) semanaSimulado += (e.tempo || 0);
+                  } else {
+                    const mat = e.disciplina || e.categoria || 'Sem matéria';
+                    totalPorMateria[mat] = (totalPorMateria[mat] || 0) + (e.tempo || 0);
+                    if (naSemana) semanaPorMateria[mat] = (semanaPorMateria[mat] || 0) + (e.tempo || 0);
+                  }
+                });
+                // Usa todasMateriasList para mostrar todas as matérias, mesmo sem estudo
+                const allMats = todasMateriasList.length > 0
+                  ? todasMateriasList
+                  : Object.keys(totalPorMateria).sort((a, b) => totalPorMateria[b] - totalPorMateria[a]);
+                const fmt = min => `${Math.floor(min / 60)}h ${Math.round(min % 60)}min`;
+                if (allMats.length === 0) {
+                  return <div className="text-secondary small text-center py-3">Nenhuma matéria no projeto.</div>;
+                }
+                return (
+                  <div style={{ overflowY: 'auto', maxHeight: 160 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82em' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                          <th style={{ padding: '4px 8px', color: 'var(--text-light)', fontWeight: 600, textAlign: 'left' }}>Matéria</th>
+                          <th style={{ padding: '4px 8px', color: 'var(--text-light)', fontWeight: 600, textAlign: 'right' }}>Esta semana</th>
+                          <th style={{ padding: '4px 8px', color: 'var(--text-light)', fontWeight: 600, textAlign: 'right' }}>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allMats.map(mat => (
+                          <tr key={mat} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '5px 8px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: materiasCoresMap[mat] || '#1b59f9', flexShrink: 0, display: 'inline-block' }} />
+                              {mat}
+                            </td>
+                            <td style={{ padding: '5px 8px', textAlign: 'right', color: (semanaPorMateria[mat] || 0) > 0 ? 'var(--primary-primary)' : 'var(--text-light)' }}>{fmt(semanaPorMateria[mat] || 0)}</td>
+                            <td style={{ padding: '5px 8px', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 600 }}>{fmt(totalPorMateria[mat] || 0)}</td>
+                          </tr>
+                        ))}
+                        <tr style={{ borderTop: '1px solid var(--border)', background: 'rgba(255,149,0,0.06)' }}>
+                          <td style={{ padding: '5px 8px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FF9500', flexShrink: 0, display: 'inline-block' }} />
+                            Simulados
+                          </td>
+                          <td style={{ padding: '5px 8px', textAlign: 'right', color: semanaSimulado > 0 ? 'var(--primary-primary)' : 'var(--text-light)' }}>{fmt(semanaSimulado)}</td>
+                          <td style={{ padding: '5px 8px', textAlign: 'right', color: 'var(--text-secondary)', fontWeight: 600 }}>{fmt(totalSimulado)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
 
           </div>
 
@@ -1571,6 +1796,7 @@ const Home = () => {
                       ]
                     }}
                     options={{
+                      interaction: { mode: 'index', intersect: false },
                       scales: {
                         x: { grid: { display: false }, ticks: { color: 'var(--text-light)' } },
                         y: {
@@ -1585,7 +1811,17 @@ const Home = () => {
                           }
                         }
                       },
-                      plugins: { legend: { display: false } },
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                          backgroundColor: 'rgba(30,30,30,0.95)',
+                          titleColor: '#fff',
+                          bodyColor: '#ccc',
+                          borderColor: 'rgba(255,255,255,0.12)',
+                          borderWidth: 1,
+                          padding: 8,
+                        }
+                      },
                       responsive: true,
                       maintainAspectRatio: false,
                       animation: false,
@@ -1725,6 +1961,7 @@ const Home = () => {
                               }
                             }]}
                             options={{
+                              interaction: { mode: 'index', intersect: false },
                               scales: {
                                 x: {
                                   grid: { display: false },
@@ -1755,6 +1992,12 @@ const Home = () => {
                               plugins: {
                                 legend: { display: false },
                                 tooltip: {
+                                  backgroundColor: 'rgba(30,30,30,0.95)',
+                                  titleColor: '#fff',
+                                  bodyColor: '#ccc',
+                                  borderColor: 'rgba(255,255,255,0.12)',
+                                  borderWidth: 1,
+                                  padding: 8,
                                   callbacks: {
                                     title: (tooltipItems) => {
                                       // Mostra o nome do simulado

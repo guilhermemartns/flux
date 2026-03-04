@@ -818,7 +818,8 @@ app.post('/login', async (req, res) => {
     if (!email || !senha) {
       return res.status(400).json({ error: 'Preencha email e senha.' });
     }
-    const usuario = await prisma.user.findUnique({ where: { email } });
+    const emailNormalizado = email.trim().toLowerCase();
+    const usuario = await prisma.user.findFirst({ where: { email: { equals: emailNormalizado, mode: 'insensitive' } } });
     if (!usuario) {
       return res.status(401).json({ error: 'Email ou senha inválidos.' });
     }
@@ -894,6 +895,19 @@ app.post('/criar-admin', async (req, res) => {
   } catch (error) {
     console.error('Erro ao criar admin:', error);
     res.status(500).json({ error: 'Erro ao criar admin.', details: error.message });
+  }
+});
+
+// ROTA GET - Buscar usuário por ID
+app.get('/usuarios/:id', autenticar, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const usuario = await prisma.user.findUnique({ where: { id } });
+    if (!usuario) return res.status(404).json({ error: 'Usuário não encontrado.' });
+    const { senha, ...dadosPublicos } = usuario;
+    res.status(200).json(dadosPublicos);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar usuário.', details: error.message });
   }
 });
 

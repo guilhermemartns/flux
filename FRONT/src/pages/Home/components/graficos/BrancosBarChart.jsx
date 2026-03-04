@@ -87,6 +87,12 @@ const BrancosBarChart = ({ brancos, materia, height = 200, editalItens, page = 0
       legend: { display: false },
       title: { display: false },
       tooltip: {
+        backgroundColor: 'rgba(30,30,30,0.95)',
+        titleColor: '#fff',
+        bodyColor: '#ccc',
+        borderColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1,
+        padding: 8,
         callbacks: {
           title: (tooltipItems) => {
             const label = tooltipItems[0].label;

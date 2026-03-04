@@ -412,9 +412,9 @@ const Ciclo = () => {
   if (!projetoSelecionado) {
     return (
       <div className="app-container d-flex flex-column justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-        <div className="text-center">
+        <div className="d-flex flex-column align-items-center text-center">
           <FontAwesomeIcon icon={faFolderOpen} size="4x" className="mb-3 text-secondary" />
-          <h4 className="mb-3 text-center fs-6">
+          <h4 className="mb-3 fs-6 text-secondary">
             Nenhum projeto selecionado.<br />
             Selecione ou crie um projeto para acessar o ciclo de estudo.
           </h4>
@@ -429,9 +429,9 @@ const Ciclo = () => {
   if (materiasProjeto.length === 0) {
     return (
       <div className="app-container d-flex flex-column justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-        <div className="text-center">
+        <div className="d-flex flex-column align-items-center text-center">
           <FontAwesomeIcon icon={faFolderOpen} size="4x" className="mb-3 text-secondary" />
-          <h4 className="mb-3 text-center fs-6">
+          <h4 className="mb-3 fs-6 text-secondary">
             Nenhuma matéria cadastrada.<br />
             Adicione matérias ao edital antes de cadastrar ciclos de estudo.
           </h4>
@@ -450,7 +450,7 @@ const Ciclo = () => {
         {!cicloSalvo && !editando && (
           <div className="d-flex flex-column justify-content-center align-items-center fadein" style={{ animationDelay: '0.1s' }}>
             <FontAwesomeIcon icon={faFaceSadTear} size="4x" className="mb-3 text-secondary" />
-            <h4 className="mb-3 text-center fs-6">Não há um ciclo de estudo cadastrado.</h4>
+            <h4 className="mb-3 text-center fs-6 text-secondary">Não há um ciclo de estudo cadastrado.</h4>
             <button className="btn btn-primary-primary px-4 py-2" onClick={() => setEditando(true)}>
               Criar Ciclo de Estudo
             </button>
@@ -913,6 +913,12 @@ const Ciclo = () => {
                                 plugins: {
                                   legend: { display: false },
                                   tooltip: {
+                                    backgroundColor: 'rgba(30,30,30,0.95)',
+                                    titleColor: '#fff',
+                                    bodyColor: '#ccc',
+                                    borderColor: 'rgba(255,255,255,0.12)',
+                                    borderWidth: 1,
+                                    padding: 8,
                                     callbacks: {
                                       label: (tooltipItem) => {
                                         const dataset = tooltipItem.dataset;

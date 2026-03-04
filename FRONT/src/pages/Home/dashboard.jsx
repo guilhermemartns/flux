@@ -415,9 +415,9 @@ const Dashboard = () => {
   if (!projetoSelecionado) {
     return (
       <div className="app-container d-flex flex-column justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-        <div className="text-center">
+        <div className="d-flex flex-column align-items-center text-center">
           <Folder size={48} className="mb-3 text-secondary" />
-          <h4 className="mb-3 text-center fs-6">Nenhum projeto selecionado.<br />Selecione ou crie um projeto para acessar o dashboard.</h4>
+          <h4 className="mb-3 fs-6 text-secondary">Nenhum projeto selecionado.<br />Selecione ou crie um projeto para acessar o dashboard.</h4>
           <button className="btn btn-primary-primary px-4 py-2" onClick={() => navigate('/projeto')}>
             Ir para Projetos
           </button>
@@ -515,7 +515,7 @@ const Dashboard = () => {
                 <div className="card-title-padrao">Evolução da Pontuação</div>
                 <div className="card-content" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', maxHeight: '200px' }}>
-                    <Line data={chartData} options={{ scales: { x: { grid: { color: '#bbb' }, ticks: { color: '#bbb' } }, y: { grid: { display: false }, ticks: { color: '#bbb' } } }, plugins: { legend: { display: false } } }}
+                    <Line data={chartData} options={{ interaction: { mode: 'index', intersect: false }, scales: { x: { grid: { color: '#bbb' }, ticks: { color: '#bbb' } }, y: { grid: { display: false }, ticks: { color: '#bbb' } } }, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(30,30,30,0.95)', titleColor: '#fff', bodyColor: '#ccc', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1, padding: 8 } } }}
                       plugins={[{ beforeDatasetsDraw: (chart) => { const ctx = chart.ctx; const chartArea = chart.chartArea; if (!chartArea) return; const datasetIndex = chart.data.datasets.findIndex(ds => ds.label === 'Líquido'); if (datasetIndex === -1) return; const meta = chart.getDatasetMeta(datasetIndex); ctx.save(); const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom); gradient.addColorStop(0, '#1b59f9'); gradient.addColorStop(1, 'rgba(65,134,235,0.05)'); ctx.globalAlpha = 0.5; ctx.fillStyle = gradient; ctx.beginPath(); meta.data.forEach((point, i) => { if (i === 0) ctx.moveTo(point.x, chartArea.bottom); ctx.lineTo(point.x, point.y); }); meta.data.slice().reverse().forEach((point) => { ctx.lineTo(point.x, chartArea.bottom); }); ctx.closePath(); ctx.fill(); ctx.restore(); } }]}
                     />
                   </div>
@@ -606,7 +606,7 @@ const Dashboard = () => {
                     <div style={{ textAlign: 'center', color: '#888', padding: '2em' }}>Nenhum dado para exibir.</div>
                   ) : (
                     <div style={{ width: '100%', height: '250px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                      <Bar data={materiasChartData} options={{ indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { title: { display: false }, grid: { color: '#bbb' }, ticks: { color: '#bbb', font: { size: 10 }, callback: v => v + '%' } }, y: { grid: { display: false }, ticks: { color: '#bbb', font: { size: 11 } } } } }} />
+                      <Bar data={materiasChartData} options={{ interaction: { mode: 'index', intersect: false }, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(30,30,30,0.95)', titleColor: '#fff', bodyColor: '#ccc', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1, padding: 8 } }, scales: { x: { title: { display: false }, grid: { color: '#bbb' }, ticks: { color: '#bbb', font: { size: 10 }, callback: v => v + '%' } }, y: { grid: { display: false }, ticks: { color: '#bbb', font: { size: 11 } } } } }} />
                     </div>
                   )}
                 </div>
@@ -700,7 +700,7 @@ const Dashboard = () => {
                           ) : (
                             <div style={{ width: '100%', height: '100%' }}>
                               <Line data={{ labels: evolucao.map(e => `#${e.numSim}`), datasets: [{ label: '% Líquido', data: evolucao.map(e => e.pctLiquido), borderColor: corMat, backgroundColor: corMat + '22', fill: true, tension: 0.3, pointRadius: 4 }] }}
-                                options={{ maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#aaa', font: { size: 10 }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }} />
+                                options={{ maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(30,30,30,0.95)', titleColor: '#fff', bodyColor: '#ccc', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1, padding: 8 } }, scales: { x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#aaa', font: { size: 10 }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }} />
                             </div>
                           )}
                         </div>
@@ -713,7 +713,7 @@ const Dashboard = () => {
                           {editalErros.length === 0 ? <div className="text-secondary small d-flex align-items-center justify-content-center h-100">Sem dados de edital.</div> : (
                             <div style={{ width: '100%', height: Math.max(220, editalErros.length * 28) }}>
                               <Bar data={{ labels: editalErros.map(e => e.item.length > 35 ? e.item.slice(0, 33) + '…' : e.item), datasets: [{ label: 'Erros', data: editalErros.map(e => e.erros), backgroundColor: corMat + '88', borderColor: corMat, borderWidth: 1 }] }}
-                                options={{ maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#ccc', font: { size: 10 } }, grid: { display: false } } } }} />
+                                options={{ maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(30,30,30,0.95)', titleColor: '#fff', bodyColor: '#ccc', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1, padding: 8 } }, scales: { x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#ccc', font: { size: 10 } }, grid: { display: false } } } }} />
                             </div>
                           )}
                         </div>
@@ -727,7 +727,7 @@ const Dashboard = () => {
                             <>
                               <div style={{ width: '110px', height: '110px', flexShrink: 0 }}>
                                 <Pie data={{ labels: motivosErroMat.map(m => m.motivo), datasets: [{ data: motivosErroMat.map(m => m.count), backgroundColor: motivosErroMat.map((_, i) => MOTIVO_COLORS[i % MOTIVO_COLORS.length] + 'CC'), borderColor: motivosErroMat.map((_, i) => MOTIVO_COLORS[i % MOTIVO_COLORS.length]), borderWidth: 1 }] }}
-                                  options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+                                  options={{ maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(30,30,30,0.95)', titleColor: '#fff', bodyColor: '#ccc', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1, padding: 8 } } }} />
                               </div>
                               <div className="d-flex flex-column gap-1 mt-2 w-100">
                                 {motivosErroMat.map((m, i) => (

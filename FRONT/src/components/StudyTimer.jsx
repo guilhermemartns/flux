@@ -150,6 +150,15 @@ const StudyTimer = () => {
 
   // Função para parar e resetar
   const handleStop = () => {
+    // Minimiza tela cheia antes de qualquer outra ação
+    if (isMaximized) {
+      setIsMaximized(false);
+      setTimeout(() => {
+        setShowMaximized(false);
+        setShowSidebar(true);
+      }, 200);
+    }
+
     if (time > 0) {
       // Salvar tempo estudado
       const today = new Date().toDateString();

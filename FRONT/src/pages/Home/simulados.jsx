@@ -405,9 +405,9 @@ function Home() {
   if (!projetoSelecionado) {
     return (
       <div className="app-container d-flex flex-column justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-        <div className="text-center">
+        <div className="d-flex flex-column align-items-center text-center">
           <Folder size={56} className="mb-3 text-secondary" />
-          <h4 className="mb-3 text-center fs-6">Nenhum projeto selecionado.<br />Selecione ou crie um projeto para acessar os simulados.</h4>
+          <h4 className="mb-3 fs-6 text-secondary">Nenhum projeto selecionado.<br />Selecione ou crie um projeto para acessar os simulados.</h4>
           <button className="btn btn-primary-primary px-4 py-2" onClick={() => navigate('/projeto')}>
             Ir para Projetos
           </button>
@@ -420,9 +420,9 @@ function Home() {
   if (!materiasLoading && materiasProjeto.length === 0) {
     return (
       <div className="app-container d-flex flex-column justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-        <div className="text-center">
+        <div className="d-flex flex-column align-items-center text-center">
           <Folder size={56} className="mb-3 text-secondary" />
-          <h4 className="mb-3 text-center fs-6">
+          <h4 className="mb-3 fs-6 text-secondary">
             Nenhuma matéria cadastrada.<br />
             Adicione matérias ao edital antes de cadastrar simulados.
           </h4>

@@ -92,11 +92,12 @@ const StudySessionForm = () => {
         alert('Erro: Projeto não selecionado. Selecione um projeto.');
         return;
       }
-      if (!disciplina) {
+      const isSimulado = (categoria === 'simulado' || categoriaFinal === 'simulado');
+      if (!isSimulado && !disciplina) {
         alert('Erro: Disciplina não selecionada.');
         return;
       }
-      if (!materiaObj) {
+      if (!isSimulado && !materiaObj) {
         alert('Erro: Matéria não encontrada.');
         return;
       }
@@ -116,13 +117,14 @@ const StudySessionForm = () => {
         cicloId = ciclo ? ciclo.id : null;
       }
       
+      const isSimuladoPayload = (categoria === 'simulado' || categoriaFinal === 'simulado');
       const payload = {
         userId,
         projetoId,
-        materiaId: materiaObj.id,
+        materiaId: isSimuladoPayload ? null : materiaObj?.id,
         tempo: tempoMinutos,
         categoria: categoriaFinal,
-        disciplina,
+        disciplina: isSimuladoPayload ? '' : disciplina,
         dataSessao: dataSessao + 'T00:00:00.000Z',
         cicloId: cicloId || null
       };
@@ -156,6 +158,7 @@ const StudySessionForm = () => {
 
           {/* Linha 1: Disciplina + Categoria */}
           <div className="d-flex gap-3 mb-3">
+            {categoria !== 'simulado' && (
             <div style={{ flex: 2 }}>
               <label className="form-label fw-semibold" style={{ fontSize: '0.8em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Disciplina</label>
               <select className="form-control linha" style={{ fontSize: '0.9em' }} value={disciplina} onChange={e => setDisciplina(e.target.value)} required>
@@ -165,6 +168,7 @@ const StudySessionForm = () => {
                 ))}
               </select>
             </div>
+            )}
             <div style={{ flex: 1 }}>
               <label className="form-label fw-semibold" style={{ fontSize: '0.8em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Categoria</label>
               <select className="form-control linha" style={{ fontSize: '0.9em' }} value={categoria} onChange={e => setCategoria(e.target.value)} required>

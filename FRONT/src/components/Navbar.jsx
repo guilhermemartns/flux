@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 // import HCaptcha from 'react-hcaptcha';
 import { useAuth } from '../auth.jsx';
+import api from '../services/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCamera, faCrown } from '@fortawesome/free-solid-svg-icons';
 import { User } from 'react-feather';
@@ -32,23 +33,42 @@ const Navbar = () => {
   });
   const [fotoPreview, setFotoPreview] = useState('');
   
-  // Atualiza os campos do perfil toda vez que abrir o modal
+  // Atualiza os campos do perfil toda vez que abrir o modal (busca dados completos da API)
   React.useEffect(() => {
-    if (showPerfilModal && user) {
-      setPerfil({
-        nome: user.nome || '',
-        sobrenome: user.sobrenome || '',
-        apelido: user.apelido || '',
-        email: user.email || '',
-        sexo: user.sexo || '',
-        nascimento: user.nascimento || '',
-        cidade: user.cidade || '',
-        uf: user.uf || '',
-        foto: user.foto || '',
-      });
-      setFotoPreview(user.foto || '');
+    if (showPerfilModal && user?.id) {
+      api.get(`/usuarios/${user.id}`)
+        .then(res => {
+          const dados = res.data;
+          setPerfil({
+            nome: dados.nome || '',
+            sobrenome: dados.sobrenome || '',
+            apelido: dados.apelido || '',
+            email: dados.email || '',
+            sexo: dados.sexo || '',
+            nascimento: dados.nascimento ? dados.nascimento.split('T')[0] : '',
+            cidade: dados.cidade || '',
+            uf: dados.uf || '',
+            foto: dados.foto || '',
+          });
+          setFotoPreview(dados.foto || '');
+        })
+        .catch(() => {
+          // fallback para dados do localStorage caso API falhe
+          setPerfil({
+            nome: user.nome || '',
+            sobrenome: user.sobrenome || '',
+            apelido: user.apelido || '',
+            email: user.email || '',
+            sexo: user.sexo || '',
+            nascimento: user.nascimento ? user.nascimento.split('T')[0] : '',
+            cidade: user.cidade || '',
+            uf: user.uf || '',
+            foto: user.foto || '',
+          });
+          setFotoPreview(user.foto || '');
+        });
     }
-  }, [showPerfilModal, user]);
+  }, [showPerfilModal, user?.id]);
   const [senhaForm, setSenhaForm] = useState({ senhaAntiga: '', novaSenha: '', repitaNovaSenha: '' });
   const [senhaMsg, setSenhaMsg] = useState('');
   const { login } = useAuth();
@@ -64,22 +84,12 @@ const Navbar = () => {
     try {
       const userId = user?.id;
       if (!userId) return;
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/usuarios/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(perfil)
-      });
-      if (!res.ok) throw new Error('Erro ao atualizar perfil');
-      const atualizado = await res.json();
-      login({ ...user, ...atualizado }); // Atualiza dados localmente
+      const res = await api.put(`/usuarios/${userId}`, perfil);
+      login({ ...user, ...res.data });
       setShowPerfilModal(false);
-  toast.success('Dados do perfil atualizados com sucesso!', { position: 'bottom-right' });
+      toast.success('Dados do perfil atualizados com sucesso!', { position: 'bottom-right' });
     } catch (err) {
-  toast.error('Erro ao atualizar perfil!', { position: 'bottom-right' });
+      toast.error('Erro ao atualizar perfil!', { position: 'bottom-right' });
     }
   }
 
@@ -115,23 +125,14 @@ const Navbar = () => {
     }
     try {
       const userId = user?.id;
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/usuarios/${userId}/senha`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ senhaAntiga: senhaForm.senhaAntiga, novaSenha: senhaForm.novaSenha })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao alterar senha');
+      await api.put(`/usuarios/${userId}/senha`, { senhaAntiga: senhaForm.senhaAntiga, novaSenha: senhaForm.novaSenha });
       setSenhaMsg('Senha alterada com sucesso!');
       setSenhaForm({ senhaAntiga: '', novaSenha: '', repitaNovaSenha: '' });
-  toast.success('Senha alterada com sucesso!', { position: 'bottom-right' });
+      toast.success('Senha alterada com sucesso!', { position: 'bottom-right' });
     } catch (err) {
-      setSenhaMsg(err.message);
-  toast.error('Erro ao alterar senha!', { position: 'bottom-right' });
+      const msg = err.response?.data?.error || err.message || 'Erro ao alterar senha';
+      setSenhaMsg(msg);
+      toast.error('Erro ao alterar senha!', { position: 'bottom-right' });
     }
   }
 

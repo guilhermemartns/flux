@@ -11,6 +11,10 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [lembrar, setLembrar] = useState(true);
+  const [hoverLogo, setHoverLogo] = useState(false);
+  const [hoverH1, setHoverH1] = useState(false);
+  const [hoverCadeira, setHoverCadeira] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -23,14 +27,17 @@ const Login = () => {
     }
     try {
       const response = await api.post('/login', {
-        email,
+        email: email.trim().toLowerCase(),
         senha: password
       });
-      // Salva usuário logado no contexto
       login(response.data);
-      // Salva token no localStorage
       if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
+        if (lembrar) {
+          localStorage.setItem('token', response.data.token);
+        } else {
+          sessionStorage.setItem('token', response.data.token);
+          localStorage.removeItem('token');
+        }
       }
       navigate('/');
     } catch (err) {
@@ -65,6 +72,40 @@ const Login = () => {
         background: 'linear-gradient(90deg, #f9c5c5 0%, #fde8e0 25%, #eaf0fb 75%, #dce6f5 100%)'
       }}
     >
+      <style>{`
+        @keyframes floatBounce {
+          0%,100% { transform: translateY(0) rotate(0deg) scale(1.08); }
+          30% { transform: translateY(-14px) rotate(-2deg) scale(1.10); }
+          60% { transform: translateY(-6px) rotate(2deg) scale(1.09); }
+        }
+        @keyframes logoPop {
+          0% { transform: scale(1) rotate(0deg); }
+          40% { transform: scale(1.12) rotate(-4deg); }
+          70% { transform: scale(1.08) rotate(3deg); }
+          100% { transform: scale(1.10) rotate(0deg); }
+        }
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .login-logo { transition: filter 0.3s, transform 0.3s; }
+        .login-logo:hover { filter: drop-shadow(0 8px 24px rgba(168,85,247,0.35)); animation: logoPop 0.5s ease forwards; }
+        .login-h1-hover {
+          background: linear-gradient(270deg, #a855f7, #ec4899, #f97316, #a855f7);
+          background-size: 300% 300%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          transition: letter-spacing 0.3s;
+        }
+        .login-h1-hover:hover {
+          animation: gradientShift 1.8s ease infinite;
+          letter-spacing: 1px;
+        }
+        .login-cadeira { transition: transform 0.3s, filter 0.3s; cursor: default; }
+        .login-cadeira:hover { filter: drop-shadow(0 12px 24px rgba(236,72,153,0.25)); animation: floatBounce 1.2s ease infinite; }
+      `}</style>
 
       {/* Lado esquerdo */}
       <div
@@ -73,34 +114,35 @@ const Login = () => {
           flex: '0 0 60%',
           background: 'transparent',
           padding: '2.5rem 3rem',
+          paddingLeft: '8rem',
         }}
       >
         {/* Conteúdo central - lado a lado */}
         <div className="d-flex align-items-center justify-content-center" style={{ gap: '2rem' }}>
           <div style={{ textAlign: 'left' }}>
-            <img src="/sigma.png" alt="FLUX Logo" style={{ width: '160px', height: 'auto', marginBottom: '2rem', display: 'block' }} />
+            <a href="#" style={{ display: 'block', marginBottom: '2rem' }}>
+              <img src="/sigma.png" alt="FLUX Logo" className="login-logo" style={{ width: '160px', height: 'auto', display: 'block' }} />
+            </a>
             <h1
+              className="login-h1-hover"
               style={{
                 fontWeight: 900,
                 fontSize: 'clamp(3rem, 7vw, 5.5rem)',
-                lineHeight: 1.0,
-                background: 'linear-gradient(90deg, #a855f7, #ec4899, #f97316)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
+                lineHeight: 0.85,
                 marginBottom: '1.8rem'
               }}
             >
               Encontre<br />seu ritmo.
             </h1>
-            <p style={{ color: '#444', fontSize: '1.15rem', lineHeight: 1.3, marginBottom: 0, maxWidth: '340px' }}>
+            <p style={{ color: '#444', fontSize: '1.04rem', lineHeight: 1.3, marginBottom: 0, maxWidth: '340px' }}>
               Entre em <strong>estado de fluxo</strong> e transforme<br />
-              o aprendizado em uma jornada natural.
+              seu aprendizado em uma jornada natural.
             </p>
           </div>
           <img
             src="/cadeira.png"
             alt="Pessoa estudando"
+            className="login-cadeira"
             style={{
               width: 'clamp(140px, 16vw, 200px)',
               height: 'auto',
@@ -111,7 +153,12 @@ const Login = () => {
           />
         </div>
 
-        <div style={{ color: '#aaa', fontSize: '0.8rem', position: 'absolute', bottom: '1.5rem', left: '3rem' }}>@meuflux</div>
+        <a
+          href="https://www.instagram.com/meuflux"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#aaa', fontSize: '0.8rem', position: 'absolute', bottom: '1.5rem', left: '3rem', textDecoration: 'none' }}
+        >@meuflux</a>
       </div>
 
       {/* Lado direito */}
@@ -166,12 +213,15 @@ const Login = () => {
 
             {error && <div className="alert alert-danger py-1 small mt-2">{error}</div>}
 
-            <div className="d-flex justify-content-between align-items-center mb-3 mt-2">
-              <div className="d-flex align-items-center gap-2">
-                <input type="checkbox" id="lembrar" style={{ cursor: 'pointer' }} />
-                <label htmlFor="lembrar" className="small text-muted mb-0" style={{ cursor: 'pointer' }}>Lembrar-me</label>
-              </div>
-              <a href="#" className="small" style={{ color: '#555' }}>Esqueceu a senha?</a>
+            <div className="d-flex align-items-center gap-2 mb-3 mt-2">
+              <input
+                type="checkbox"
+                id="lembrar"
+                checked={lembrar}
+                onChange={e => setLembrar(e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              <label htmlFor="lembrar" className="small text-muted mb-0" style={{ cursor: 'pointer' }}>Lembrar-me</label>
             </div>
 
             <button
@@ -183,20 +233,18 @@ const Login = () => {
             </button>
           </form>
 
-          <div className="d-flex align-items-center gap-2 mb-3">
-            <hr style={{ flex: 1, margin: 0 }} />
-            <span className="text-muted small">ou continue com</span>
-            <hr style={{ flex: 1, margin: 0 }} />
+          <div className="text-center mt-1">
+            <span className="text-muted small">Não tem acesso? </span>
+            <a
+              href="https://wa.me/5514997200604?text=Ol%C3%A1%2C%20gostaria%20de%20acessar%20o%20Flux!"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="small"
+              style={{ color: '#888', textDecoration: 'underline' }}
+            >
+              Solicitar acesso
+            </a>
           </div>
-
-          <button
-            className="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-2 mb-3"
-            style={{ borderRadius: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}
-            type="button"
-          >
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style={{ width: '18px' }} />
-            Google
-          </button>
 
 
         </div>
