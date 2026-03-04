@@ -12,8 +12,7 @@ const bcrypt = require('bcryptjs');
 const app = express();
 const prisma = new PrismaClient();
 app.use(cors({
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
-  credentials: true,
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Token'],
 }));
