@@ -573,7 +573,7 @@ const Projeto = () => {
                               zIndex: 2 - idx,
                               transform: arr.length === 2 ? (idx === 0 ? 'rotate(-8deg)' : 'rotate(8deg)') : 'none'
                             }}
-                            onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/40?text=Sem+Imagem'; }}
+                            onError={e => { e.target.onerror = null; e.target.style.display = 'none'; }}
                           />
                         ))}
                       </div>
@@ -582,7 +582,7 @@ const Projeto = () => {
                         src={p.imagem && (p.imagem.startsWith('http') || p.imagem.startsWith('/') || p.imagem.startsWith('data:')) ? p.imagem : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/uploads/${p.imagem}`}
                         alt="Imagem do projeto"
                         style={{ width: 40, height: 40, borderRadius: '10px', objectFit: 'contain', display: 'block', margin: '0 auto' }}
-                        onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/40?text=Sem+Imagem'; }}
+                        onError={e => { e.target.onerror = null; e.target.style.display = 'none'; }}
                       />
                     ) : (
                       <Folder className="text-primary-primary" size={24} style={{ display: 'block', margin: '0 auto' }} />
