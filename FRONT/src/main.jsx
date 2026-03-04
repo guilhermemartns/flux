@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './index.css';
 import './style2.css';
-import Home from './pages/home';
+import Home from './pages/Home';
 import Inserir from './pages/Home/inserir.jsx';
 import Usuarios from './pages/Home/Usuarios.jsx';
 function AdminRoute({ children }) {
