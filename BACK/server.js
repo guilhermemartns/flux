@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-// Servir arquivos da pasta uploads
+// Arquivos estáticos de uploads (não persiste no Vercel, mantido para compatibilidade local)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // ROTA PUT - Editar nome da carreira
 app.put('/carreiras/:id', async (req, res) => {
@@ -43,25 +43,16 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
 
-// Configuração do multer para upload de imagem
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    const nomeArquivo = `${Date.now()}_${Math.floor(Math.random()*10000)}${ext}`;
-    cb(null, nomeArquivo);
-  }
-});
-const upload = multer({ storage });
+// Configuração do multer para upload de imagem (memoryStorage para compatibilidade com Vercel)
+const upload = multer({ storage: multer.memoryStorage() });
 
 // ROTA PARA UPLOAD DE IMAGEM DO PROJETO PADRÃO
 app.post('/upload-imagem-projeto', upload.single('imagem'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
-    // Retorna apenas o nome do arquivo salvo
-    res.status(201).json({ filename: req.file.filename });
+    // Converte para base64 para compatibilidade com Vercel (sem disco persistente)
+    const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    res.status(201).json({ filename: base64 });
   } catch (error) {
     console.error('Erro ao fazer upload da imagem:', error);
     res.status(500).json({ error: 'Erro ao fazer upload da imagem.', details: error.message });
@@ -2415,4 +2406,7 @@ app.get('/fila-revisao/count', async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3000)
+if (require.main === module) {
+  app.listen(process.env.PORT || 3000);
+}
+module.exports = app;

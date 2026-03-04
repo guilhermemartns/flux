@@ -319,9 +319,7 @@ const Projeto = () => {
                             <div style={{ flex: '0 0 56px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 56, padding: '0 8px 8px 8px' }}>
                               {p.imagem ? (
                                 <img
-                                  src={p.imagem.startsWith('http') ? p.imagem : `http://localhost:3000/uploads/${p.imagem}`}
-                                  alt="Imagem do projeto"
-                                  style={{ width: 40, height: 40, borderRadius: '8px', objectFit: 'contain', marginRight: 4 }}
+                                  src={(p.imagem.startsWith('http') || p.imagem.startsWith('data:')) ? p.imagem : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/uploads/${p.imagem}`}
                                 />
                               ) : (
                                 <Archive className="fs-4 text-primary-primary" size={20} />
@@ -375,7 +373,7 @@ const Projeto = () => {
                         <div className="d-flex align-items-center gap-3">
                           {p.imagem ? (
                             <img
-                              src={p.imagem.startsWith('http') ? p.imagem : `http://localhost:3000/uploads/${p.imagem}`}
+                              src={(p.imagem.startsWith('http') || p.imagem.startsWith('data:')) ? p.imagem : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/uploads/${p.imagem}`}
                               alt="Imagem do projeto"
                               style={{ width: 48, height: 48, borderRadius: '8px', objectFit: 'contain', marginRight: 4 }}
                             />
@@ -562,7 +560,7 @@ const Projeto = () => {
                         {p.imagens.slice(0, 2).map((img, idx, arr) => (
                           <img
                             key={idx}
-                            src={img && (img.startsWith('http') || img.startsWith('/')) ? img : `http://localhost:3000/uploads/${img}`}
+                            src={img && (img.startsWith('http') || img.startsWith('/') || img.startsWith('data:')) ? img : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/uploads/${img}`}
                             alt={`Imagem do projeto ${idx+1}`}
                             style={{
                               width: 40,
@@ -581,7 +579,7 @@ const Projeto = () => {
                       </div>
                     ) : p.imagem ? (
                       <img
-                        src={p.imagem && (p.imagem.startsWith('http') || p.imagem.startsWith('/')) ? p.imagem : `http://localhost:3000/uploads/${p.imagem}`}
+                        src={p.imagem && (p.imagem.startsWith('http') || p.imagem.startsWith('/') || p.imagem.startsWith('data:')) ? p.imagem : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/uploads/${p.imagem}`}
                         alt="Imagem do projeto"
                         style={{ width: 40, height: 40, borderRadius: '10px', objectFit: 'contain', display: 'block', margin: '0 auto' }}
                         onError={e => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/40?text=Sem+Imagem'; }}
