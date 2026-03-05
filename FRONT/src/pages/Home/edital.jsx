@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ErrorBoundary from './ErrorBoundary.jsx';
+import { SkeletonTable } from '../../components/Skeleton';
 import Sidebar from './components/sidebar.jsx';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -386,11 +387,7 @@ function Materias() {
     }, [materias.length]);
 
     if (loading) {
-        return (
-            <div style={{ width: '400px', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 'auto' }}>
-                <Spinner animation="border" role="status" />
-            </div>
-        );
+        return <SkeletonTable rows={8} cols={4} />;
     }
 
     return (

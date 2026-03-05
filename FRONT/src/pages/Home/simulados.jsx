@@ -11,6 +11,7 @@ import { useAuth } from '../../auth.jsx';
 import { getSimuladoStats } from '../../services/simuladoStats';
 import { Modal, Button } from 'react-bootstrap';
 import Spinner from 'react-bootstrap/Spinner';
+import { SkeletonSimulados } from '../../components/Skeleton';
 
 import { CSSTransition } from 'react-transition-group';
 import './simuladoCollapse.css';
@@ -396,11 +397,7 @@ function Home() {
 
   const projetoSelecionado = localStorage.getItem('projetoSelecionado');
   if (loading) {
-    return (
-      <div style={{ width: '400px', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 'auto' }}>
-        <Spinner animation="border" role="status" />
-      </div>
-    );
+    return <SkeletonSimulados />;
   }
   if (!projetoSelecionado) {
     return (

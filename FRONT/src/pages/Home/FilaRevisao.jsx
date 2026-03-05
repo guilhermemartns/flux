@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { usePageTitle } from '../../components/PageTitleContext';
+import { SkLine, SkBlock, SkCard, SkCircle } from '../../components/Skeleton';
 import api from '../../services/api';
 import { useAuth } from '../../auth.jsx';
 import { CheckCircle, XCircle, Archive, Trash2, Edit2, AlertCircle, Award, Filter, X as XIcon, HelpCircle } from 'react-feather';
@@ -510,7 +511,18 @@ export default function FilaRevisao() {
       {/* Tabela */}
       <div className="card-padrao2 p-0" style={{ overflowX: 'auto' }}>
         {loading ? (
-          <div className="text-secondary text-center p-4" style={{ fontSize: '0.88em' }}>Carregando...</div>
+          <div style={{ padding: '1rem' }}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="d-flex align-items-center gap-3" style={{ marginBottom: 14 }}>
+                <SkCircle size={32} />
+                <div style={{ flex: 1 }}>
+                  <SkLine w="55%" h={13} mb={6} />
+                  <SkLine w="35%" h={11} mb={0} />
+                </div>
+                <SkLine w={60} h={26} mb={0} style={{ borderRadius: 8 }} />
+              </div>
+            ))}
+          </div>
         ) : itensFiltrados.length === 0 ? (
           <div className="text-center p-5" style={{ color: 'var(--text-light)' }}>
             <div style={{ fontSize: '0.88em' }}>

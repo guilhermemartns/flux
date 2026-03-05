@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 import Spinner from 'react-bootstrap/Spinner';
+import { SkeletonDashboard } from '../../components/Skeleton';
 
 Chart.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Legend, Tooltip, Title, Filler, ArcElement);
 
@@ -406,11 +407,7 @@ const Dashboard = () => {
   // Adicione este bloco logo antes do return:
   const projetoSelecionado = localStorage.getItem('projetoSelecionado');
   if (loading) {
-    return (
-      <div style={{ width: '400px', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: ' auto' }}>
-        <Spinner animation="border" role="status" />
-      </div>
-    );
+    return <SkeletonDashboard />;
   }
   if (!projetoSelecionado) {
     return (

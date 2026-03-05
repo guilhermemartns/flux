@@ -11,6 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
 import { usePageTitle } from '../../components/PageTitleContext';
 import Spinner from 'react-bootstrap/Spinner';
+import { SkeletonCiclo } from '../../components/Skeleton';
 import { useNavigate } from 'react-router-dom';
 Chart.register(ArcElement, Tooltip, Legend);
 
@@ -208,11 +209,7 @@ const Ciclo = () => {
   // --- TODOS OS HOOKS ACIMA DESTA LINHA ---
 
   if (loading) {
-    return (
-      <div style={{ width: '400px', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 'auto' }}>
-        <Spinner animation="border" role="status" />
-      </div>
-    );
+    return <SkeletonCiclo />;
   }
 
   // --- FUNÇÕES DO COMPONENTE ---

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SkLine, SkBlock, SkCard } from '../../components/Skeleton';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 const EyeIcon = ({ open }) => (
   <span style={{ marginLeft: '0.5em', color: 'rgb(25, 118, 210)', cursor: 'pointer' }}>
@@ -84,7 +85,14 @@ function Erros() {
           </select>
         </div>
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#888', padding: '2em' }}>Carregando...</div>
+          <SkCard>
+            {[...Array(5)].map((_, i) => (
+              <div key={i} style={{ marginBottom: 16 }}>
+                <SkLine w="45%" h={16} mb={10} />
+                <SkBlock w="100%" h={80} style={{ borderRadius: 8 }} />
+              </div>
+            ))}
+          </SkCard>
         ) : (
           Object.keys(errosPorMateria).length === 0 ? (
             <div style={{ textAlign: 'center', color: '#888', padding: '2em' }}>Nenhum erro encontrado.</div>

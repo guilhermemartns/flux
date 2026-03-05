@@ -1,5 +1,6 @@
 import Sidebar from './components/sidebar.jsx';
 import React, { useEffect, useState, useContext } from 'react';
+import { SkeletonHome } from '../../components/Skeleton';
 import api from '../../services/api';
 import { Trash, Upload, Edit2, Calendar, Award, CheckCircle } from 'react-feather';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -664,11 +665,7 @@ const Home = () => {
 
   // Adicione esta verificação antes do return:
   if (loadingInit) {
-    return (
-      <div style={{ width: '100%', height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Spinner animation="border" role="status" />
-      </div>
-    );
+    return <SkeletonHome />;
   }
 
   if (!temProjetosCadastrados) {
@@ -726,11 +723,7 @@ const Home = () => {
   }
 
   if (loading) {
-    return (
-      <div style={{ width: '400px', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 'auto' }}>
-        <Spinner animation="border" role="status" />
-      </div>
-    );
+    return <SkeletonHome />;
   }
 
   // Adicione no início do componente Home (antes do return)

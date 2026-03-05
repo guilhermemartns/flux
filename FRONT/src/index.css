@@ -1,3 +1,19 @@
+/* ─── Skeleton shimmer ───────────────────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Skeleton CSS variables — sobrescritas pelo tema em style2.css */
+:root {
+  --skeleton-base: rgba(0,0,0,0.07);
+  --skeleton-shine: rgba(0,0,0,0.03);
+}
+[data-theme="dark"], .dark-mode {
+  --skeleton-base: rgba(255,255,255,0.08);
+  --skeleton-shine: rgba(255,255,255,0.04);
+}
+
 /* Otter spin para lados diferentes e transição de cor */
 .otter-anim {
   transition: color 0.3s cubic-bezier(.77,0,.18,1);

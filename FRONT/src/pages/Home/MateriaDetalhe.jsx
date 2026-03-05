@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { SkeletonMateriaDetalhe } from '../../components/Skeleton';
 import api from '../../services/api';
 import { Button, Modal, Spinner } from 'react-bootstrap';
 import ErrosBarChart from './components/graficos/ErrosBarChart';
@@ -293,11 +294,7 @@ function MateriaDetalhe() {
         }
     }
 
-    if (loading) return (
-        <div style={{ width: '400px', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 'auto' }}>
-            <Spinner animation="border" role="status" />
-        </div>
-    );
+    if (loading) return <SkeletonMateriaDetalhe />;
     if (!materia) return <div>Matéria não encontrada.</div>;
 
     // Filtra apenas os erros e brancos que possuem dados
