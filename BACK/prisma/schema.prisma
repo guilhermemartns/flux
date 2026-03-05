@@ -100,12 +100,13 @@ model Carreira {
   projetosPadrao ProjetoPadrao[]
 }
 model MateriaPadrao {
-  id              String        @id @default(auto()) @map("_id") @db.ObjectId
-  nome            String
-  conteudos       String[]      @default([])
-  projetoPadraoId String        @db.ObjectId
-  projetoPadrao   ProjetoPadrao @relation(fields: [projetoPadraoId], references: [id])
-  cor             String?       // Cor vinculada à matéria padrão
+  id                  String        @id @default(auto()) @map("_id") @db.ObjectId
+  nome                String
+  conteudos           String[]      @default([])
+  projetoPadraoId     String        @db.ObjectId
+  projetoPadrao       ProjetoPadrao @relation(fields: [projetoPadraoId], references: [id])
+  cor                 String?       // Cor vinculada à matéria padrão
+  quantidadeQuestoes  Int?          @default(0) // Quantidade de questões no edital
 }
 
 model EditalProgresso {

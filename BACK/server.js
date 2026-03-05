@@ -319,7 +319,8 @@ app.get('/projetos-padrao/:id', async (req, res) => {
     const materias = (projeto.Materias || []).map(mat => ({
       nome: mat.nome,
       cor: mat.cor || '#71dd8c',
-      edital: Array.isArray(mat.conteudos) ? mat.conteudos : []
+      edital: Array.isArray(mat.conteudos) ? mat.conteudos : [],
+      quantidadeQuestoes: mat.quantidadeQuestoes ?? 0
     }));
   res.json({
     id: projeto.id,
@@ -600,7 +601,8 @@ app.put('/projetos-padrao/:id', async (req, res) => {
             nome: mat.nome,
             conteudos: mat.edital || mat.conteudos || [],
             cor: mat.cor || '#71dd8c',
-            projetoPadraoId: id
+            projetoPadraoId: id,
+            quantidadeQuestoes: mat.quantidadeQuestoes !== undefined ? parseInt(mat.quantidadeQuestoes) || 0 : 0
           }
         });
       }
@@ -635,9 +637,10 @@ app.post('/projetos-padrao', async (req, res) => {
       await prisma.materiaPadrao.create({
         data: {
           nome: mat.nome,
-          conteudos: mat.conteudos,
+          conteudos: mat.conteudos || mat.edital || [],
           cor: mat.cor || '#71dd8c',
-          projetoPadraoId: projetoPadrao.id
+          projetoPadraoId: projetoPadrao.id,
+          quantidadeQuestoes: mat.quantidadeQuestoes !== undefined ? parseInt(mat.quantidadeQuestoes) || 0 : 0
         }
       });
     }
