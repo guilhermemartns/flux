@@ -80,6 +80,7 @@ model Materia {
   estudos         Estudo[]
   cor              String?           // Cor vinculada à matéria
   respostas Resposta[] @relation("MateriaRespostas")
+  quantidadeQuestoes Int?           @default(0) // Quantidade de questões no edital
 }
 
 model ProjetoPadrao {

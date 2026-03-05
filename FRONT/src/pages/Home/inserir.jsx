@@ -312,231 +312,162 @@ const Inserir = () => {
               </tbody>
             </table>
           </div>
-          <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" className="modal-fundo" size="xl">
+          <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" className="modal-fundo" size="lg">
             <Modal.Header className="modal-estilo border-0 pb-0" closeButton>
-              <Modal.Title className="fw-bold fs-5">
+              <Modal.Title className="fw-bold fs-6">
                 {editProjetoIdx !== null ? 'Editar Projeto Padrão' : 'Novo Projeto Padrão'}
               </Modal.Title>
             </Modal.Header>
-            <Modal.Body className="modal-estilo pt-2">
+            <Modal.Body className="modal-estilo py-3">
 
-              {/* ── Seção 1: Informações gerais ── */}
-              <div className="mb-1 pb-1 border-bottom">
-                <span className="text-uppercase fw-semibold small" style={{ color: 'var(--text-muted, #888)', letterSpacing: '0.07em' }}>Informações gerais</span>
+              {/* ── Linha 1: campos principais ── */}
+              <div className="d-flex gap-2 mb-2 flex-wrap">
+                <Form.Control size="sm" className="linha" style={{ flex: '2 1 140px' }} type="text" value={nomeProjetoPadrao} onChange={e => setNomeProjetoPadrao(e.target.value)} placeholder="Nome do projeto" />
+                <Form.Control size="sm" className="linha" style={{ flex: '0 0 72px' }} type="number" value={anoProjetoPadrao} onChange={e => setAnoProjetoPadrao(e.target.value)} placeholder="Ano" min="1900" max="2100" />
+                <Form.Control size="sm" className="linha" style={{ flex: '1 1 110px' }} type="text" value={cargoProjetoPadrao} onChange={e => setCargoProjetoPadrao(e.target.value)} placeholder="Cargo" />
+                <Form.Control size="sm" className="linha" style={{ flex: '2 1 140px' }} type="text" value={descricaoProjetoPadrao} onChange={e => setDescricaoProjetoPadrao(e.target.value)} placeholder="Descrição" />
               </div>
-              <div className="row g-3 mb-3 mt-1">
-                <div className="col-12 col-sm-5">
-                  <Form.Label className="small fw-semibold mb-1">Nome do projeto</Form.Label>
-                  <Form.Control type="text" className="linha" value={nomeProjetoPadrao} onChange={e => setNomeProjetoPadrao(e.target.value)} placeholder="ex: PF 2025" />
-                </div>
-                <div className="col-6 col-sm-2">
-                  <Form.Label className="small fw-semibold mb-1">Ano</Form.Label>
-                  <Form.Control type="number" className="linha" value={anoProjetoPadrao} onChange={e => setAnoProjetoPadrao(e.target.value)} placeholder="2025" min="1900" max="2100" />
-                </div>
-                <div className="col-6 col-sm-5">
-                  <Form.Label className="small fw-semibold mb-1">Cargo</Form.Label>
-                  <Form.Control type="text" className="linha" value={cargoProjetoPadrao} onChange={e => setCargoProjetoPadrao(e.target.value)} placeholder="ex: Delegado" />
-                </div>
-                <div className="col-12 col-sm-7">
-                  <Form.Label className="small fw-semibold mb-1">Descrição</Form.Label>
-                  <Form.Control type="text" className="linha" value={descricaoProjetoPadrao} onChange={e => setDescricaoProjetoPadrao(e.target.value)} placeholder="Breve descrição do projeto" />
-                </div>
-                <div className="col-12 col-sm-5">
-                  <Form.Label className="small fw-semibold mb-1">Carreira</Form.Label>
-                  <div style={{ position: 'relative' }} ref={dropdownRef}>
-                    <button type="button" className="form-select linha text-start w-100" style={{ minHeight: 38 }} onClick={() => setShowCarreiraDropdown(v => !v)}>
-                      {carreiras.find(c => c.id === carreiraSelecionadaModal)?.nome || <span className="text-muted">Selecione a carreira</span>}
-                    </button>
-                    <div className="text-dark" style={{ position: 'absolute', zIndex: 20, background: '#fff', border: '1px solid #ddd', borderRadius: 8, width: '100%', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', display: showCarreiraDropdown ? 'block' : 'none' }}>
-                      {carreiras.map(opt => (
-                        <div key={opt.id || opt.value} className="d-flex align-items-center justify-content-between px-3 py-2" style={{ cursor: 'pointer', borderBottom: '1px solid #f2f2f2' }}>
-                          <span className="d-flex align-items-center gap-2" style={{ flex: 1 }}>
-                            <span onClick={() => { setCarreiraSelecionadaModal(opt.id); setShowCarreiraDropdown(false); }}>{opt.nome || opt.label}</span>
-                            <FontAwesomeIcon icon={faPenToSquare} style={{ color: 'var(--primary-primary)', cursor: 'pointer', fontSize: '0.85em' }} title="Editar carreira"
-                              onClick={e => { e.stopPropagation(); setCarreiraEditando(opt); setNovoNomeCarreira(opt.nome || ''); setShowEditarCarreiraModal(true); }} />
-                          </span>
-                          <span style={{ color: '#dc3545' }} title={`Apagar carreira: ${opt.nome}`}
-                            onClick={async e => {
-                              e.stopPropagation();
-                              if (window.confirm('Deseja realmente apagar esta carreira? Todos os projetos padrão relacionados também serão apagados.')) {
-                                try {
-                                  const token = JSON.parse(localStorage.getItem('user'))?.token;
-                                  await api.delete(`/carreiras/${opt.id}`, { headers: { Authorization: `Bearer ${token}` } });
-                                  setCarreiras(carreiras.filter(c => c.id !== opt.id));
-                                  setProjetosPadrao(projetosPadrao.filter(p => p.carreiraId !== opt.id));
-                                  if (carreiraSelecionada === opt.id) setCarreiraSelecionada('');
-                                  setShowCarreiraDropdown(false);
-                                } catch (err) { alert('Erro ao apagar carreira'); }
-                              }
-                            }}>
-                            <span style={{ fontWeight: 'bold', fontSize: 18 }}>×</span>
-                          </span>
-                        </div>
-                      ))}
-                      <div className="px-3 py-2" style={{ cursor: 'pointer', color: 'var(--primary-primary)', fontWeight: 600 }} onClick={() => { setShowCarreiraModal(true); setShowCarreiraDropdown(false); }}>
-                        + Nova carreira
+
+              {/* ── Linha 2: carreira + imagem ── */}
+              <div className="d-flex gap-2 mb-3 align-items-center flex-wrap">
+                <div style={{ position: 'relative', flex: '1 1 160px' }} ref={dropdownRef}>
+                  <button type="button" className="form-select form-select-sm linha text-start w-100" onClick={() => setShowCarreiraDropdown(v => !v)}>
+                    {carreiras.find(c => c.id === carreiraSelecionadaModal)?.nome || <span className="text-muted">Carreira</span>}
+                  </button>
+                  <div className="text-dark" style={{ position: 'absolute', zIndex: 20, background: '#fff', border: '1px solid #ddd', borderRadius: 8, minWidth: '100%', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', display: showCarreiraDropdown ? 'block' : 'none' }}>
+                    {carreiras.map(opt => (
+                      <div key={opt.id} className="d-flex align-items-center justify-content-between px-2 py-1" style={{ cursor: 'pointer', borderBottom: '1px solid #f2f2f2', fontSize: '0.9em' }}>
+                        <span className="d-flex align-items-center gap-2" style={{ flex: 1 }}>
+                          <span onClick={() => { setCarreiraSelecionadaModal(opt.id); setShowCarreiraDropdown(false); }}>{opt.nome}</span>
+                          <FontAwesomeIcon icon={faPenToSquare} style={{ color: 'var(--primary-primary)', cursor: 'pointer', fontSize: '0.8em' }}
+                            onClick={e => { e.stopPropagation(); setCarreiraEditando(opt); setNovoNomeCarreira(opt.nome || ''); setShowEditarCarreiraModal(true); }} />
+                        </span>
+                        <span style={{ color: '#dc3545', fontWeight: 'bold', fontSize: 16, lineHeight: 1 }}
+                          onClick={async e => {
+                            e.stopPropagation();
+                            if (window.confirm('Apagar esta carreira? Os projetos padrão relacionados também serão apagados.')) {
+                              try {
+                                const token = JSON.parse(localStorage.getItem('user'))?.token;
+                                await api.delete(`/carreiras/${opt.id}`, { headers: { Authorization: `Bearer ${token}` } });
+                                setCarreiras(carreiras.filter(c => c.id !== opt.id));
+                                setProjetosPadrao(projetosPadrao.filter(p => p.carreiraId !== opt.id));
+                                if (carreiraSelecionada === opt.id) setCarreiraSelecionada('');
+                                setShowCarreiraDropdown(false);
+                              } catch (err) { alert('Erro ao apagar carreira'); }
+                            }
+                          }}>×</span>
                       </div>
-                    </div>
-
-                    {showEditarCarreiraModal && carreiraEditando && (
-                      <Modal show={showEditarCarreiraModal} onHide={() => setShowEditarCarreiraModal(false)} centered backdrop="static" className="modal-fundo">
-                        <Modal.Header className="modal-estilo border-0 pb-0" closeButton>
-                          <Modal.Title className="fw-bold fs-6">Editar carreira</Modal.Title>
-                        </Modal.Header>
-                        <Modal.Body className="modal-estilo pt-2">
-                          <Form.Group>
-                            <Form.Label className="small fw-semibold">Novo nome</Form.Label>
-                            <Form.Control type="text" className="linha" value={novoNomeCarreira} onChange={e => setNovoNomeCarreira(e.target.value)} />
-                          </Form.Group>
-                        </Modal.Body>
-                        <Modal.Footer className="modal-estilo border-0 pt-0">
-                          <button className="btn btn-outline-primary-primary3" onClick={() => setShowEditarCarreiraModal(false)}>Cancelar</button>
-                          <button className="btn btn-primary-primary3" onClick={async () => {
-                            if (!novoNomeCarreira.trim()) return;
-                            try {
-                              const token = JSON.parse(localStorage.getItem('user'))?.token;
-                              const res = await api.put(`/carreiras/${carreiraEditando.id}`, { nome: novoNomeCarreira }, { headers: { Authorization: `Bearer ${token}` } });
-                              setCarreiras(carreiras.map(c => c.id === carreiraEditando.id ? { ...c, nome: res.data.nome } : c));
-                              setShowEditarCarreiraModal(false);
-                            } catch (err) { alert('Erro ao editar carreira'); }
-                          }}>Salvar</button>
-                        </Modal.Footer>
-                      </Modal>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Seção 2: Imagem ── */}
-              <div className="mb-1 pb-1 border-bottom">
-                <span className="text-uppercase fw-semibold small" style={{ color: 'var(--text-muted, #888)', letterSpacing: '0.07em' }}>Imagem do projeto</span>
-              </div>
-              <div className="d-flex align-items-center gap-3 my-3">
-                <Form.Control type="file" accept="image/*" className="linha" style={{ maxWidth: 320 }}
-                  disabled={uploadingImagem}
-                  onChange={e => {
-                    if (e.target.files && e.target.files[0]) setImagemProjetoPadrao(e.target.files[0]);
-                    else setImagemProjetoPadrao(null);
-                  }}
-                />
-                {imagemProjetoPadrao ? (
-                  <img src={URL.createObjectURL(imagemProjetoPadrao)} alt="Prévia" style={{ height: 56, borderRadius: 8, border: '1px solid #ddd', objectFit: 'cover' }} />
-                ) : (editProjetoIdx !== null && projetosPadrao[editProjetoIdx]?.imagem ? (
-                  <img src={projetosPadrao[editProjetoIdx].imagem} alt="Imagem salva" style={{ height: 56, borderRadius: 8, border: '1px solid #ddd', objectFit: 'cover' }} />
-                ) : <span className="text-muted small">Nenhuma imagem selecionada</span>)}
-              </div>
-
-              {/* ── Seção 3: Nova matéria ── */}
-              <div className="mb-1 pb-1 border-bottom">
-                <span className="text-uppercase fw-semibold small" style={{ color: 'var(--text-muted, #888)', letterSpacing: '0.07em' }}>Adicionar matéria</span>
-              </div>
-              <div className="p-3 rounded-3 mt-2 mb-3" style={{ background: 'var(--background-light)' }}>
-                <div className="row g-3">
-                  <div className="col-12 col-sm-4">
-                    <Form.Label className="small fw-semibold mb-1">Nome</Form.Label>
-                    <Form.Control type="text" className="linha" value={materiaNome} onChange={e => setMateriaNome(e.target.value)} placeholder="ex: Contabilidade" />
-                  </div>
-                  <div className="col-6 col-sm-2">
-                    <Form.Label className="small fw-semibold mb-1">Qtd. Questões</Form.Label>
-                    <Form.Control type="number" className="linha" value={materiaQuantidade} onChange={e => setMateriaQuantidade(e.target.value)} min={0} placeholder="0" />
-                  </div>
-                  <div className="col-6 col-sm-6">
-                    <Form.Label className="small fw-semibold mb-1">Cor</Form.Label>
-                    <div className="d-flex flex-wrap align-items-center gap-1">
-                      {Array.from(new Set(PALETAS.flat())).map((cor, i) => (
-                        <span key={i} title={cor} style={{ background: cor, width: 22, height: 22, borderRadius: '50%', display: 'inline-block', cursor: 'pointer', border: materiaCor === cor ? '2.5px solid #333' : '1.5px solid rgba(255,255,255,0.6)', boxShadow: materiaCor === cor ? '0 0 0 2px #33333366' : 'none', transition: 'all 0.15s', flexShrink: 0 }}
-                          onClick={() => setMateriaCor(cor)}
-                        />
-                      ))}
-                      <span className="ms-1 small text-muted">{materiaCor}</span>
+                    ))}
+                    <div className="px-2 py-1" style={{ cursor: 'pointer', color: 'var(--primary-primary)', fontWeight: 600, fontSize: '0.9em' }}
+                      onClick={() => { setShowCarreiraModal(true); setShowCarreiraDropdown(false); }}>
+                      + Nova carreira
                     </div>
                   </div>
-                  <div className="col-12">
-                    <Form.Label className="small fw-semibold mb-1">Edital <span className="text-muted fw-normal">(um tópico por linha)</span></Form.Label>
-                    <Form.Control as="textarea" className="linha" rows={2} value={materiaEdital} onChange={e => setMateriaEdital(e.target.value)} placeholder="Tópicos do edital, um por linha..." />
-                  </div>
+                  {showEditarCarreiraModal && carreiraEditando && (
+                    <Modal show={showEditarCarreiraModal} onHide={() => setShowEditarCarreiraModal(false)} centered backdrop="static" className="modal-fundo">
+                      <Modal.Header className="modal-estilo border-0 pb-0" closeButton>
+                        <Modal.Title className="fw-bold fs-6">Editar carreira</Modal.Title>
+                      </Modal.Header>
+                      <Modal.Body className="modal-estilo pt-2">
+                        <Form.Control type="text" className="linha" value={novoNomeCarreira} onChange={e => setNovoNomeCarreira(e.target.value)} placeholder="Nome da carreira" />
+                      </Modal.Body>
+                      <Modal.Footer className="modal-estilo border-0 pt-0">
+                        <button className="btn btn-outline-primary-primary3 btn-sm" onClick={() => setShowEditarCarreiraModal(false)}>Cancelar</button>
+                        <button className="btn btn-primary-primary3 btn-sm" onClick={async () => {
+                          if (!novoNomeCarreira.trim()) return;
+                          try {
+                            const token = JSON.parse(localStorage.getItem('user'))?.token;
+                            const res = await api.put(`/carreiras/${carreiraEditando.id}`, { nome: novoNomeCarreira }, { headers: { Authorization: `Bearer ${token}` } });
+                            setCarreiras(carreiras.map(c => c.id === carreiraEditando.id ? { ...c, nome: res.data.nome } : c));
+                            setShowEditarCarreiraModal(false);
+                          } catch (err) { alert('Erro ao editar carreira'); }
+                        }}>Salvar</button>
+                      </Modal.Footer>
+                    </Modal>
+                  )}
                 </div>
-                <div className="d-flex justify-content-end mt-3">
-                  <button className="btn btn-primary-primary px-4" onClick={() => {
-                    if (!materiaNome.trim()) return alert('Informe o nome da matéria');
-                    const editalArray = materiaEdital.split('\n').map(e => e.trim()).filter(e => e);
-                    setMateriasProjeto([...materiasProjeto, { nome: materiaNome, cor: materiaCor, edital: editalArray, quantidadeQuestoes: parseInt(materiaQuantidade) || 0 }]);
-                    setMateriaNome('');
-                    setMateriaCor('#71dd8c');
-                    setMateriaEdital('');
-                    setMateriaQuantidade(0);
-                  }}>+ Adicionar</button>
+                <div className="d-flex align-items-center gap-2" style={{ flex: '2 1 200px' }}>
+                  <Form.Control type="file" size="sm" accept="image/*" className="linha" disabled={uploadingImagem}
+                    onChange={e => { if (e.target.files?.[0]) setImagemProjetoPadrao(e.target.files[0]); else setImagemProjetoPadrao(null); }} />
+                  {imagemProjetoPadrao
+                    ? <img src={URL.createObjectURL(imagemProjetoPadrao)} alt="Prévia" style={{ height: 32, borderRadius: 6, border: '1px solid #ddd', objectFit: 'cover' }} />
+                    : (editProjetoIdx !== null && projetosPadrao[editProjetoIdx]?.imagem
+                      ? <img src={projetosPadrao[editProjetoIdx].imagem} alt="Atual" style={{ height: 32, borderRadius: 6, border: '1px solid #ddd', objectFit: 'cover' }} />
+                      : null)}
                 </div>
               </div>
 
-              {/* ── Seção 4: Lista de matérias ── */}
-              <div className="d-flex align-items-center justify-content-between mb-1 pb-1 border-bottom">
-                <span className="text-uppercase fw-semibold small" style={{ color: 'var(--text-muted, #888)', letterSpacing: '0.07em' }}>Matérias adicionadas</span>
-                <span className="badge bg-secondary">{materiasProjeto.length}</span>
+              {/* ── Adicionar matéria (inline) ── */}
+              <div className="border-top pt-2 mb-2">
+                <span className="small fw-semibold text-muted">Adicionar matéria</span>
               </div>
-              <div className="overflow-auto rounded mt-2" style={{ maxHeight: '28vh' }}>
-                <table className="table table-bordered table-sm m-0" style={{ fontSize: '0.88em', minWidth: 500 }}>
+              <div className="d-flex gap-2 align-items-center flex-wrap mb-2">
+                <Form.Control size="sm" className="linha" style={{ flex: '2 1 130px' }} type="text" value={materiaNome} onChange={e => setMateriaNome(e.target.value)} placeholder="Nome da matéria" />
+                <Form.Control size="sm" className="linha" style={{ flex: '0 0 80px' }} type="number" value={materiaQuantidade} onChange={e => setMateriaQuantidade(e.target.value)} min={0} placeholder="Questões" />
+                <div className="d-flex flex-wrap gap-1 align-items-center" style={{ flex: '3 1 160px' }}>
+                  {Array.from(new Set(PALETAS.flat())).map((cor, i) => (
+                    <span key={i} title={cor} style={{ background: cor, width: 18, height: 18, borderRadius: '50%', display: 'inline-block', cursor: 'pointer', flexShrink: 0, border: materiaCor === cor ? '2px solid #333' : '1.5px solid rgba(255,255,255,0.5)', boxShadow: materiaCor === cor ? '0 0 0 2px #33333355' : 'none', transition: 'all 0.12s' }}
+                      onClick={() => setMateriaCor(cor)} />
+                  ))}
+                </div>
+                <button className="btn btn-primary-primary btn-sm px-3" style={{ flexShrink: 0 }} onClick={() => {
+                  if (!materiaNome.trim()) return alert('Informe o nome da matéria');
+                  const editalArray = materiaEdital.split('\n').map(e => e.trim()).filter(e => e);
+                  setMateriasProjeto([...materiasProjeto, { nome: materiaNome, cor: materiaCor, edital: editalArray, quantidadeQuestoes: parseInt(materiaQuantidade) || 0 }]);
+                  setMateriaNome(''); setMateriaCor('#71dd8c'); setMateriaEdital(''); setMateriaQuantidade(0);
+                }}>+ Adicionar</button>
+              </div>
+
+              {/* ── Lista de matérias ── */}
+              <div className="overflow-auto rounded border" style={{ maxHeight: '22vh' }}>
+                <table className="table table-sm m-0" style={{ fontSize: '0.85em' }}>
                   <thead className="table-light">
                     <tr>
-                      <th className="text-center py-2">Matéria</th>
-                      <th className="text-center py-2" style={{ width: 80 }}>Cor</th>
-                      <th className="text-center py-2">Edital</th>
-                      <th className="text-center py-2" style={{ width: 90 }}>Questões</th>
-                      <th className="text-center py-2" style={{ width: 70 }}></th>
+                      <th className="ps-2 py-1">Matéria</th>
+                      <th className="text-center py-1" style={{ width: 40 }}>Cor</th>
+                      <th className="py-1">Edital</th>
+                      <th className="text-center py-1" style={{ width: 70 }}>Questões</th>
+                      <th className="py-1" style={{ width: 90 }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {materiasProjeto.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="text-secondary text-center py-3 fst-italic">Nenhuma matéria adicionada ainda.</td>
+                      <tr><td colSpan={5} className="text-muted text-center py-2 fst-italic">Nenhuma matéria adicionada.</td></tr>
+                    ) : materiasProjeto.map((mat, idx) => (
+                      <tr key={idx}>
+                        <td className="align-middle ps-2 fw-semibold" style={{ color: 'var(--primary-primary)' }}>{mat.nome}</td>
+                        <td className="text-center align-middle">
+                          <span style={{ background: mat.cor, width: 18, height: 18, borderRadius: '50%', display: 'inline-block', border: '1.5px solid rgba(255,255,255,0.3)', verticalAlign: 'middle' }} title={mat.cor} />
+                        </td>
+                        <td className="align-middle text-muted small">
+                          {Array.isArray(mat.edital) && mat.edital.length > 0
+                            ? <>{mat.edital.slice(0, 2).join(', ')}{mat.edital.length > 2 ? ` +${mat.edital.length - 2}` : ''}</>
+                            : <span className="fst-italic">—</span>}
+                        </td>
+                        <td className="text-center align-middle">{mat.quantidadeQuestoes ?? 0}</td>
+                        <td className="text-center align-middle">
+                          <div className="d-flex justify-content-center gap-1">
+                            <Button variant="outline-primary" size="sm" style={{ padding: '1px 8px', fontSize: '0.82em' }} onClick={() => {
+                              setEditMatIdx(idx); setEditMatNome(mat.nome); setEditMatCor(mat.cor || '#71dd8c');
+                              setEditMatEdital(Array.isArray(mat.edital) ? mat.edital.join('\n') : '');
+                              setEditMatQtd(mat.quantidadeQuestoes ?? 0); setShowEditMateriaModal(true);
+                            }}>Editar</Button>
+                            <Button variant="outline-danger" size="sm" style={{ padding: '1px 7px', fontSize: '0.82em' }} onClick={() => setMateriasProjeto(materiasProjeto.filter((_, i) => i !== idx))}>✕</Button>
+                          </div>
+                        </td>
                       </tr>
-                    ) : (
-                      materiasProjeto.map((mat, idx) => (
-                        <tr key={idx}>
-                          <td className="align-middle fw-semibold ps-2" style={{ color: 'var(--primary-primary)' }}>{mat.nome}</td>
-                          <td className="text-center align-middle">
-                            <span style={{ background: mat.cor, width: 22, height: 22, borderRadius: '50%', display: 'inline-block', border: '2px solid rgba(255,255,255,0.3)', boxShadow: '0 1px 4px rgba(0,0,0,0.18)', verticalAlign: 'middle' }} title={mat.cor} />
-                          </td>
-                          <td className="align-middle ps-2">
-                            {Array.isArray(mat.edital) && mat.edital.length > 0 ? (
-                              <span className="text-muted small">{mat.edital.slice(0, 2).join(', ')}{mat.edital.length > 2 ? ` +${mat.edital.length - 2}` : ''}</span>
-                            ) : (
-                              <span className="text-muted fst-italic small">—</span>
-                            )}
-                          </td>
-                          <td className="text-center align-middle fw-semibold">{mat.quantidadeQuestoes ?? 0}</td>
-                          <td className="text-center align-middle">
-                            <div className="d-flex justify-content-center gap-1">
-                              <Button variant="outline-primary" size="sm" onClick={() => {
-                                setEditMatIdx(idx);
-                                setEditMatNome(mat.nome);
-                                setEditMatCor(mat.cor || '#71dd8c');
-                                setEditMatEdital(Array.isArray(mat.edital) ? mat.edital.join('\n') : '');
-                                setEditMatQtd(mat.quantidadeQuestoes ?? 0);
-                                setShowEditMateriaModal(true);
-                              }}>Editar</Button>
-                              <Button variant="outline-danger" size="sm" onClick={() => setMateriasProjeto(materiasProjeto.filter((_, i) => i !== idx))}>✕</Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>
             </Modal.Body>
 
             <Modal.Footer className="modal-estilo border-0 pt-0">
-              <button className="btn btn-outline-primary-primary" onClick={() => {
-                setShowModal(false);
-                setEditProjetoIdx(null);
-                setNomeProjetoPadrao('');
-                setDescricaoProjetoPadrao('');
-                setMaterias([]);
-                setMateriasProjeto([]);
-                setCarreiraSelecionadaModal('');
+              <button className="btn btn-outline-primary-primary btn-sm" onClick={() => {
+                setShowModal(false); setEditProjetoIdx(null); setNomeProjetoPadrao(''); setDescricaoProjetoPadrao('');
+                setMaterias([]); setMateriasProjeto([]); setCarreiraSelecionadaModal('');
               }}>Cancelar</button>
-              <button className="btn btn-primary-primary px-4" onClick={handleSalvarProjetoPadrao} disabled={uploadingImagem}>
+              <button className="btn btn-primary-primary btn-sm px-4" onClick={handleSalvarProjetoPadrao} disabled={uploadingImagem}>
                 {uploadingImagem ? 'Salvando...' : (editProjetoIdx !== null ? 'Salvar Alterações' : 'Criar Projeto')}
               </button>
             </Modal.Footer>

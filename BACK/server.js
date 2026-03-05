@@ -250,48 +250,6 @@ app.put('/usuarios/:id/senha-admin', autenticar, autorizarAdmin, async (req, res
   }
 });
 // Apagar projeto padrão
-// Editar projeto padrão
-app.put('/projetos-padrao/:id', async (req, res) => {
-  console.log('PUT /projetos-padrao/:id chamado', req.params, req.body);
-  try {
-    const { id } = req.params;
-    let { nome, descricao, carreiraId, imagem, ano, cargo } = req.body;
-    // Type-cast ano to int if present and not empty
-    if (ano !== undefined && ano !== null && ano !== "") {
-      ano = parseInt(ano);
-      if (isNaN(ano)) ano = null;
-    } else {
-      ano = null;
-    }
-    // Garante que imagem seja string ou null
-    if (Array.isArray(imagem)) {
-      imagem = imagem.length > 0 ? imagem[0] : null;
-    }
-    // Type-cast carreiraId to string (Prisma expects string for id fields)
-    if (carreiraId !== undefined && carreiraId !== null && carreiraId !== "") {
-      carreiraId = String(carreiraId);
-    } else {
-      carreiraId = null;
-    }
-    // Atualiza dados do projeto padrão
-    const projetoPadraoAtualizado = await prisma.projetoPadrao.update({
-      where: { id },
-      data: {
-        ...(nome !== undefined && { nome }),
-        ...(descricao !== undefined && { descricao }),
-        carreiraId, // always update carreiraId, can be null
-        ...(imagem !== undefined && { imagem }),
-        ...(ano !== undefined && { ano }),
-        ...(cargo !== undefined && { cargo })
-      }
-    });
-    res.json(projetoPadraoAtualizado);
-  } catch (error) {
-    console.error('Erro ao editar projeto padrão:', error);
-    console.error('Stack:', error.stack);
-    res.status(500).json({ error: 'Erro ao editar projeto padrão.', details: error.message, stack: error.stack });
-  }
-});
 app.delete('/projetos-padrao/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -554,7 +512,8 @@ app.post('/usuarios/:userId/copiar-projeto-padrao/:projetoPadraoId', async (req,
           edital: mat.conteudos,
           cor: mat.cor || '#71dd8c',
           projetoId,
-          userId
+          userId,
+          quantidadeQuestoes: mat.quantidadeQuestoes ?? 0
         }
       });
     }

@@ -522,6 +522,14 @@ function Materias() {
 
                                                 {/* Conteúdo principal */}
                                                 <div className="flex-grow-1 p-3 pt-2 d-flex flex-column justify-content-between">
+                                                    {/* Quantidade de questões do edital */}
+                                                    {materia.quantidadeQuestoes > 0 && (
+                                                        <div className="d-flex align-items-center gap-1 mb-2">
+                                                            <span className="badge fw-semibold" style={{ background: materia.cor ? `${materia.cor}33` : 'rgba(13,110,253,0.15)', color: materia.cor || '#0d6efd', fontSize: '0.75rem', border: `1px solid ${materia.cor || '#0d6efd'}55` }}>
+                                                                {materia.quantidadeQuestoes} questões
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                     {/* Progresso do edital */}
                                                     {Array.isArray(materia.edital) && materia.edital.length > 0 ? (
                                                         <div className="mb-3">
