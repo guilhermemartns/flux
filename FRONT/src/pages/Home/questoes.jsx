@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import SelecaoBateria from './SelecaoBateria';
 import api from '../../services/api';
-import { Folder, FileText, Check, X, File, Hash, Edit2, Trash } from 'react-feather';
+import { Folder, FileText, Check, X, File, Hash, Edit2, Trash, HelpCircle } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useAuth } from '../../auth.jsx';
 import { Modal } from 'react-bootstrap';
@@ -15,7 +15,8 @@ import { usePageTitle } from '../../components/PageTitleContext';
 function Questoes() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { setTitle } = usePageTitle();
+  const { setTitle, setTitleExtra } = usePageTitle();
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const [baterias, setBaterias] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +39,17 @@ function Questoes() {
   useEffect(() => {
     setTitle('Baterias de Questões');
     document.title = 'FLUX | Questões';
-  }, [setTitle]);
+    setTitleExtra(
+      <button
+        className="btn p-0 d-flex align-items-center"
+        style={{ color: 'var(--text-light)', border: 'none', background: 'none', lineHeight: 1 }}
+        onClick={() => setShowHelpModal(true)}
+      >
+        <HelpCircle size={14} />
+      </button>
+    );
+    return () => setTitleExtra(null);
+  }, [setTitle, setTitleExtra]);
 
   useEffect(() => {
     if (selectedId) setShowSelecao(true);
@@ -382,6 +393,45 @@ function Questoes() {
                 <button type="submit" className="btn btn-primary-primary3">Cadastrar</button>
               </div>
             </form>
+          </Modal.Body>
+        </Modal>
+
+        {/* Modal de ajuda */}
+        <Modal show={showHelpModal} onHide={() => setShowHelpModal(false)} centered className="modal-fundo">
+          <Modal.Body className="modal-estilo">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <Modal.Title className="fw-bold fs-5 m-0" style={{ color: 'var(--text-middle)' }}>Como usar Baterias de Questões?</Modal.Title>
+              <button className="btn p-0" style={{ background: 'none', border: 'none', color: 'var(--text-light)' }} onClick={() => setShowHelpModal(false)}><X size={18} /></button>
+            </div>
+            <div className="d-flex flex-column gap-3" style={{ fontSize: '0.88em' }}>
+              <div>
+                <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>📋 O que é uma bateria?</div>
+                <p className="m-0" style={{ color: 'var(--text-light)' }}>Uma bateria é um conjunto de questões avulsas — listas de exercícios, questões de livros, plataformas ou provas anteriores que não são simulados completos. Ideal para registrar seu desempenho em treinos focados por matéria.</p>
+              </div>
+              <div>
+                <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>➕ Criando uma bateria</div>
+                <p className="m-0" style={{ color: 'var(--text-light)' }}>Clique em <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>+ Nova Bateria</span>, informe um <strong>título</strong>, a <strong>quantidade de questões</strong> e a <strong>data</strong>. Após criar, o modal de correção abre automaticamente.</p>
+              </div>
+              <div>
+                <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>✏️ Preenchendo a correção</div>
+                <ul className="m-0 ps-3 d-flex flex-column gap-1" style={{ color: 'var(--text-light)' }}>
+                  <li>Para cada questão, selecione a <strong>Matéria</strong>, o <strong>Tópico do Edital</strong>, a <strong>Resposta</strong> e o <strong>Gabarito</strong>.</li>
+                  <li>Marque <span style={{ color: '#AF52DE', fontWeight: 600 }}>Chutei?</span> para registrar respostas sem certeza.</li>
+                  <li>Marque <span style={{ color: '#8e8e93', fontWeight: 600 }}>Anulada?</span> para excluir a questão do cálculo.</li>
+                </ul>
+              </div>
+              <div>
+                <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>⚡ Preenchimento relâmpago</div>
+                <p className="m-0" style={{ color: 'var(--text-light)' }}>Ative o ícone <span style={{ color: '#ffc107', fontWeight: 600 }}>⚡</span> na coluna Matéria. Com ele ativo, ao selecionar uma matéria, <strong>todas as linhas abaixo</strong> são preenchidas com o mesmo valor automaticamente.</p>
+              </div>
+              <div>
+                <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>🔄 Fila de Revisão</div>
+                <p className="m-0" style={{ color: 'var(--text-light)' }}>Ao salvar, questões <span style={{ color: '#FF2D55', fontWeight: 600 }}>erradas</span>, <span style={{ color: '#FF9500', fontWeight: 600 }}>em branco</span> e <span style={{ color: '#AF52DE', fontWeight: 600 }}>chutadas</span> são enviadas automaticamente para a Fila de Revisão com a fonte identificada como <span style={{ color: '#AF52DE', fontWeight: 600 }}>Bateria</span>.</p>
+              </div>
+            </div>
+            <div className="d-flex justify-content-end mt-4">
+              <button className="btn btn-primary-primary3" onClick={() => setShowHelpModal(false)}>Entendi</button>
+            </div>
           </Modal.Body>
         </Modal>
       </main>

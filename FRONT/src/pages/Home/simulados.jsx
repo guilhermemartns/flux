@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Selecao from './selecao';
 import api from '../../services/api';
-import { Folder, FileText, Check, X, File, Hash, Copy, Edit2, Trash, BookOpen } from 'react-feather';
+import { Folder, FileText, Check, X, File, Hash, Copy, Edit2, Trash, BookOpen, HelpCircle } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useAuth } from '../../auth.jsx';
 import { getSimuladoStats } from '../../services/simuladoStats';
@@ -22,6 +22,7 @@ import { usePageTitle } from '../../components/PageTitleContext';
 
 
 function Home() {
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [stats, setStats] = useState({});
   const { user } = useAuth();
   const [simulados, setSimulados] = useState([]);
@@ -45,7 +46,7 @@ function Home() {
   const [cardHeights, setCardHeights] = useState({});
   const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const { setTitle } = usePageTitle();
+  const { setTitle, setTitleExtra } = usePageTitle();
   const toastShownRef = useRef(false);
   const [delays, setDelays] = useState([]);
 
@@ -64,7 +65,17 @@ function Home() {
   useEffect(() => {
     setTitle('Simulados');
     document.title = 'FLUX | Simulados';
-  }, [setTitle]);
+    setTitleExtra(
+      <button
+        className="btn p-0 d-flex align-items-center"
+        style={{ color: 'var(--text-light)', border: 'none', background: 'none', lineHeight: 1 }}
+        onClick={() => setShowHelpModal(true)}
+      >
+        <HelpCircle size={14} />
+      </button>
+    );
+    return () => setTitleExtra(null);
+  }, [setTitle, setTitleExtra]);
 
   useEffect(() => {
     const projetoSelecionado = localStorage.getItem('projetoSelecionado');
@@ -720,6 +731,46 @@ function Home() {
                 </form>
               </Modal.Body>
             </Modal>
+
+      {/* Modal de ajuda */}
+      <Modal show={showHelpModal} onHide={() => setShowHelpModal(false)} centered className="modal-fundo">
+        <Modal.Body className="modal-estilo">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <Modal.Title className="fw-bold fs-5 m-0" style={{ color: 'var(--text-middle)' }}>Como usar Simulados?</Modal.Title>
+            <button className="btn p-0" style={{ background: 'none', border: 'none', color: 'var(--text-light)' }} onClick={() => setShowHelpModal(false)}><X size={18} /></button>
+          </div>
+          <div className="d-flex flex-column gap-3" style={{ fontSize: '0.88em' }}>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>📋 Criando um simulado</div>
+              <p className="m-0" style={{ color: 'var(--text-light)' }}>Clique em <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>+ Novo Simulado</span>, informe a <strong>quantidade de questões</strong> e a <strong>data</strong> de realização. Após criar, clique no ícone de lápis para abrir a correção.</p>
+            </div>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>✏️ Preenchendo a correção</div>
+              <ul className="m-0 ps-3 d-flex flex-column gap-1" style={{ color: 'var(--text-light)' }}>
+                <li>Para cada questão, selecione a <strong>Matéria</strong>, o <strong>Tópico do Edital</strong>, a <strong>Resposta</strong> dada e o <strong>Gabarito</strong>.</li>
+                <li>Marque <span style={{ color: '#AF52DE', fontWeight: 600 }}>Chutei?</span> se respondeu sem ter certeza — mesmo acertando, entra na fila de revisão.</li>
+                <li>Marque <span style={{ color: '#8e8e93', fontWeight: 600 }}>Anulada?</span> para excluir a questão do cálculo.</li>
+                <li>Selecione o <strong>Motivo do Erro</strong> para análises futuras no Dashboard.</li>
+              </ul>
+            </div>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>⚡ Preenchimento relâmpago</div>
+              <p className="m-0" style={{ color: 'var(--text-light)' }}>Ative o ícone <span style={{ color: '#ffc107', fontWeight: 600 }}>⚡</span> na coluna Matéria. Com ele ativo, ao selecionar uma matéria em qualquer linha, <strong>todas as linhas abaixo</strong> serão preenchidas automaticamente com o mesmo valor — útil para simulados com blocos de questões por matéria.</p>
+            </div>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>📄 PDFs</div>
+              <p className="m-0" style={{ color: 'var(--text-light)' }}>Anexe o <strong>PDF da prova</strong> e o <strong>PDF do gabarito</strong> diretamente no modal de correção para acesso futuro.</p>
+            </div>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>🔄 Fila de Revisão</div>
+              <p className="m-0" style={{ color: 'var(--text-light)' }}>Ao salvar, questões <span style={{ color: '#FF2D55', fontWeight: 600 }}>erradas</span>, <span style={{ color: '#FF9500', fontWeight: 600 }}>em branco</span> e <span style={{ color: '#AF52DE', fontWeight: 600 }}>chutadas</span> são enviadas automaticamente para a Fila de Revisão.</p>
+            </div>
+          </div>
+          <div className="d-flex justify-content-end mt-4">
+            <button className="btn btn-primary-primary3" onClick={() => setShowHelpModal(false)}>Entendi</button>
+          </div>
+        </Modal.Body>
+      </Modal>
 
       </main>
     </div>

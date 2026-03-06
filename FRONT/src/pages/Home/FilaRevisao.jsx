@@ -261,27 +261,35 @@ export default function FilaRevisao() {
           <div className="d-flex flex-column gap-3" style={{ fontSize: '0.88em' }}>
             <div>
               <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>📥 Como as questões entram?</div>
-              <p className="m-0" style={{ color: 'var(--text-light)' }}>Ao salvar um simulado, questões <span style={{ color: '#FF2D55', fontWeight: 600 }}>erradas</span>, <span style={{ color: '#FF9500', fontWeight: 600 }}>em branco</span> e <span style={{ color: '#AF52DE', fontWeight: 600 }}>chutadas (mesmo acertando)</span> são automaticamente adicionadas como <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>Pendentes</span>. Questões acertadas sem chute são removidas da fila.</p>
+              <p className="m-0" style={{ color: 'var(--text-light)' }}>Ao salvar um <strong>simulado</strong> ou uma <strong>bateria de questões</strong>, questões <span style={{ color: '#FF2D55', fontWeight: 600 }}>erradas</span>, <span style={{ color: '#FF9500', fontWeight: 600 }}>em branco</span> e <span style={{ color: '#AF52DE', fontWeight: 600 }}>chutadas (mesmo acertando)</span> são automaticamente adicionadas como <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>Pendentes</span>. Questões acertadas sem chute são removidas da fila.</p>
             </div>
             <div>
               <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>🔄 Status das questões</div>
               <ul className="m-0 ps-3 d-flex flex-column gap-1" style={{ color: 'var(--text-light)' }}>
                 <li><span style={{ color: '#FF2D55', fontWeight: 600 }}>Pendente</span> — precisa revisar</li>
-                <li><span style={{ color: '#34C759', fontWeight: 600 }}>Dominado</span> — acertou na revisão consecutivamente</li>
+                <li><span style={{ color: '#34C759', fontWeight: 600 }}>Dominado</span> — acertou na revisão 2x consecutivas</li>
                 <li><span style={{ color: '#8e8e93', fontWeight: 600 }}>Arquivado</span> — removido da fila ativa sem dominar</li>
               </ul>
             </div>
             <div>
               <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>✅ Acertei / ❌ Errei</div>
-              <p className="m-0" style={{ color: 'var(--text-light)' }}>Ao revisar uma questão, clique <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>Acertei</span> para registrar um acerto consecutivo — ao acertar seguidas vezes, a questão vira <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>Dominada</span>. Clicando <span style={{ color: 'var(--text-middle)', fontWeight: 600 }}>Errei</span>, o contador de acertos consecutivos é zerado.</p>
+              <p className="m-0" style={{ color: 'var(--text-light)' }}>Clique <span style={{ color: '#34C759', fontWeight: 600 }}>Acertei</span> para registrar um acerto consecutivo — ao acertar 2x seguidas a questão vira <span style={{ color: '#34C759', fontWeight: 600 }}>Dominada</span> e sai da fila. Clicando <span style={{ color: '#FF2D55', fontWeight: 600 }}>Errei</span>, o contador é zerado.</p>
             </div>
             <div>
               <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>📝 Tipos</div>
               <ul className="m-0 ps-3 d-flex flex-column gap-1" style={{ color: 'var(--text-light)' }}>
                 <li><span style={{ color: '#FF2D55', fontWeight: 600 }}>Erro</span> — respondeu errado</li>
                 <li><span style={{ color: '#FF9500', fontWeight: 600 }}>Branco</span> — não respondeu</li>
-                <li><span style={{ color: '#AF52DE', fontWeight: 600 }}>Chute</span> — acertou mas por sorte (marcado como chute)</li>
+                <li><span style={{ color: '#AF52DE', fontWeight: 600 }}>Chute</span> — acertou mas marcou como chute</li>
               </ul>
+            </div>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>🏷️ Fonte</div>
+              <p className="m-0" style={{ color: 'var(--text-light)' }}>Cada item indica se veio de um <span style={{ color: '#007AFF', fontWeight: 600 }}>Simulado</span> ou de uma <span style={{ color: '#AF52DE', fontWeight: 600 }}>Bateria</span>. Use o filtro de Fonte para focar em apenas um tipo.</p>
+            </div>
+            <div>
+              <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>🔍 Filtros e anotações</div>
+              <p className="m-0" style={{ color: 'var(--text-light)' }}>Use o painel de filtros para segmentar por matéria, tipo, fonte ou motivo de erro. Clique no ícone de lápis para adicionar uma <strong>anotação</strong> a qualquer item — útil para registrar o raciocínio correto da questão.</p>
             </div>
           </div>
 

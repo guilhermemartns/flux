@@ -4,7 +4,7 @@ import { Table } from 'react-bootstrap';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { Chart, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Legend, Tooltip, Title, Filler, ArcElement } from 'chart.js';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Check, X, Circle, Hash, Calendar, TrendingUp, Folder, Frown, AlertTriangle, ChevronDown, ChevronRight } from 'react-feather';
+import { Check, X, Circle, Hash, Calendar, TrendingUp, Folder, Frown, AlertTriangle, ChevronDown, ChevronRight, HelpCircle } from 'react-feather';
 import Navbar from '../../components/Navbar';
 import { usePageTitle } from '../../components/PageTitleContext';
 import { useNavigate } from 'react-router-dom';
@@ -39,7 +39,8 @@ const Dashboard = () => {
   const [loadingBaterias, setLoadingBaterias] = useState(false);
   const [bateriaDataLoaded, setBateriaDataLoaded] = useState(false);
   const [expandedBatMateria, setExpandedBatMateria] = useState({});
-  const { setTitle } = usePageTitle();
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const { setTitle, setTitleExtra } = usePageTitle();
 
   // CSS para estabilizar layout com tooltips do Bootstrap
   useEffect(() => {
@@ -73,7 +74,17 @@ const Dashboard = () => {
   useEffect(() => {
     setTitle('Dashboard');
     document.title = 'FLUX | Dashboard';
-  }, [setTitle]);
+    setTitleExtra(
+      <button
+        className="btn p-0 d-flex align-items-center"
+        style={{ color: 'var(--text-light)', border: 'none', background: 'none', lineHeight: 1 }}
+        onClick={() => setShowHelpModal(true)}
+      >
+        <HelpCircle size={14} />
+      </button>
+    );
+    return () => setTitleExtra(null);
+  }, [setTitle, setTitleExtra]);
 
   useEffect(() => {
     if (materiasProjeto.length > 0 && !materiaSelecionada) {
@@ -1018,6 +1029,52 @@ const Dashboard = () => {
             </div>
           </>)}
         </>)}
+
+      {/* Modal de ajuda */}
+      {showHelpModal && (
+        <div className="modal show d-block modal-fundo" tabIndex="-1" onClick={e => { if (e.target === e.currentTarget) setShowHelpModal(false); }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content modal-estilo">
+              <div className="modal-body">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <span className="fw-bold fs-5" style={{ color: 'var(--text-middle)' }}>Como usar o Dashboard?</span>
+                  <button className="btn p-0" style={{ background: 'none', border: 'none', color: 'var(--text-light)' }} onClick={() => setShowHelpModal(false)}><X size={18} /></button>
+                </div>
+                <div className="d-flex flex-column gap-3" style={{ fontSize: '0.88em' }}>
+                  <div>
+                    <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>📊 Abas: Simulados | Baterias</div>
+                    <p className="m-0" style={{ color: 'var(--text-light)' }}>O dashboard é dividido em duas abas — <strong>Simulados</strong> para análise das provas completas e <strong>Baterias de Questões</strong> para os treinos avulsos.</p>
+                  </div>
+                  <div>
+                    <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>📈 Aba Simulados — Visão Geral</div>
+                    <ul className="m-0 ps-3 d-flex flex-column gap-1" style={{ color: 'var(--text-light)' }}>
+                      <li>Tabela com os últimos simulados: acertos, erros, brancos e líquido (acertos − erros).</li>
+                      <li>Gráfico de evolução da pontuação ao longo do tempo com linha de tendência.</li>
+                      <li>Tabela de comparação de notas líquidas por matéria entre simulados (destaque automático pelo pior desempenho).</li>
+                      <li>Use o seletor <strong>"Últimos N simulados"</strong> para filtrar o período analisado.</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>🔍 Aba Simulados — Desempenho por Matéria</div>
+                    <p className="m-0" style={{ color: 'var(--text-light)' }}>Selecione uma matéria para ver: evolução do % líquido por simulado, top tópicos com mais erros e distribuição dos motivos de erro.</p>
+                  </div>
+                  <div>
+                    <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>⚠️ Aba Simulados — Alertas</div>
+                    <p className="m-0" style={{ color: 'var(--text-light)' }}>Mostra questões que você acertou por <span style={{ color: '#FF9500', fontWeight: 600 }}>chute</span> por matéria, e a retenção da fila de revisão — matérias com mais questões pendentes e média de erros por item.</p>
+                  </div>
+                  <div>
+                    <div className="fw-bold mb-1" style={{ color: 'var(--text-middle)' }}>📋 Aba Baterias</div>
+                    <p className="m-0" style={{ color: 'var(--text-light)' }}>Exibe totais consolidados de todas as baterias, gráfico de % líquido por matéria, tabela por bateria e desempenho detalhado por matéria expandível até o nível de tópico.</p>
+                  </div>
+                </div>
+                <div className="d-flex justify-content-end mt-4">
+                  <button className="btn btn-primary-primary3" onClick={() => setShowHelpModal(false)}>Entendi</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       </main>
     </div>

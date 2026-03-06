@@ -747,9 +747,6 @@ const Home = () => {
 
       <main className="container-fluid gap-4 pt-3">
 
-
-
-
         <div className="m-0 w-100 p-3 border fadein" style={{ borderRadius: 25, animationDelay: '0.1s', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
           <div className="card-title-padrao position-absolute px-3" style={{ top: '-12px', left: '20px', zIndex: 1, backgroundColor: 'var(--background)' }}>TEMPO</div>
 
