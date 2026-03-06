@@ -14,11 +14,13 @@ export const StudyTimerProvider = ({ children }) => {
       running: false,
       seconds: 0,
       preset: null,
-      mode: 'cronometro', // 'cronometro' ou 'timer'
-      inputSeconds: 0 // usado para timer
+      mode: 'cronometro',
+      inputSeconds: 0
     };
   });
   const intervalRef = useRef(null);
+  const startedAtRef = useRef(null); // Date.now() quando começou a rodar
+  const baseSecondsRef = useRef(0);  // segundos acumulados antes de pausar
 
   useEffect(() => {
     localStorage.setItem('study-timer', JSON.stringify(timer));
@@ -26,22 +28,32 @@ export const StudyTimerProvider = ({ children }) => {
 
   useEffect(() => {
     if (timer.running) {
-      intervalRef.current = setInterval(() => {
-        setTimer(prev => {
-          if (prev.mode === 'cronometro') {
-            return { ...prev, seconds: prev.seconds + 1 };
-          } else if (prev.mode === 'timer') {
+      if (timer.mode === 'cronometro') {
+        // Inicializa refs ao começar a rodar
+        if (!startedAtRef.current) {
+          startedAtRef.current = Date.now();
+          baseSecondsRef.current = timer.seconds;
+        }
+        intervalRef.current = setInterval(() => {
+          setTimer(prev => ({
+            ...prev,
+            seconds: baseSecondsRef.current + Math.floor((Date.now() - startedAtRef.current) / 1000)
+          }));
+        }, 500);
+      } else if (timer.mode === 'timer') {
+        // Timer countdown: ainda usa ticks (contagem regressiva)
+        intervalRef.current = setInterval(() => {
+          setTimer(prev => {
             if (prev.seconds > 0) {
               return { ...prev, seconds: prev.seconds - 1 };
-            } else {
-              // Timer chegou a zero
-              return { ...prev, running: false };
             }
-          }
-          return prev;
-        });
-      }, 1000);
+            return { ...prev, running: false };
+          });
+        }, 1000);
+      }
     } else {
+      // Parou: limpa refs para o próximo start
+      startedAtRef.current = null;
       clearInterval(intervalRef.current);
     }
     return () => clearInterval(intervalRef.current);

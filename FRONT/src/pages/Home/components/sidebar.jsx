@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api from '../../../services/api';
-import { Home, BookOpen, FileText, RefreshCw, Clipboard, BarChart2, HelpCircle, ChevronDown, User, Edit2, Menu, X, Zap, Target, Activity, AlertTriangle, Star, Smile } from 'react-feather';
+import { Home, BookOpen, FileText, RefreshCw, Clipboard, BarChart2, HelpCircle, User, Edit2, Menu, X, Zap, Target, Activity, AlertTriangle, Star, Smile } from 'react-feather';
 import { Modal, Button } from 'react-bootstrap';
 import { motion, AnimatePresence } from 'framer-motion';
 import StudyTimer from '../../../components/StudyTimer';
@@ -47,45 +47,6 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
 
   // Mostrar/ocultar card de dicas (fechar)
   const [showDicaCard, setShowDicaCard] = useState(false);
-
-  // Estados para controlar dropdowns - iniciam expandidos
-  const [simuladosExpanded, setSimuladosExpanded] = useState(true);
-  const [questoesExpanded, setQuestoesExpanded] = useState(true);
-
-  // "Pinned" indica que o dropdown foi fixado por clique (permanece aberto mesmo ao tirar o mouse)
-  const [simuladosPinned, setSimuladosPinned] = useState(false);
-  const [questoesPinned, setQuestoesPinned] = useState(false);
-
-  // Auto-expandir / fixar dropdowns se a rota atual pertencer ao grupo;
-  // caso contrário, fechar e desfixar.
-  useEffect(() => {
-    const p = location.pathname;
-    const isSimRoute = p.startsWith('/simulados') || p.startsWith('/dashboard') || p.startsWith('/fila-revisao');
-    const isQuestRoute = p.startsWith('/questoes') || p.startsWith('/dashboard-questoes');
-
-    setSimuladosPinned(isSimRoute);
-    setQuestoesPinned(isQuestRoute);
-
-    // manter expanded true se estiver pinned (rota do grupo) — se não, fecha
-    setSimuladosExpanded(isSimRoute);
-    setQuestoesExpanded(isQuestRoute);
-  }, [location.pathname]);
-
-  // Handlers para clique (fixa/desfixa) e hover (abre temporariamente)
-  function handleSimuladosClick() {
-    setSimuladosPinned(prev => {
-      const next = !prev;
-      setSimuladosExpanded(next);
-      return next;
-    });
-  }
-  function handleQuestoesClick() {
-    setQuestoesPinned(prev => {
-      const next = !prev;
-      setQuestoesExpanded(next);
-      return next;
-    });
-  }
 
   // Persistência do estado collapsed
   useEffect(() => {
@@ -360,13 +321,6 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
         </div>
         <div
           className='menu-navigation'
-          onClick={() => {E
-            // Fecha imediatamente dropdowns; o useEffect abaixo reabrirá se a rota pertencer ao dropdown
-            setSimuladosPinned(false);
-            setQuestoesPinned(false);
-            setSimuladosExpanded(false);
-            setQuestoesExpanded(false);
-          }}
         >
           {/* Botões principais */}
           <Link to="/" className={`menu-item ${location.pathname === '/' ? 'active' : ''}`}>
@@ -395,97 +349,33 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
             <span>Edital</span>
           </Link>
 
-          {/* Link para ciclo oculto 
-          <Link to="/ciclo" className={`menu-item ${location.pathname === '/ciclo' ? 'active' : ''}`}>
-            <RefreshCw size={14} />
-            <span>Ciclo</span>
+          <Link to="/dashboard" className={`menu-item ${location.pathname.startsWith('/dashboard') ? 'active' : ''}`}>
+            <BarChart2 size={14} />
+            <span>Dashboard</span>
           </Link>
-          */}
 
-          {/* Dropdown Simulados */}
-          <div 
-            className="dropdown-section"
-            onMouseEnter={() => setSimuladosExpanded(true)}
-            onMouseLeave={() => setSimuladosExpanded(simuladosPinned)}
-          >
-            <div 
-              className={`dropdown-header d-flex align-items-center gap-2 ${simuladosExpanded ? 'expanded' : ''}`}
-              onClick={handleSimuladosClick}
-            >
-               <Clipboard size={14} />
-               <span >Simulados</span>
-               <ChevronDown size={12} className="dropdown-arrow" />
-             </div>
+          <span className="nav-section-label">Meus Registros</span>
 
-            <AnimatePresence>
-               {simuladosExpanded && (
-                 <motion.div
-                   initial={{ height: 0, opacity: 0 }}
-                   animate={{ height: 'auto', opacity: 1 }}
-                   exit={{ height: 0, opacity: 0 }}
-                   transition={{ duration: 0.3, ease: "easeInOut" }}
-                   className="dropdown-content"
-                 >
-                   {/* Linha separadora removida conforme solicitado */}
-                   <Link to="/simulados" className={`menu-item submenu-item ${location.pathname === '/simulados' ? 'active' : ''}`}>
-                     <Clipboard size={14} />
-                     <span className='small'>Meus simulados</span>
-                     {simuladoCount > 0 && (
-                       <span className="badge rounded" style={{ background: 'rgba(142,142,147,0.15)', color: 'var(--text-light)', fontWeight: 700, fontSize: '0.75em', marginLeft: 'auto' }}>{simuladoCount}</span>
-                     )}
-                   </Link>
-                   <Link to="/dashboard" className={`menu-item submenu-item ${location.pathname.startsWith('/dashboard') ? 'active' : ''}`}>
-                     <BarChart2 size={14} />
-                     <span className='small'>Dashboard</span>
-                   </Link>
-                   <Link to="/fila-revisao" className={`menu-item submenu-item ${location.pathname === '/fila-revisao' ? 'active' : ''}`}>
-                     <RefreshCw size={14} />
-                     <span className='small'>Fila de Revisão</span>
-                     {filaCount > 0 && (
-                       <span className="badge rounded" style={{ background: 'rgba(255,45,85,0.15)', color: '#FF2D55', fontWeight: 700, fontSize: '0.75em', marginLeft: 'auto' }}>{filaCount}</span>
-                     )}
-                   </Link>
-                 </motion.div>
-               )}
-             </AnimatePresence>
-          </div>
+          <Link to="/simulados" className={`menu-item ${location.pathname === '/simulados' ? 'active' : ''}`}>
+            <Clipboard size={14} />
+            <span>Simulados</span>
+            {simuladoCount > 0 && (
+              <span className="badge rounded" style={{ background: 'rgba(142,142,147,0.15)', color: 'var(--text-light)', fontWeight: 700, fontSize: '0.75em', marginLeft: 'auto' }}>{simuladoCount}</span>
+            )}
+          </Link>
 
-          {/* Dropdown Questões oculto
-          <div 
-            className="dropdown-section"
-            onMouseEnter={() => setQuestoesExpanded(true)}
-            onMouseLeave={() => setQuestoesExpanded(questoesPinned)}
-          >
-            <div 
-              className={`dropdown-header d-flex align-items-center gap-2 ${questoesExpanded ? 'expanded' : ''}`}
-              onClick={handleQuestoesClick}
-            >
-               <HelpCircle size={14} />
-               <span>Questões</span>
-               <ChevronDown size={12} className="dropdown-arrow" />
-             </div>
-            <AnimatePresence>
-               {questoesExpanded && (
-                 <motion.div
-                   initial={{ height: 0, opacity: 0 }}
-                   animate={{ height: 'auto', opacity: 1 }}
-                   exit={{ height: 0, opacity: 0 }}
-                   transition={{ duration: 0.3, ease: "easeInOut" }}
-                   className="dropdown-content"
-                 >
-                   <Link to="/questoes" className={`menu-item submenu-item ${location.pathname === '/questoes' ? 'active' : ''}`}>
-                     <HelpCircle size={14} />
-                     <span className='small'>Minhas questões</span>
-                   </Link>
-                   <Link to="/dashboard-questoes" className={`menu-item submenu-item ${location.pathname === '/dashboard-questoes' ? 'active' : ''}`}>
-                     <BarChart2 size={14} />
-                     <span className='small'>Dashboard</span>
-                   </Link>
-                 </motion.div>
-               )}
-             </AnimatePresence>
-          </div>
-          */}
+          <Link to="/questoes" className={`menu-item ${location.pathname === '/questoes' ? 'active' : ''}`}>
+            <HelpCircle size={14} />
+            <span>Questões</span>
+          </Link>
+
+          <Link to="/fila-revisao" className={`menu-item ${location.pathname === '/fila-revisao' ? 'active' : ''}`}>
+            <RefreshCw size={14} />
+            <span>Fila de Revisão</span>
+            {filaCount > 0 && (
+              <span className="badge rounded" style={{ background: 'rgba(255,45,85,0.15)', color: '#FF2D55', fontWeight: 700, fontSize: '0.75em', marginLeft: 'auto' }}>{filaCount}</span>
+            )}
+          </Link>
 
           {/* Link para "Reportar erro" removido */}
         </div>

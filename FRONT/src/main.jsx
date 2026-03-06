@@ -28,6 +28,7 @@ import MateriaDetalhe from './pages/Home/MateriaDetalhe.jsx';
 import MateriaOverview from './pages/Home/MateriaOverview.jsx';
 import Ciclo from './pages/Home/Ciclo';
 import FilaRevisao from './pages/Home/FilaRevisao';
+import Questoes from './pages/Home/questoes';
 import Navbar from './components/Navbar.jsx';
 import { PageTitleProvider } from './components/PageTitleContext';
 import { ToastContainer } from 'react-toastify';
@@ -112,6 +113,7 @@ function AppLayout() {
           <Route path="/projeto" element={<PrivateRoute><Projeto /></PrivateRoute>} />
           <Route path="/ciclo" element={<PrivateRoute><Ciclo /></PrivateRoute>} />
           <Route path="/fila-revisao" element={<PrivateRoute><FilaRevisao /></PrivateRoute>} />
+          <Route path="/questoes" element={<PrivateRoute><Questoes /></PrivateRoute>} />
           <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
           <Route path="/inserir" element={<AdminRoute><Inserir /></AdminRoute>} />
         </Routes>

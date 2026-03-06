@@ -4,7 +4,7 @@ import { Table } from 'react-bootstrap';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { Chart, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Legend, Tooltip, Title, Filler, ArcElement } from 'chart.js';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Check, X, Circle, Hash, Calendar, TrendingUp, Folder, Frown, AlertTriangle } from 'react-feather';
+import { Check, X, Circle, Hash, Calendar, TrendingUp, Folder, Frown, AlertTriangle, ChevronDown, ChevronRight } from 'react-feather';
 import Navbar from '../../components/Navbar';
 import { usePageTitle } from '../../components/PageTitleContext';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +33,12 @@ const Dashboard = () => {
   const [loadingAnalise, setLoadingAnalise] = useState(false);
   const [materiaSelecionada, setMateriaSelecionada] = useState(null);
   const [analiseQtd, setAnaliseQtd] = useState('all');
+  const [activeTab, setActiveTab] = useState('simulados');
+  const [baterias, setBaterias] = useState([]);
+  const [bateriaResumos, setBateriaResumos] = useState({});
+  const [loadingBaterias, setLoadingBaterias] = useState(false);
+  const [bateriaDataLoaded, setBateriaDataLoaded] = useState(false);
+  const [expandedBatMateria, setExpandedBatMateria] = useState({});
   const { setTitle } = usePageTitle();
 
   // CSS para estabilizar layout com tooltips do Bootstrap
@@ -154,6 +160,22 @@ const Dashboard = () => {
       window.removeEventListener('storage', handleStorage);
     };
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'baterias' || bateriaDataLoaded) return;
+    const projetoId = localStorage.getItem('projetoSelecionado') || '';
+    const userId = JSON.parse(localStorage.getItem('user'))?.id || '';
+    if (!projetoId || !userId) return;
+    setLoadingBaterias(true);
+    Promise.all([
+      api.get('/baterias', { params: { userId, projetoId } }),
+      api.get('/baterias/resumos', { params: { userId, projetoId } }),
+    ]).then(([batRes, resumoRes]) => {
+      setBaterias(batRes.data.filter(b => b.projetoId === projetoId));
+      setBateriaResumos(resumoRes.data || {});
+      setBateriaDataLoaded(true);
+    }).catch(console.error).finally(() => setLoadingBaterias(false));
+  }, [activeTab, bateriaDataLoaded]);
 
   useEffect(() => {
     if (analise) return; // já carregou
@@ -425,26 +447,67 @@ const Dashboard = () => {
       </div>
     );
   }
-  if (simulados.length === 0) {
-    return (
-      <div className="app-container d-flex flex-column justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-        <div className="text-center d-flex flex-column align-items-center gap-2">
-          <Frown size={48} className="text-secondary" />
-          <h4 className="text-center text-secondary fs-6 m-0">Não há nenhum simulado cadastrado.</h4>
-          <button className="btn btn-primary-primary3 px-4 py-2" onClick={() => navigate('/simulados')}>
-            Ir para Simulados
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const MOTIVO_COLORS = ['#FF2D55', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#5856D6', '#AF52DE', '#FF3B30', '#8e8e93'];
+
+  // Dados consolidados das baterias
+  const bConsolidado = {};
+  Object.values(bateriaResumos).forEach(r => {
+    (r.materias || []).forEach(m => {
+      if (!bConsolidado[m.nome]) bConsolidado[m.nome] = { acertos: 0, erros: 0, brancos: 0, topicos: {} };
+      bConsolidado[m.nome].acertos += m.acertos;
+      bConsolidado[m.nome].erros += m.erros;
+      bConsolidado[m.nome].brancos += m.brancos;
+      Object.entries(m.topicos || {}).forEach(([topico, stats]) => {
+        if (!bConsolidado[m.nome].topicos[topico]) bConsolidado[m.nome].topicos[topico] = { acertos: 0, erros: 0, brancos: 0 };
+        bConsolidado[m.nome].topicos[topico].acertos += stats.acertos;
+        bConsolidado[m.nome].topicos[topico].erros += stats.erros;
+        bConsolidado[m.nome].topicos[topico].brancos += stats.brancos;
+      });
+    });
+  });
+  const bMateriasNomes = Object.keys(bConsolidado);
+  const bTotal = bMateriasNomes.reduce((acc, nome) => {
+    const m = bConsolidado[nome];
+    return { acertos: acc.acertos + m.acertos, erros: acc.erros + m.erros, brancos: acc.brancos + m.brancos };
+  }, { acertos: 0, erros: 0, brancos: 0 });
+  const bLiquido = bTotal.acertos - bTotal.erros;
+  const bPorcentagens = bMateriasNomes.map(nome => {
+    const m = bConsolidado[nome];
+    const total = m.acertos + m.erros + m.brancos;
+    return total > 0 ? ((m.acertos - m.erros) / total * 100) : 0;
+  });
+  const bMin = bPorcentagens.length ? Math.min(...bPorcentagens) : 0;
+  const bMax = bPorcentagens.length ? Math.max(...bPorcentagens) : 0;
+  const bBarrasCores = bPorcentagens.map(p => {
+    const norm = bMin === bMax ? 0.5 : (p - bMin) / (bMax - bMin);
+    const r2 = Math.round(255 + (52 - 255) * norm);
+    const g2 = Math.round(45 + (199 - 45) * norm);
+    const b2 = Math.round(85 + (89 - 85) * norm);
+    return `rgb(${r2},${g2},${b2})`;
+  });
+  const bMateriaChartData = {
+    labels: bMateriasNomes,
+    datasets: [{ label: '% Líquido', data: bPorcentagens, backgroundColor: bBarrasCores, borderColor: bBarrasCores }],
+  };
 
   return (
     <div className="app-container">
       <main className="container-fluid gap-4 pt-3 pb-4 fadein" style={{ animationDelay: '0.05s' }}>
 
+        {/* ─── TABS ─── */}
+        <div className="d-flex gap-2 mb-4">
+          <button onClick={() => setActiveTab('simulados')} style={{ borderRadius: 20, fontWeight: 600, fontSize: '0.85rem', padding: '6px 20px', background: activeTab === 'simulados' ? '#1b59f9' : 'transparent', color: activeTab === 'simulados' ? '#fff' : 'var(--text-secondary)', border: activeTab === 'simulados' ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}>Simulados</button>
+          <button onClick={() => setActiveTab('baterias')} style={{ borderRadius: 20, fontWeight: 600, fontSize: '0.85rem', padding: '6px 20px', background: activeTab === 'baterias' ? '#1b59f9' : 'transparent', color: activeTab === 'baterias' ? '#fff' : 'var(--text-secondary)', border: activeTab === 'baterias' ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}>Baterias de Questões</button>
+        </div>
+
+        {activeTab === 'simulados' && (<>
+          {simulados.length === 0 ? (
+            <div className="d-flex flex-column justify-content-center align-items-center gap-2" style={{ minHeight: '50vh' }}>
+              <Frown size={48} className="text-secondary" />
+              <h4 className="text-center text-secondary fs-6 m-0">Não há nenhum simulado cadastrado.</h4>
+              <button className="btn btn-primary-primary3 px-4 py-2" onClick={() => navigate('/simulados')}>Ir para Simulados</button>
+            </div>
+          ) : (<>
         {/* ─── BLOCO 1: VISÃO GERAL ─── */}
         <div className="m-0 w-100 p-3 fadein position-relative mb-4" style={{ borderRadius: '1em', animationDelay: '0.1s', border: '1px solid var(--border)', overflow: 'visible' }}>
           <div className="card-title-padrao position-absolute px-3" style={{ top: '-12px', left: '20px', zIndex: 1, backgroundColor: 'var(--background)' }}>VISÃO GERAL</div>
@@ -824,6 +887,137 @@ const Dashboard = () => {
             ) : null}
           </div>
         </div>
+
+          </>)}
+        </>)}
+
+        {activeTab === 'baterias' && (<>
+          {loadingBaterias ? (
+            <div className="d-flex justify-content-center py-5"><Spinner animation="border" size="sm" /></div>
+          ) : baterias.length === 0 ? (
+            <div className="d-flex flex-column justify-content-center align-items-center gap-2" style={{ minHeight: '50vh' }}>
+              <Frown size={48} className="text-secondary" />
+              <h4 className="text-center text-secondary fs-6 m-0">Não há nenhuma bateria cadastrada.</h4>
+              <button className="btn btn-primary-primary3 px-4 py-2" onClick={() => navigate('/questoes')}>Ir para Questões</button>
+            </div>
+          ) : (<>
+            {/* ─── BATERIAS BLOCO 1: VISÃO GERAL ─── */}
+            <div className="m-0 w-100 p-3 fadein position-relative mb-4" style={{ borderRadius: '1em', border: '1px solid var(--border)', overflow: 'visible' }}>
+              <div className="card-title-padrao position-absolute px-3" style={{ top: '-12px', left: '20px', zIndex: 1, backgroundColor: 'var(--background)' }}>VISÃO GERAL</div>
+              <div style={{ padding: '1rem' }}>
+                <div className="d-flex gap-3 flex-wrap mb-4">
+                  {[
+                    { label: 'Acertos', value: bTotal.acertos, color: '#34C759', bg: 'rgba(52,199,89,0.1)' },
+                    { label: 'Erros', value: bTotal.erros, color: '#FF2D55', bg: 'rgba(255,45,85,0.1)' },
+                    { label: 'Brancos', value: bTotal.brancos, color: '#FF9500', bg: 'rgba(255,149,0,0.1)' },
+                    { label: 'Líquido', value: bLiquido, color: '#1b59f9', bg: 'rgba(27,89,249,0.1)' },
+                  ].map(({ label, value, color, bg }) => (
+                    <div key={label} style={{ flex: '1 1 80px', background: bg, borderRadius: 10, padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-light)', fontWeight: 600 }}>{label}</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="d-flex gap-3 align-items-stretch flex-wrap">
+                  <div className="card-padrao2" style={{ flex: 2, minWidth: 240, padding: '1rem', position: 'relative' }}>
+                    <div className="card-title-padrao">% Líquido por Matéria</div>
+                    <div style={{ height: 200 }}>
+                      <Bar data={bMateriaChartData} options={{ maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1) + '%' } } }, scales: { x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#aaa', font: { size: 10 }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }} />
+                    </div>
+                  </div>
+                  <div className="card-padrao2" style={{ flex: 1, minWidth: 240, padding: '1rem', position: 'relative' }}>
+                    <div className="card-title-padrao">Baterias</div>
+                    <div style={{ overflowX: 'auto', maxHeight: 240 }}>
+                      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.8rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <th style={{ padding: '6px 8px', color: 'var(--text-light)', textAlign: 'left' }}>Bateria</th>
+                            <th style={{ padding: '6px 8px', color: '#34C759', textAlign: 'center' }}>✓</th>
+                            <th style={{ padding: '6px 8px', color: '#FF2D55', textAlign: 'center' }}>✗</th>
+                            <th style={{ padding: '6px 8px', color: '#FF9500', textAlign: 'center' }}>○</th>
+                            <th style={{ padding: '6px 8px', color: '#1b59f9', textAlign: 'center' }}>Líq.</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {baterias.map((bat, idx) => {
+                            const r = bateriaResumos[bat.id] || {};
+                            const a = r.acertos || 0, e = r.erros || 0, b3 = r.brancos || 0;
+                            return (
+                              <tr key={bat.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', backgroundColor: idx % 2 !== 0 ? 'rgba(0,0,0,0.04)' : 'transparent' }}>
+                                <td style={{ padding: '6px 8px', color: 'var(--text-secondary)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{bat.titulo}</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center', color: '#34C759', fontWeight: 700 }}>{a}</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center', color: '#FF2D55', fontWeight: 700 }}>{e}</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center', color: '#FF9500', fontWeight: 700 }}>{b3}</td>
+                                <td style={{ padding: '6px 8px', textAlign: 'center', color: '#1b59f9', fontWeight: 700 }}>{a - e}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ─── BATERIAS BLOCO 2: DESEMPENHO POR MATÉRIA ─── */}
+            <div className="m-0 w-100 p-3 fadein position-relative mb-4" style={{ borderRadius: '1em', border: '1px solid var(--border)', overflow: 'visible' }}>
+              <div className="card-title-padrao position-absolute px-3" style={{ top: '-12px', left: '20px', zIndex: 1, backgroundColor: 'var(--background)' }}>DESEMPENHO POR MATÉRIA</div>
+              <div style={{ padding: '1rem' }}>
+                <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.82rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                      <th style={{ padding: '8px 12px', color: 'var(--text-light)', textAlign: 'left' }}>Matéria</th>
+                      <th style={{ padding: '8px 12px', color: '#34C759', textAlign: 'center' }}>Acertos</th>
+                      <th style={{ padding: '8px 12px', color: '#FF2D55', textAlign: 'center' }}>Erros</th>
+                      <th style={{ padding: '8px 12px', color: '#FF9500', textAlign: 'center' }}>Brancos</th>
+                      <th style={{ padding: '8px 12px', color: '#1b59f9', textAlign: 'center' }}>Líquido</th>
+                      <th style={{ padding: '8px 12px', color: 'var(--text-light)', textAlign: 'center' }}>% Líq.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bMateriasNomes.map(nome => {
+                      const m = bConsolidado[nome];
+                      const total = m.acertos + m.erros + m.brancos;
+                      const pct = total > 0 ? ((m.acertos - m.erros) / total * 100).toFixed(1) : '0.0';
+                      const isExp = !!expandedBatMateria[nome];
+                      const hasTopicos = Object.keys(m.topicos || {}).length > 0;
+                      return (
+                        <React.Fragment key={nome}>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: hasTopicos ? 'pointer' : 'default' }} onClick={() => hasTopicos && setExpandedBatMateria(prev => ({ ...prev, [nome]: !prev[nome] }))}>
+                            <td style={{ padding: '8px 12px', fontWeight: 600 }}>
+                              {hasTopicos && (isExp ? <ChevronDown size={12} className="me-1" /> : <ChevronRight size={12} className="me-1" />)}
+                              {nome}
+                            </td>
+                            <td style={{ padding: '8px 12px', textAlign: 'center', color: '#34C759', fontWeight: 700 }}>{m.acertos}</td>
+                            <td style={{ padding: '8px 12px', textAlign: 'center', color: '#FF2D55', fontWeight: 700 }}>{m.erros}</td>
+                            <td style={{ padding: '8px 12px', textAlign: 'center', color: '#FF9500', fontWeight: 700 }}>{m.brancos}</td>
+                            <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1b59f9', fontWeight: 700 }}>{m.acertos - m.erros}</td>
+                            <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: parseFloat(pct) >= 0 ? '#34C759' : '#FF2D55' }}>{pct}%</td>
+                          </tr>
+                          {isExp && Object.entries(m.topicos || {}).map(([topico, ts]) => {
+                            const tTotal = ts.acertos + ts.erros + ts.brancos;
+                            const tPct = tTotal > 0 ? ((ts.acertos - ts.erros) / tTotal * 100).toFixed(1) : '0.0';
+                            return (
+                              <tr key={topico} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', backgroundColor: 'rgba(0,0,0,0.06)' }}>
+                                <td style={{ padding: '6px 12px 6px 28px', color: 'var(--text-light)', fontSize: '0.78rem' }}>{topico}</td>
+                                <td style={{ padding: '6px 12px', textAlign: 'center', color: '#34C759', fontSize: '0.78rem' }}>{ts.acertos}</td>
+                                <td style={{ padding: '6px 12px', textAlign: 'center', color: '#FF2D55', fontSize: '0.78rem' }}>{ts.erros}</td>
+                                <td style={{ padding: '6px 12px', textAlign: 'center', color: '#FF9500', fontSize: '0.78rem' }}>{ts.brancos}</td>
+                                <td style={{ padding: '6px 12px', textAlign: 'center', color: '#1b59f9', fontSize: '0.78rem' }}>{ts.acertos - ts.erros}</td>
+                                <td style={{ padding: '6px 12px', textAlign: 'center', fontSize: '0.78rem', color: parseFloat(tPct) >= 0 ? '#34C759' : '#FF2D55' }}>{tPct}%</td>
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>)}
+        </>)}
 
       </main>
     </div>

@@ -636,11 +636,21 @@ app.post('/upload-pdf', upload.fields([
         var gabaritoFile = files.pdfGabarito[0].filename;
     }
       // Atualiza o registro do simulado com os nomes dos arquivos
+      const bateriaId = req.body.bateriaId;
       if (simuladoId && (simuladoFile || gabaritoFile)) {
         await prisma.simulado.update({
           where: { id: simuladoId },
           data: {
             ...(simuladoFile && { simulado: simuladoFile }),
+            ...(gabaritoFile && { gabarito: gabaritoFile })
+          }
+        });
+      }
+      if (bateriaId && (simuladoFile || gabaritoFile)) {
+        await prisma.bateria.update({
+          where: { id: bateriaId },
+          data: {
+            ...(simuladoFile && { pdf: simuladoFile }),
             ...(gabaritoFile && { gabarito: gabaritoFile })
           }
         });
@@ -748,6 +758,14 @@ app.delete('/projetos/:id', async (req, res) => {
     }
     // Apaga simulados do projeto
     await prisma.simulado.deleteMany({ where: { projetoId: id } });
+    // Apaga respostas e baterias do projeto
+    const baterias = await prisma.bateria.findMany({ where: { projetoId: id } });
+    const bateriaIds = baterias.map(b => b.id);
+    if (bateriaIds.length > 0) {
+      await prisma.respostaBateria.deleteMany({ where: { bateriaId: { in: bateriaIds } } });
+      await prisma.filaRevisao.deleteMany({ where: { bateriaId: { in: bateriaIds } } });
+    }
+    await prisma.bateria.deleteMany({ where: { projetoId: id } });
     // Apaga ciclos do projeto
     const ciclos = await prisma.ciclo.findMany({ where: { projetoId: id } });
     const cicloIds = ciclos.map(c => c.id);
@@ -1405,9 +1423,216 @@ app.get('/simulados/:id', async (req, res) => {
   }
 });
 
+// ==================== BATERIAS DE QUESTÕES ====================
 
+// Criar bateria
+app.post('/baterias', async (req, res) => {
+  try {
+    const { titulo, quanQuest, dataBat, projetoId, userId } = req.body;
+    if (!titulo || !quanQuest || !dataBat || !projetoId || !userId) {
+      return res.status(400).json({ error: 'Campos obrigatórios faltando.' });
+    }
+    const projetoExiste = await prisma.projeto.findUnique({ where: { id: projetoId } });
+    if (!projetoExiste) return res.status(400).json({ error: 'Projeto não encontrado.' });
+    const bateria = await prisma.bateria.create({
+      data: {
+        titulo,
+        quanQuest: parseInt(quanQuest),
+        dataBat: new Date(dataBat + 'T00:00:00.000Z').toISOString(),
+        projetoId,
+        userId
+      }
+    });
+    res.status(201).json(bateria);
+  } catch (error) {
+    console.error('Erro ao criar bateria:', error);
+    res.status(500).json({ error: 'Erro ao criar bateria.', details: error.message });
+  }
+});
 
-//ROTA SALVAR RESPOSTAS
+// Listar baterias
+app.get('/baterias', async (req, res) => {
+  try {
+    const { userId, projetoId } = req.query;
+    const where = {};
+    if (userId) where.userId = userId;
+    if (projetoId) where.projetoId = projetoId;
+    const baterias = await prisma.bateria.findMany({ where, orderBy: { dataBat: 'desc' } });
+    res.status(200).json(baterias);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao listar baterias.', details: error.message });
+  }
+});
+
+// Dashboard de baterias: resumo por bateria (acertos, erros, brancos, por matéria)
+app.get('/baterias/resumos', async (req, res) => {
+  try {
+    const { userId, projetoId } = req.query;
+    if (!userId || !projetoId) return res.status(400).json({ error: 'userId e projetoId obrigatórios.' });
+    const baterias = await prisma.bateria.findMany({ where: { userId, projetoId } });
+    const bateriaIds = baterias.map(b => b.id);
+    const respostas = await prisma.respostaBateria.findMany({ where: { bateriaId: { in: bateriaIds } } });
+
+    const resumos = {};
+    baterias.forEach(b => {
+      const rs = respostas.filter(r => r.bateriaId === b.id);
+      const acertos = rs.filter(r => r.acertou).length;
+      const erros = rs.filter(r => !r.acertou && r.resposta !== '' && r.resposta !== 'S').length;
+      const brancos = rs.filter(r => !r.resposta || r.resposta === 'S').length;
+      const materias = {};
+      rs.forEach(r => {
+        if (!materias[r.materia]) materias[r.materia] = { nome: r.materia, acertos: 0, erros: 0, brancos: 0, topicos: {} };
+        if (r.acertou) materias[r.materia].acertos++;
+        else if (!r.resposta || r.resposta === 'S') materias[r.materia].brancos++;
+        else materias[r.materia].erros++;
+        if (r.editalItem) {
+          if (!materias[r.materia].topicos[r.editalItem]) materias[r.materia].topicos[r.editalItem] = { acertos: 0, erros: 0, brancos: 0 };
+          if (r.acertou) materias[r.materia].topicos[r.editalItem].acertos++;
+          else if (!r.resposta || r.resposta === 'S') materias[r.materia].topicos[r.editalItem].brancos++;
+          else materias[r.materia].topicos[r.editalItem].erros++;
+        }
+      });
+      resumos[b.id] = { acertos, erros, brancos, materias: Object.values(materias) };
+    });
+    res.json(resumos);
+  } catch (error) {
+    console.error('Erro ao calcular resumos de baterias:', error);
+    res.status(500).json({ error: 'Erro ao calcular resumos.', details: error.message });
+  }
+});
+
+// Buscar bateria por ID
+app.get('/baterias/:id', async (req, res) => {
+  try {
+    const bateria = await prisma.bateria.findUnique({ where: { id: req.params.id } });
+    if (!bateria) return res.status(404).json({ error: 'Bateria não encontrada.' });
+    res.status(200).json(bateria);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar bateria.', details: error.message });
+  }
+});
+
+// Atualizar bateria
+app.put('/baterias/:id', async (req, res) => {
+  try {
+    const { titulo, dataBat, quanQuest } = req.body;
+    const atualizada = await prisma.bateria.update({
+      where: { id: req.params.id },
+      data: {
+        titulo: titulo || undefined,
+        dataBat: dataBat ? new Date(dataBat).toISOString() : undefined,
+        quanQuest: quanQuest ? parseInt(quanQuest) : undefined,
+      }
+    });
+    res.status(200).json(atualizada);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar bateria.', details: error.message });
+  }
+});
+
+// Deletar bateria
+app.delete('/baterias/:id', async (req, res) => {
+  try {
+    const bateriaId = req.params.id;
+    // Remove da fila de revisão
+    await prisma.filaRevisao.deleteMany({ where: { bateriaId } });
+    // Remove respostas
+    await prisma.respostaBateria.deleteMany({ where: { bateriaId } });
+    // Remove batalha
+    await prisma.bateria.delete({ where: { id: bateriaId } });
+    res.status(200).json({ message: 'Bateria e respostas deletadas com sucesso.' });
+  } catch (error) {
+    console.error('Erro ao deletar bateria:', error);
+    res.status(500).json({ error: 'Erro ao deletar bateria.' });
+  }
+});
+
+// Salvar respostas de bateria
+app.post('/salvarRespostasBateria', async (req, res) => {
+  try {
+    const { dados } = req.body;
+    if (!Array.isArray(dados) || dados.length === 0) {
+      return res.status(400).json({ error: 'Nenhum dado recebido.' });
+    }
+    const bateriaId = dados[0].bateriaId;
+    if (bateriaId) {
+      await prisma.respostaBateria.deleteMany({ where: { bateriaId } });
+    }
+    await prisma.respostaBateria.createMany({ data: dados });
+    res.status(201).json({ message: 'Respostas de bateria salvas com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao salvar respostas de bateria:', error);
+    res.status(500).json({ error: 'Erro ao salvar respostas de bateria.', details: error.message });
+  }
+});
+
+// Buscar respostas de bateria por bateriaId
+app.get('/respostas-bateria/:bateriaId', async (req, res) => {
+  try {
+    const respostas = await prisma.respostaBateria.findMany({
+      where: { bateriaId: req.params.bateriaId }
+    });
+    res.json(respostas);
+  } catch (error) {
+    console.error('Erro ao buscar respostas de bateria:', error);
+    res.status(500).json({ error: 'Erro ao buscar respostas de bateria.' });
+  }
+});
+
+// Sincronizar fila de revisão a partir de bateria
+app.post('/fila-revisao/sync-bateria', async (req, res) => {
+  try {
+    const { userId, projetoId, bateriaId, questoes } = req.body;
+    if (!userId || !projetoId || !bateriaId || !Array.isArray(questoes)) {
+      return res.status(400).json({ error: 'Dados inválidos.' });
+    }
+    const FALLBACK_ID = '000000000000000000000000';
+    for (const q of questoes) {
+      const existente = await prisma.filaRevisao.findFirst({
+        where: { userId, bateriaId, numeroQuestao: q.numero, fonte: 'bateria' }
+      });
+      const acertou = q.acertou;
+      const anulada = q.anulada;
+      const ehChute = q.chute || false;
+
+      if (anulada) {
+        if (existente && existente.status === 'pendente') {
+          await prisma.filaRevisao.delete({ where: { id: existente.id } });
+        }
+        continue;
+      }
+      if (acertou && !ehChute) {
+        if (existente && existente.status === 'pendente') {
+          await prisma.filaRevisao.delete({ where: { id: existente.id } });
+        }
+        continue;
+      }
+
+      const tipo = ehChute ? 'chute' : (q.tipo || 'erro');
+      const materiaId = (q.materiaId && q.materiaId.trim() !== '') ? q.materiaId : FALLBACK_ID;
+      const materiaNome = q.materia || '';
+      const editalItem = q.editalItem || '';
+      const motivoErro = q.motivoErro || '';
+
+      if (existente) {
+        await prisma.filaRevisao.update({
+          where: { id: existente.id },
+          data: { tipo, motivoErro: motivoErro || existente.motivoErro || '', editalItem: editalItem || existente.editalItem || '', materiaNome: materiaNome || existente.materiaNome, materiaId: materiaId !== FALLBACK_ID ? materiaId : existente.materiaId }
+        });
+      } else {
+        await prisma.filaRevisao.create({
+          data: { userId, projetoId, materiaId, materiaNome, bateriaId, simuladoId: null, fonte: 'bateria', numeroQuestao: q.numero, tipo, editalItem, motivoErro }
+        });
+      }
+    }
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro ao sincronizar fila (bateria):', err);
+    return res.status(500).json({ error: 'Erro ao sincronizar fila de revisão (bateria).' });
+  }
+});
+
+// ==================== FIM BATERIAS ====================
 app.post('/salvarRespostas', async (req, res) => {
   try {
     console.log('--- INICIO /salvarRespostas ---');
@@ -2246,7 +2471,7 @@ app.post('/fila-revisao/sync', async (req, res) => {
         });
       } else {
         await prisma.filaRevisao.create({
-          data: { userId, projetoId, materiaId, materiaNome, simuladoId, numeroQuestao: q.numero, tipo, editalItem, motivoErro }
+          data: { userId, projetoId, materiaId, materiaNome, simuladoId, fonte: 'simulado', numeroQuestao: q.numero, tipo, editalItem, motivoErro }
         });
       }
     }

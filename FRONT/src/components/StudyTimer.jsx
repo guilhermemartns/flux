@@ -17,6 +17,11 @@ const StudyTimer = () => {
   const [showSidebar, setShowSidebar] = useState(true);
   const intervalRef = useRef(null);
   const pauseIntervalRef = useRef(null);
+  // Fonte de verdade: timestamp de quando o timer (re)começou a rodar + segundos acumulados antes da pausa
+  const startedAtRef = useRef(null);   // Date.now() quando começou/retomou
+  const baseSecondsRef = useRef(0);    // segundos acumulados antes da última pausa
+  const pauseStartedAtRef = useRef(null); // Date.now() quando pausou
+  const basePausedRef = useRef(0);     // segundos de pausa acumulados
   
   // Contexto para abrir o modal de registro
   const { openForm, setTimer } = useContext(StudyTimerContext);
@@ -30,15 +35,21 @@ const StudyTimer = () => {
     // Restaurar estado do timer
     const timerState = JSON.parse(localStorage.getItem('timerState') || '{}');
     if (timerState.isRunning) {
-      const elapsed = Math.floor((Date.now() - timerState.startTime) / 1000);
+      const elapsed = Math.floor((Date.now() - timerState.startTime) / 1000) + (timerState.baseSeconds || 0);
+      baseSecondsRef.current = timerState.baseSeconds || 0;
+      startedAtRef.current = timerState.startTime;
+      basePausedRef.current = timerState.pausedTime || 0;
       setTime(elapsed);
       setIsRunning(true);
       setIsPaused(false);
     } else if (timerState.isPaused) {
+      baseSecondsRef.current = timerState.time || 0;
+      basePausedRef.current = timerState.pausedTime || 0;
+      pauseStartedAtRef.current = timerState.pauseStartTime || null;
       setTime(timerState.time || 0);
+      setPausedTime(timerState.pausedTime || 0);
       setIsRunning(true);
       setIsPaused(true);
-      setPausedTime(timerState.pausedTime || 0);
       setPauseStartTime(timerState.pauseStartTime || null);
     }
   }, []);
@@ -67,29 +78,41 @@ const StudyTimer = () => {
   // Efeito para salvar estado do timer no localStorage
   useEffect(() => {
     if (isRunning && !isPaused) {
-      // Timer rodando - salvar apenas estado básico
       const timerState = {
         isRunning: true,
         isPaused: false,
-        startTime: Date.now() - (time * 1000), // Recalcula startTime baseado no tempo atual
-        totalTime: time
+        startTime: startedAtRef.current,
+        baseSeconds: baseSecondsRef.current,
+        pausedTime: basePausedRef.current,
       };
       localStorage.setItem('timerState', JSON.stringify(timerState));
     } else if (isRunning && isPaused) {
-      // Timer pausado - salvar estado
       const timerState = {
         isRunning: false,
         isPaused: true,
-        time: time,
-        pausedTime: pausedTime,
-        pauseStartTime: pauseStartTime
+        time: baseSecondsRef.current,
+        pausedTime: basePausedRef.current,
+        pauseStartTime: pauseStartedAtRef.current
       };
       localStorage.setItem('timerState', JSON.stringify(timerState));
     } else {
-      // Timer parado - limpar estado
       localStorage.removeItem('timerState');
     }
-  }, [isRunning, isPaused]); // Remove 'time' das dependências para não salvar constantemente
+  }, [isRunning, isPaused]);
+
+  // Recalcula o tempo ao voltar para a aba (cobre throttling agressivo)
+  useEffect(() => {
+    const onVisible = () => {
+      if (isRunning && !isPaused && startedAtRef.current) {
+        setTime(baseSecondsRef.current + Math.floor((Date.now() - startedAtRef.current) / 1000));
+      }
+      if (isRunning && isPaused && pauseStartedAtRef.current) {
+        setPausedTime(basePausedRef.current + Math.floor((Date.now() - pauseStartedAtRef.current) / 1000));
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [isRunning, isPaused]);
 
   // Efeito para controlar o cronômetro
   useEffect(() => {
@@ -101,8 +124,9 @@ const StudyTimer = () => {
 
     if (isRunning && !isPaused) {
       intervalRef.current = setInterval(() => {
-        setTime(prevTime => prevTime + 1);
-      }, 1000);
+        // Usa Date.now() como fonte de verdade — imune a throttling de aba inativa
+        setTime(baseSecondsRef.current + Math.floor((Date.now() - startedAtRef.current) / 1000));
+      }, 500); // 500ms para responsividade, mas tempo real vem de Date.now()
     }
 
     return () => {
@@ -123,8 +147,9 @@ const StudyTimer = () => {
 
     if (isPaused && isRunning) {
       pauseIntervalRef.current = setInterval(() => {
-        setPausedTime(prevPausedTime => prevPausedTime + 1);
-      }, 1000);
+        // Usa Date.now() — imune a throttling
+        setPausedTime(basePausedRef.current + Math.floor((Date.now() - pauseStartedAtRef.current) / 1000));
+      }, 500);
     }
 
     return () => {
@@ -137,6 +162,9 @@ const StudyTimer = () => {
 
   // Função para iniciar/retomar
   const handleStart = () => {
+    startedAtRef.current = Date.now();
+    // baseSeconds já acumulado (era o time no momento da pausa)
+    baseSecondsRef.current = time;
     setIsRunning(true);
     setIsPaused(false);
     setPauseStartTime(null);
@@ -144,8 +172,14 @@ const StudyTimer = () => {
 
   // Função para pausar
   const handlePause = () => {
+    // Congela o tempo acumulado
+    const now = Date.now();
+    baseSecondsRef.current = baseSecondsRef.current + Math.floor((now - startedAtRef.current) / 1000);
+    startedAtRef.current = null;
+    pauseStartedAtRef.current = now;
+    basePausedRef.current = pausedTime;
     setIsPaused(true);
-    setPauseStartTime(Date.now());
+    setPauseStartTime(now);
   };
 
   // Função para parar e resetar
@@ -175,6 +209,10 @@ const StudyTimer = () => {
     // Limpar estado do timer
     localStorage.removeItem('timerState');
     
+    startedAtRef.current = null;
+    baseSecondsRef.current = 0;
+    pauseStartedAtRef.current = null;
+    basePausedRef.current = 0;
     setIsRunning(false);
     setIsPaused(false);
     setTime(0);
@@ -187,6 +225,10 @@ const StudyTimer = () => {
     // Limpar estado do timer
     localStorage.removeItem('timerState');
     
+    startedAtRef.current = null;
+    baseSecondsRef.current = 0;
+    pauseStartedAtRef.current = null;
+    basePausedRef.current = 0;
     setIsRunning(false);
     setIsPaused(false);
     setTime(0);

@@ -26,6 +26,7 @@ export default function FilaRevisao() {
   const [filtroStatus, setFiltroStatus] = useState('pendente');
   const [filtroMateria, setFiltroMateria] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
+  const [filtroFonte, setFiltroFonte] = useState('');
   const [filtroMotivoErro, setFiltroMotivoErro] = useState('');
   const [busca, setBusca] = useState('');
   const [counts, setCounts] = useState({ pendentes: 0, dominados: 0, arquivados: 0 });
@@ -199,6 +200,7 @@ export default function FilaRevisao() {
 
   const itensFiltrados = itens.filter(item => {
     if (filtroTipo && item.tipo !== filtroTipo) return false;
+    if (filtroFonte && item.fonte !== filtroFonte) return false;
     if (filtroMotivoErro && item.motivoErro !== filtroMotivoErro) return false;
     if (!busca) return true;
     return (
@@ -218,7 +220,7 @@ export default function FilaRevisao() {
     : itensFiltrados.slice((paginaSegura - 1) * itensPorPagina, paginaSegura * itensPorPagina);
 
   // Reset página ao mudar filtros
-  useEffect(() => { setPaginaAtual(1); }, [filtroStatus, filtroMateria, filtroTipo, filtroMotivoErro, busca]);
+  useEffect(() => { setPaginaAtual(1); }, [filtroStatus, filtroMateria, filtroTipo, filtroFonte, filtroMotivoErro, busca]);
 
   // Fecha painel ao clicar fora
   useEffect(() => {
@@ -236,6 +238,7 @@ export default function FilaRevisao() {
 
   const activeFilters = [
     filtroMateria && { key: 'materia', label: materiaNomeFiltro, clear: () => setFiltroMateria('') },
+    filtroFonte && { key: 'fonte', label: filtroFonte === 'bateria' ? 'Bateria' : 'Simulado', clear: () => setFiltroFonte('') },
     filtroTipo && { key: 'tipo', label: TIPO_LABELS[filtroTipo]?.label || filtroTipo, clear: () => { setFiltroTipo(''); setFiltroMotivoErro(''); } },
     filtroMotivoErro && { key: 'motivo', label: filtroMotivoErro, clear: () => setFiltroMotivoErro('') },
     filtroStatus && { key: 'status', label: STATUS_LABELS[filtroStatus]?.label || filtroStatus, clear: () => setFiltroStatus('') },
@@ -391,6 +394,18 @@ export default function FilaRevisao() {
                     </div>
                   </div>
                   <div>
+                    <div style={labelStyle} className="mb-1">Fonte</div>
+                    <div className="d-flex gap-1 flex-wrap">
+                      {[{ v: '', l: 'Todas' }, { v: 'simulado', l: 'Simulado' }, { v: 'bateria', l: 'Bateria' }].map(({ v, l }) => (
+                        <button key={v} onClick={() => setFiltroFonte(v)}
+                          className="btn btn-sm"
+                          style={{ fontSize: '0.8em', fontWeight: 600, background: filtroFonte === v ? 'var(--primary, #0070FF)' : 'transparent', color: filtroFonte === v ? '#fff' : 'var(--text-secondary, #555)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
                     <div style={labelStyle} className="mb-1">Tipo</div>
                     <div className="d-flex gap-1 flex-wrap">
                       {[{ v: '', l: 'Todos' }, { v: 'erro', l: 'Erro' }, { v: 'branco', l: 'Branco' }, { v: 'chute', l: 'Chute' }].map(({ v, l }) => (
@@ -425,7 +440,7 @@ export default function FilaRevisao() {
                   </div>
                   {activeFilters.length > 0 && (
                     <button className="btn btn-sm" style={{ fontSize: '0.8em', color: 'var(--text-light)', border: 'none', textAlign: 'left', padding: 0 }}
-                      onClick={() => { setFiltroStatus(''); setFiltroTipo(''); setFiltroMotivoErro(''); setFiltroMateria(''); }}>
+                      onClick={() => { setFiltroStatus(''); setFiltroTipo(''); setFiltroFonte(''); setFiltroMotivoErro(''); setFiltroMateria(''); }}>
                       Limpar todos os filtros
                     </button>
                   )}
@@ -545,6 +560,7 @@ export default function FilaRevisao() {
                 <th style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--text-light)', textAlign: 'left', width: 55 }}>Nº</th>
                 <th style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--text-light)', textAlign: 'left', width: '18%' }}>Matéria</th>
                 <th style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--text-light)', textAlign: 'left', width: '20%' }}>Tópico do Edital</th>
+                <th style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--text-light)', textAlign: 'center', width: 75 }}>Fonte</th>
                 <th style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--text-light)', textAlign: 'center', width: 70 }}>Tipo</th>
                 <th style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--text-light)', textAlign: 'center', width: 55 }}>Erros</th>
                 <th style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--text-light)', textAlign: 'center', width: 100 }}>Status</th>
@@ -595,6 +611,15 @@ export default function FilaRevisao() {
                     </td>
                     <td style={{ padding: '10px 12px', color: 'var(--text-light)', fontSize: '0.9em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 0 }} title={item.editalItem || ''}>
                       {item.editalItem || <span style={{ opacity: 0.4 }}>—</span>}
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                      <span className="badge" style={{
+                        background: item.fonte === 'bateria' ? 'rgba(88,86,214,0.15)' : 'rgba(0,122,255,0.12)',
+                        color: item.fonte === 'bateria' ? '#5856D6' : '#007AFF',
+                        fontWeight: 600, fontSize: '0.78em'
+                      }}>
+                        {item.fonte === 'bateria' ? 'Bateria' : 'Simulado'}
+                      </span>
                     </td>
                     <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                       <span className="badge" style={{ background: tp.color + '22', color: tp.color, fontWeight: 600, fontSize: '0.8em' }}>{tp.label}</span>

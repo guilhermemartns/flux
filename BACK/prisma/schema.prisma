@@ -80,6 +80,7 @@ model Materia {
   estudos         Estudo[]
   cor              String?           // Cor vinculada à matéria
   respostas Resposta[] @relation("MateriaRespostas")
+  respostasBateria RespostaBateria[] @relation("MateriaRespostasBateria")
   quantidadeQuestoes Int?           @default(0) // Quantidade de questões no edital
 }
 
@@ -131,6 +132,8 @@ model Projeto {
   Resposta  Resposta[]
   Materia   Materia[]
   simulados Simulado[]
+  baterias  Bateria[]
+  respostasBateria RespostaBateria[]
   ciclos    Ciclo[]
   estudos   Estudo[]
   metaSemanal Float?   // Meta semanal em horas
@@ -222,7 +225,9 @@ model FilaRevisao {
   projetoId           String    @db.ObjectId
   materiaId           String    @db.ObjectId
   materiaNome         String
-  simuladoId          String    @db.ObjectId
+  simuladoId          String?   @db.ObjectId   // opcional — preenchido quando vem de simulado
+  bateriaId           String?   @db.ObjectId   // opcional — preenchido quando vem de bateria
+  fonte               String    @default("simulado") // "simulado" | "bateria"
   numeroQuestao       Int
   tipo                String    // "erro" | "branco" | "chute"
   status              String    @default("pendente") // "pendente" | "dominado" | "arquivado"
@@ -234,4 +239,37 @@ model FilaRevisao {
   motivoErro          String?
   criadoEm            DateTime  @default(now())
   respostaId          String?   @db.ObjectId
+}
+
+model Bateria {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  titulo    String
+  quanQuest Int
+  dataBat   DateTime
+  projetoId String           @db.ObjectId
+  projeto   Projeto          @relation(fields: [projetoId], references: [id])
+  userId    String           @db.ObjectId
+  pdf       String?
+  gabarito  String?
+  respostas RespostaBateria[] @relation("BateriaRespostas")
+}
+
+model RespostaBateria {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  numero     Int
+  materia    String
+  editalItem String?
+  resposta   String
+  gabarito   String
+  acertou    Boolean?
+  chute      Boolean
+  anulada    Boolean
+  motivoErro String?
+  bateriaId  String   @db.ObjectId
+  bateria    Bateria  @relation("BateriaRespostas", fields: [bateriaId], references: [id])
+  userId     String   @db.ObjectId
+  projetoId  String   @db.ObjectId
+  projeto    Projeto  @relation(fields: [projetoId], references: [id])
+  materiaId  String   @db.ObjectId
+  materiaRel Materia  @relation("MateriaRespostasBateria", fields: [materiaId], references: [id])
 }
