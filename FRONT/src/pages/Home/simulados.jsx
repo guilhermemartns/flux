@@ -530,7 +530,7 @@ function Home() {
                     {simulado.simulado && (
                       <span
                         className="d-flex align-items-center cursor-pointer"
-                        onClick={e => { e.stopPropagation(); window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/pdf/${simulado.simulado}`, '_blank'); }}
+                        onClick={e => { e.stopPropagation(); window.open(simulado.simulado, '_blank'); }}
                         title="Abrir PDF do Simulado"
                       >
                         <FileText size={16} className="btn-icon p-0 text-primary-primary" title="PDF do Simulado" />
@@ -539,7 +539,7 @@ function Home() {
                     {simulado.gabarito && (
                       <span
                         className="d-flex align-items-center cursor-pointer"
-                        onClick={e => { e.stopPropagation(); window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/pdf/${simulado.gabarito}`, '_blank'); }}
+                        onClick={e => { e.stopPropagation(); window.open(simulado.gabarito, '_blank'); }}
                         title="Abrir PDF do Gabarito"
                       >
                         <FileText size={16} className="btn-icon p-0" title="PDF do Gabarito" />

@@ -597,7 +597,7 @@ export default function FilaRevisao() {
                       {(item.pdfSimulado || item.pdfGabarito) && (
                         <div className="d-flex gap-1 mt-1">
                           {item.pdfSimulado && (
-                            <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/pdf/${item.pdfSimulado}`} target="_blank" rel="noreferrer"
+                            <a href={item.pdfSimulado} target="_blank" rel="noreferrer"
                               title="PDF do Simulado"
                               style={{ color: '#e74c3c', fontSize: '0.75em', display: 'flex', alignItems: 'center', gap: 2, textDecoration: 'none', fontWeight: 600, opacity: 0.85 }}
                             >
@@ -606,7 +606,7 @@ export default function FilaRevisao() {
                             </a>
                           )}
                           {item.pdfGabarito && (
-                            <a href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/pdf/${item.pdfGabarito}`} target="_blank" rel="noreferrer"
+                            <a href={item.pdfGabarito} target="_blank" rel="noreferrer"
                               title="PDF do Gabarito"
                               style={{ color: '#27ae60', fontSize: '0.75em', display: 'flex', alignItems: 'center', gap: 2, textDecoration: 'none', fontWeight: 600, opacity: 0.85 }}
                             >

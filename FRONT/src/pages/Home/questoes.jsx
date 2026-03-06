@@ -284,7 +284,7 @@ function Questoes() {
                     {bat.pdf && (
                       <span
                         className="d-flex align-items-center cursor-pointer"
-                        onClick={e => { e.stopPropagation(); window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/pdf/${bat.pdf}`, '_blank'); }}
+                        onClick={e => { e.stopPropagation(); window.open(bat.pdf, '_blank'); }}
                         title="Abrir PDF da Bateria"
                       >
                         <FileText size={16} className="btn-icon p-0 text-primary-primary" />
@@ -293,7 +293,7 @@ function Questoes() {
                     {bat.gabarito && (
                       <span
                         className="d-flex align-items-center cursor-pointer"
-                        onClick={e => { e.stopPropagation(); window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/pdf/${bat.gabarito}`, '_blank'); }}
+                        onClick={e => { e.stopPropagation(); window.open(bat.gabarito, '_blank'); }}
                         title="Abrir PDF do Gabarito"
                       >
                         <FileText size={16} className="btn-icon p-0" />
