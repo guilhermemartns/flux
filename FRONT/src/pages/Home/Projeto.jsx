@@ -8,7 +8,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { usePageTitle } from '../../components/PageTitleContext';
-import Spinner from 'react-bootstrap/Spinner';
+import { SkeletonProjeto } from '../../components/Skeleton';
 
 const Projeto = () => {
   // Estado para modal de mesclagem
@@ -258,13 +258,7 @@ const Projeto = () => {
   }, [projetos.length]);
 
   if (loading) {
-    return (
-      <div style={{ width: '400px', height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 'auto' }}>
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Carregando...</span>
-        </Spinner>
-      </div>
-    );
+    return <SkeletonProjeto />;
   }
 
   return (

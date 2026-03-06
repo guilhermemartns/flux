@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ErrorBoundary from './ErrorBoundary.jsx';
-import { SkeletonTable } from '../../components/Skeleton';
+import { SkeletonEdital } from '../../components/Skeleton';
 import Sidebar from './components/sidebar.jsx';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -387,7 +387,7 @@ function Materias() {
     }, [materias.length]);
 
     if (loading) {
-        return <SkeletonTable rows={8} cols={4} />;
+        return <SkeletonEdital />;
     }
 
     return (

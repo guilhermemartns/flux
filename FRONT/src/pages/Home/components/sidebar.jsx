@@ -141,7 +141,8 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
   let dicaCategoriaNome = dica?.categoria?.nome || dica?.categoriaNome || 'Dica do Dia';
 
   // Estado de projetos precisa vir antes do uso
-  const [projetos, setProjetos] = useState([]);
+  // null = carregando, [] = carregado sem projetos
+  const [projetos, setProjetos] = useState(null);
   const [projetoNome, setProjetoNome] = useState(() => localStorage.getItem('projetoSelecionadoNome') || '');
 
   // Verifica se há projeto criado
@@ -376,7 +377,11 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
           <Link to="/projeto" className={`menu-item ${location.pathname === '/projeto' ? 'active' : ''}`}>
             <BookOpen size={14} />
             <span>Projeto</span>
-            {(Array.isArray(projetos) && projetos.filter(p => p && p.id).length === 0) ? (
+            {projetos === null ? (
+              projetoNome
+                ? <span className="badge rounded bg-primary-primary4 text-primary-primary5">{projetoNome}</span>
+                : null
+            ) : (Array.isArray(projetos) && projetos.filter(p => p && p.id).length === 0) ? (
               <span className="badge rounded bg-danger">Insira</span>
             ) : (!localStorage.getItem('projetoSelecionado') || !projetoNome) ? (
               <span className="badge rounded bg-warning text-dark">Selecione</span>

@@ -17,7 +17,8 @@ Chart.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement
 
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [settled, setSettled] = useState(() => !localStorage.getItem('projetoSelecionado'));
   const navigate = useNavigate();
   const toastShownRef = useRef(false);
   const [simulados, setSimulados] = useState([]);
@@ -99,12 +100,13 @@ const Dashboard = () => {
             setMateriasProjeto([]);
             setResumos({});
             setLoading(false);
+            setSettled(true);
           }
           return;
         }
 
         // Só executa loading se há projeto selecionado E há simulados
-        if (isMounted) setLoading(true);
+        if (isMounted) { setSettled(true); setLoading(true); }
 
         // Dispara requisições restantes em paralelo
         const [materiasRes, resumoRes] = await Promise.all([
@@ -406,6 +408,7 @@ const Dashboard = () => {
 
   // Adicione este bloco logo antes do return:
   const projetoSelecionado = localStorage.getItem('projetoSelecionado');
+  if (!settled) return <div className="app-container" style={{ minHeight: '80vh' }} />;
   if (loading) {
     return <SkeletonDashboard />;
   }

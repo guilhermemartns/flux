@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import api from '../../services/api';
@@ -13,7 +13,20 @@ const Login = () => {
   const [error, setError] = useState('');
   const [lembrar, setLembrar] = useState(true);
   const [hoverLogo, setHoverLogo] = useState(false);
-  const [hoverH1, setHoverH1] = useState(false);
+  const containerRef = React.useRef(null);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    Promise.all([
+      document.fonts.load('900 5rem "Geist Sans"'),
+      document.fonts.ready,
+    ]).then(() => {
+      if (containerRef.current) {
+        containerRef.current.style.opacity = '1';
+      }
+    });
+    return () => { document.body.style.overflow = ''; };
+  }, []);
   const [hoverCadeira, setHoverCadeira] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -65,14 +78,21 @@ const Login = () => {
 
   return (
     <div
+      ref={containerRef}
       className="min-vh-100 d-flex p-0 m-0"
       style={{
         fontFamily: 'inherit',
         overflow: 'hidden',
+        opacity: 0,
+        transition: 'opacity 0.25s ease',
         background: 'linear-gradient(90deg, #f9c5c5 0%, #fde8e0 25%, #eaf0fb 75%, #dce6f5 100%)'
       }}
     >
       <style>{`
+        @keyframes loginFadeIn {
+          from { opacity: 0.99; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
         @keyframes floatBounce {
           0%,100% { transform: translateY(0) rotate(0deg) scale(1.08); }
           30% { transform: translateY(-14px) rotate(-2deg) scale(1.10); }
@@ -98,6 +118,11 @@ const Login = () => {
           -webkit-text-fill-color: transparent;
           background-clip: text;
           transition: letter-spacing 0.3s;
+          will-change: transform;
+          transform: translateZ(0);
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+          isolation: isolate;
         }
         .login-h1-hover:hover {
           animation: gradientShift 1.8s ease infinite;
@@ -126,6 +151,7 @@ const Login = () => {
             <h1
               className="login-h1-hover"
               style={{
+                fontFamily: "'Geist Sans', 'Inter', sans-serif",
                 fontWeight: 900,
                 fontSize: 'clamp(3rem, 7vw, 5.5rem)',
                 lineHeight: 0.85,

@@ -851,7 +851,7 @@ const Home = () => {
                         titulo = dentroMigracao ? 'Dia migrado' : 'Estudou';
                         icone = <FontAwesomeIcon icon={faCircleCheck} style={{ color: '#71dd8c', fontSize: 16 }} />;
                       } else {
-                        icone = <FontAwesomeIcon icon={faCircleXmark} style={{ color: '#ff4757', fontSize: 14 }} />;
+                        icone = <FontAwesomeIcon icon={faCircleXmark} style={{ color: '#9ca3af', fontSize: 14 }} />;
                       }
                       const title = `${titulo} - ${day}/${m}/${y}`;
                       return (

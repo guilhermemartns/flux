@@ -152,25 +152,61 @@ export const SkeletonCiclo = () => (
   </div>
 );
 
-/** Skeleton para Simulados */
+/** Skeleton para Simulados — lista vertical de cards */
 export const SkeletonSimulados = () => (
   <div className="app-container">
-    <main className="container-fluid pt-3 pb-4 px-4" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <SkLine w="25%" h={22} mb={0} />
-        <SkLine w={120} h={34} mb={0} style={{ borderRadius: 8 }} />
+    <main className="container-fluid pt-3 pb-4" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Botão "adicionar simulado" */}
+      <SkBlock w="100%" h={50} style={{ borderRadius: 10 }} />
+      {/* Linhas de simulado */}
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="d-flex align-items-center gap-3" style={{ padding: '10px 14px', borderRadius: 10, ...base }}>
+          <SkBlock w={18} h={18} style={{ borderRadius: 4, flexShrink: 0 }} />
+          <SkLine w={110} h={13} mb={0} />
+          <SkLine w={70} h={11} mb={0} />
+          <div className="ms-auto d-flex gap-2">
+            {[36, 36, 36, 44, 52].map((w, j) => (
+              <SkLine key={j} w={w} h={22} mb={0} style={{ borderRadius: 6 }} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </main>
+  </div>
+);
+
+/** Skeleton para Edital — progresso + grid de cards de matéria */
+export const SkeletonEdital = () => (
+  <div className="app-container">
+    <main className="container-fluid gap-4 pt-3">
+      {/* Barra de progresso geral */}
+      <div className="d-flex align-items-center gap-4 w-100">
+        <SkLine w="28%" h={14} mb={0} />
+        <SkBlock w="100%" h={3} mb={0} style={{ borderRadius: 999 }} />
       </div>
-      <div className="d-flex flex-wrap gap-3">
-        {[...Array(6)].map((_, i) => (
-          <SkCard key={i} style={{ width: 'calc(33% - 1rem)', minWidth: 240 }}>
-            <SkLine w="60%" h={16} mb={8} />
-            <SkLine w="80%" h={13} mb={8} />
-            <SkLine w="45%" h={13} mb={16} />
-            <div className="d-flex gap-2">
-              <SkLine w={70} h={28} mb={0} style={{ borderRadius: 8 }} />
-              <SkLine w={70} h={28} mb={0} style={{ borderRadius: 8 }} />
+      {/* Grid de cards de matéria */}
+      <div className="m-0 w-100 p-3 border position-relative" style={{ borderRadius: '1em' }}>
+        <div className="row g-3">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="col-12 col-sm-6 col-md-4 col-lg-3">
+              <SkBlock w="100%" h={200} style={{ borderRadius: '0.75rem' }} />
             </div>
-          </SkCard>
+          ))}
+        </div>
+      </div>
+    </main>
+  </div>
+);
+
+/** Skeleton para Projeto — grid de cards de projeto */
+export const SkeletonProjeto = () => (
+  <div className="app-container">
+    <main className="container-fluid pt-3 pb-4">
+      <div className="row g-3">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="col-12 col-sm-6 col-md-4 col-lg-3">
+            <SkBlock w="100%" h={160} style={{ borderRadius: 18 }} />
+          </div>
         ))}
       </div>
     </main>

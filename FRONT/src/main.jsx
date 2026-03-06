@@ -40,6 +40,7 @@ function PrivateRoute({ children }) {
 
 function AppLayout() {
   const location = useLocation();
+  const { user } = useAuth();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/cadastro';
   
   // Garante que o tema claro seja sempre aplicado
@@ -72,6 +73,7 @@ function AppLayout() {
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', sidebarCollapsed ? '1' : '0');
   }, [sidebarCollapsed]);
+
   if (isAuthPage) {
     return (
       <Routes>
@@ -79,6 +81,11 @@ function AppLayout() {
         <Route path="/cadastro" element={<Cadastro />} />
       </Routes>
     );
+  }
+
+  // Evita flash da tela de login e da logo: não renderiza o layout completo se não estiver logado
+  if (!user) {
+    return <Navigate to="/login" />;
   }
 
   return (
@@ -93,6 +100,7 @@ function AppLayout() {
         }}
       >
         <Navbar /><hr/>
+        <div key={location.key} style={{ animation: 'pageFadeIn 0.18s ease both', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Routes>
           <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
           <Route path="/simulados" element={<PrivateRoute><Simulados /></PrivateRoute>} />
@@ -107,6 +115,7 @@ function AppLayout() {
           <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
           <Route path="/inserir" element={<AdminRoute><Inserir /></AdminRoute>} />
         </Routes>
+        </div>
       </div>
       
       {/* Modal de registro de sessão de estudo - renderizado sobre toda a aplicação */}
