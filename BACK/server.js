@@ -8,6 +8,13 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const app = express();
 const prisma = new PrismaClient();
@@ -17,8 +24,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Token'],
 }));
 app.options('/{*path}', cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Arquivos estáticos de uploads (não persiste no Vercel, mantido para compatibilidade local)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // ROTA PUT - Editar nome da carreira
@@ -53,7 +60,7 @@ try {
 }
 
 // Configuração do multer para upload de imagem (memoryStorage para compatibilidade com Vercel)
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 // ROTA PARA UPLOAD DE IMAGEM DO PROJETO PADRÃO
 app.post('/upload-imagem-projeto', upload.single('imagem'), async (req, res) => {
@@ -617,45 +624,59 @@ app.post('/projetos-padrao', async (req, res) => {
 
 
 //ROTA POST
-// ROTA PARA UPLOAD DE PDF DO SIMULADO E GABARITO
+// ROTA PARA UPLOAD DE PDF DO SIMULADO E GABARITO (via Cloudinary)
 app.post('/upload-pdf', upload.fields([
   { name: 'pdfSimulado', maxCount: 1 },
   { name: 'pdfGabarito', maxCount: 1 }
 ]), async (req, res) => {
   try {
-    // Arquivos enviados
     const files = req.files;
     const simuladoId = req.body.simuladoId;
-    let response = {};
-    if (files.pdfSimulado) {
-      response.simulado = files.pdfSimulado[0].filename;
-        var simuladoFile = files.pdfSimulado[0].filename;
-    }
-    if (files.pdfGabarito) {
-      response.gabarito = files.pdfGabarito[0].filename;
-        var gabaritoFile = files.pdfGabarito[0].filename;
-    }
-      // Atualiza o registro do simulado com os nomes dos arquivos
-      const bateriaId = req.body.bateriaId;
-      if (simuladoId && (simuladoFile || gabaritoFile)) {
-        await prisma.simulado.update({
-          where: { id: simuladoId },
-          data: {
-            ...(simuladoFile && { simulado: simuladoFile }),
-            ...(gabaritoFile && { gabarito: gabaritoFile })
+    const bateriaId = req.body.bateriaId;
+
+    async function uploadToCloudinary(file) {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { resource_type: 'raw', folder: 'sigma-pdfs', format: 'pdf' },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result.secure_url);
           }
-        });
-      }
-      if (bateriaId && (simuladoFile || gabaritoFile)) {
-        await prisma.bateria.update({
-          where: { id: bateriaId },
-          data: {
-            ...(simuladoFile && { pdf: simuladoFile }),
-            ...(gabaritoFile && { gabarito: gabaritoFile })
-          }
-        });
-      }
-    res.status(200).json({ message: 'Upload realizado com sucesso!', ...response });
+        );
+        stream.end(file.buffer);
+      });
+    }
+
+    let simuladoUrl = null;
+    let gabaritoUrl = null;
+
+    if (files && files.pdfSimulado) {
+      simuladoUrl = await uploadToCloudinary(files.pdfSimulado[0]);
+    }
+    if (files && files.pdfGabarito) {
+      gabaritoUrl = await uploadToCloudinary(files.pdfGabarito[0]);
+    }
+
+    if (simuladoId && (simuladoUrl || gabaritoUrl)) {
+      await prisma.simulado.update({
+        where: { id: simuladoId },
+        data: {
+          ...(simuladoUrl && { simulado: simuladoUrl }),
+          ...(gabaritoUrl && { gabarito: gabaritoUrl })
+        }
+      });
+    }
+    if (bateriaId && (simuladoUrl || gabaritoUrl)) {
+      await prisma.bateria.update({
+        where: { id: bateriaId },
+        data: {
+          ...(simuladoUrl && { pdf: simuladoUrl }),
+          ...(gabaritoUrl && { gabarito: gabaritoUrl })
+        }
+      });
+    }
+
+    res.status(200).json({ message: 'Upload realizado com sucesso!' });
   } catch (error) {
     console.error('Erro no upload:', error);
     res.status(500).json({ error: 'Erro ao fazer upload dos arquivos.' });

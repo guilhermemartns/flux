@@ -305,11 +305,12 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
                         style={{ width: '260px' }}
                       />
                       {bateria.pdf && !pdfBateria && (
-                        <a href={`${API_URL}/pdf/${bateria.pdf}`} target="_blank" rel="noopener noreferrer" className="text-primary" style={{ fontSize: '1.2em' }}>
+                        <a href={bateria.pdf} target="_blank" rel="noopener noreferrer" className="text-primary" style={{ fontSize: '1.2em' }} title="Abrir PDF">
                           <FontAwesomeIcon icon={faFilePdf} />
                         </a>
                       )}
                     </div>
+                    <span className="text-muted" style={{ fontSize: '0.72rem', marginTop: 2 }}>Tamanho máximo recomendado: 8 MB</span>
                   </div>
                   <div className="d-flex flex-column">
                     <label className="form-label fw-semibold small d-flex align-items-center gap-1">
@@ -325,7 +326,7 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
                         style={{ width: '260px' }}
                       />
                       {bateria.gabarito && !pdfGabarito && (
-                        <a href={`${API_URL}/pdf/${bateria.gabarito}`} target="_blank" rel="noopener noreferrer" className="text-danger" style={{ fontSize: '1.2em' }}>
+                        <a href={bateria.gabarito} target="_blank" rel="noopener noreferrer" className="text-danger" style={{ fontSize: '1.2em' }} title="Abrir Gabarito">
                           <FontAwesomeIcon icon={faFilePdf} />
                         </a>
                       )}

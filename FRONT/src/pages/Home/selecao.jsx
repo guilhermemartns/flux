@@ -474,11 +474,12 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
                       style={{ width: '300px' }}
                     />
                     {simulado.simulado && !pdfSimulado && (
-                      <a href={`${API_URL}/pdf/${simulado.simulado}`} target="_blank" rel="noopener noreferrer" className="text-primary" style={{ fontSize: '1.2em' }}>
+                      <a href={simulado.simulado} target="_blank" rel="noopener noreferrer" className="text-primary" style={{ fontSize: '1.2em' }} title="Abrir PDF">
                         <FontAwesomeIcon icon={faFilePdf} />
                       </a>
                     )}
                   </div>
+                  <span className="text-muted" style={{ fontSize: '0.72rem', marginTop: 2 }}>Tamanho máximo recomendado: 8 MB</span>
                 </div>
 
                 {/* PDF Gabarito */}
@@ -496,7 +497,7 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
                       style={{ width: '300px' }}
                     />
                     {simulado.gabarito && !pdfGabarito && (
-                      <a href={`${API_URL}/pdf/${simulado.gabarito}`} target="_blank" rel="noopener noreferrer" className="text-danger" style={{ fontSize: '1.2em' }}>
+                      <a href={simulado.gabarito} target="_blank" rel="noopener noreferrer" className="text-danger" style={{ fontSize: '1.2em' }} title="Abrir Gabarito">
                         <FontAwesomeIcon icon={faFilePdf} />
                       </a>
                     )}
