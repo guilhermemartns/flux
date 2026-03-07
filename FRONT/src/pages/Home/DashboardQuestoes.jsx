@@ -46,6 +46,7 @@ function DashboardQuestoes() {
   }, [user]);
 
   const projetoSelecionado = localStorage.getItem('projetoSelecionado');
+  const projetoAnulatoria = localStorage.getItem('projetoAnulatoria') !== 'false';
 
   if (loading) return <SkeletonSimulados />;
 
@@ -90,13 +91,15 @@ function DashboardQuestoes() {
     const liquido = acertos - erros;
     const total = acertos + erros + brancos;
     const perc = total > 0 ? ((liquido / total) * 100).toFixed(1) : '0.0';
+    const percAcertos = total > 0 ? ((acertos / total) * 100).toFixed(1) : '0.0';
     return (
       <div className="d-flex align-items-center gap-2 fw-bold" style={{ fontSize: '0.85em' }}>
         <span title="Acertos" className="text-success d-flex align-items-center gap-1"><Check size={12} /> {acertos}</span>
         <span title="Erros" className="text-danger d-flex align-items-center gap-1"><X size={12} /> {erros}</span>
         <span title="Brancos" className="text-warning d-flex align-items-center gap-1"><File size={12} /> {brancos}</span>
-        <span title="Líquido" className="badge bg-primary-primary4 text-primary-primary5 rounded d-flex align-items-center gap-1"><Hash size={12} /> {liquido}</span>
-        <span title="% Líquido" className="badge bg-info text-dark rounded">{perc}%</span>
+        {projetoAnulatoria && <span title="Líquido" className="badge bg-primary-primary4 text-primary-primary5 rounded d-flex align-items-center gap-1"><Hash size={12} /> {liquido}</span>}
+        {projetoAnulatoria && <span title="% Líquido" className="badge bg-info text-dark rounded">{perc}%</span>}
+        {!projetoAnulatoria && <span title="% Acertos" className="badge bg-info text-dark rounded">{percAcertos}%</span>}
       </div>
     );
   }

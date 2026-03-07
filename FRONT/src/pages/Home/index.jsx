@@ -1,4 +1,3 @@
-import Sidebar from './components/sidebar.jsx';
 import React, { useEffect, useState, useContext } from 'react';
 import { SkeletonHome } from '../../components/Skeleton';
 import api from '../../services/api';
@@ -13,8 +12,7 @@ import { Pie } from 'react-chartjs-2';
 import { Bar } from 'react-chartjs-2';
 import { Badge, Modal, Spinner } from 'react-bootstrap';
 import { usePageTitle } from '../../components/PageTitleContext';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import confetti from 'canvas-confetti';
 import { StudyTimerContext } from '../../components/StudyTimerContext';
 Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip, Title, RadialLinearScale, Filler);
@@ -219,6 +217,7 @@ const Home = () => {
   // Recupera nome do usuário logado
   const usuario = JSON.parse(localStorage.getItem('user'));
   const nomeUsuario = usuario?.nome || usuario?.email || '';
+  const projetoAnulatoria = localStorage.getItem('projetoAnulatoria') !== 'false';
 
   // Função para duplicar simulado
   async function handleDuplicarSimulado(simuladoId) {
@@ -1735,6 +1734,7 @@ const Home = () => {
                           fill: false,
                           tension: 0.2,
                         },
+                        ...(projetoAnulatoria ? [
                         {
                           label: 'Líquido',
                           data: simuladosOrdenados.length > 0 ? simuladosOrdenados.map((s, idx) => {
@@ -1786,6 +1786,7 @@ const Home = () => {
                           tension: 0,
                           order: 10
                         }
+                        ] : [])
                       ]
                     }}
                     options={{
@@ -1867,8 +1868,8 @@ const Home = () => {
                     const materiaPorcentagens = simuladosOrdenados.map(sim => {
                       const mat = (resumos[sim.id]?.materias ?? []).find(m => m.nome === materiaNome);
                       const totalMat = mat ? (mat.acertos + mat.erros + mat.brancos) : 0;
-                      const liquido = mat ? (mat.acertos - mat.erros) : 0;
-                      return totalMat > 0 ? ((liquido / totalMat) * 100) : null;
+                      const valor = mat ? (projetoAnulatoria ? (mat.acertos - mat.erros) : mat.acertos) : 0;
+                      return totalMat > 0 ? ((valor / totalMat) * 100) : null;
                     });
                     const tendenciaMateria = (() => {
                       const arr = materiaPorcentagens.map(v => v === null ? 0 : Number(v));
@@ -1898,7 +1899,7 @@ const Home = () => {
                               labels: simLabels,
                               datasets: [
                                 {
-                                  label: '% Líquido',
+                                  label: projetoAnulatoria ? '% Líquido' : '% Acertos',
                                   data: materiaPorcentagens,
                                   borderColor: corMateria,
                                   backgroundColor: (context) => {
@@ -1931,7 +1932,7 @@ const Home = () => {
                                 const ctx = chart.ctx;
                                 const chartArea = chart.chartArea;
                                 if (!chartArea) return;
-                                const datasetIndex = chart.data.datasets.findIndex(ds => ds.label === '% Líquido');
+                                const datasetIndex = chart.data.datasets.findIndex(ds => ds.label === '% Líquido' || ds.label === '% Acertos');
                                 if (datasetIndex === -1) return;
                                 const meta = chart.getDatasetMeta(datasetIndex);
                                 ctx.save();
@@ -1967,14 +1968,14 @@ const Home = () => {
                                   grid: {
                                     display: true,
                                     color: (context) => {
-                                      if (context.tick.value === 0) {
-                                        return '#dc3545'; // Vermelho para a linha do 0
+                                      if (projetoAnulatoria && context.tick.value === 0) {
+                                        return '#dc3545';
                                       }
-                                      return 'rgba(187, 187, 187, 0.1)'; // Cinza claro para outras linhas
+                                      return 'rgba(187, 187, 187, 0.1)';
                                     },
                                     lineWidth: (context) => {
-                                      if (context.tick.value === 0) {
-                                        return 2; // Linha mais grossa para o 0
+                                      if (projetoAnulatoria && context.tick.value === 0) {
+                                        return 2;
                                       }
                                       return 1;
                                     }
@@ -2067,7 +2068,7 @@ const Home = () => {
                         <span>
                           <strong>Simulado #{s.numSim}</strong> - <span className="text-secondary">{data}</span>
                         </span>
-                        <span className="badge bg-primary-primary4 text-dark">{notaLiquida} pts</span>
+                        {projetoAnulatoria && <span className="badge bg-primary-primary4 text-dark">{notaLiquida} pts</span>}
                       </li>
                     );
                   })

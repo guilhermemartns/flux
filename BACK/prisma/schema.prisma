@@ -91,6 +91,8 @@ model ProjetoPadrao {
   imagem     String?         // Caminho ou URL da imagem do projeto padrão
   ano        Int?
   cargo      String?
+  tipo       String?         @default("alternativas")
+  anulatoria Boolean?        @default(true)
   Materias   MateriaPadrao[]
   carreiraId String?         @db.ObjectId
   carreira   Carreira?       @relation(fields: [carreiraId], references: [id])
@@ -137,6 +139,8 @@ model Projeto {
   ciclos    Ciclo[]
   estudos   Estudo[]
   metaSemanal Float?   // Meta semanal em horas
+  tipo        String?  @default("alternativas") // Tipo de questão do projeto
+  anulatoria  Boolean? @default(true)            // Se erros descontam acertos
   createdAt DateTime   @default(now()) // Data de criação do projeto
 }
 

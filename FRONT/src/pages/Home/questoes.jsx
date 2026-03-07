@@ -3,13 +3,12 @@ import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import SelecaoBateria from './SelecaoBateria';
 import api from '../../services/api';
-import { Folder, FileText, Check, X, File, Hash, Edit2, Trash, HelpCircle } from 'react-feather';
+import { Folder, FileText, Check, X, File, Edit2, Trash, HelpCircle } from 'react-feather';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useAuth } from '../../auth.jsx';
 import { Modal } from 'react-bootstrap';
 import { SkeletonSimulados } from '../../components/Skeleton';
 import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { usePageTitle } from '../../components/PageTitleContext';
 
 const pdfUrl = url => {
@@ -61,6 +60,8 @@ function Questoes() {
     if (selectedId) setShowSelecao(true);
   }, [selectedId]);
 
+  const projetoAnulatoria = localStorage.getItem('projetoAnulatoria') !== 'false';
+
   async function getBaterias() {
     try {
       const projetoId = localStorage.getItem('projetoSelecionado') || '';
@@ -71,6 +72,7 @@ function Questoes() {
 
       // Buscar stats de cada bateria
       const statsObj = {};
+      const projetoAnulatoria = localStorage.getItem('projetoAnulatoria') !== 'false';
       await Promise.all(lista.map(async (bat) => {
         try {
           const r = await api.get(`/respostas-bateria/${bat.id}`);
@@ -81,7 +83,7 @@ function Questoes() {
             else if (q.acertou) acertos++;
             else erros++;
           });
-          statsObj[bat.id] = { acertos, erros, branco, liquido: acertos - erros };
+          statsObj[bat.id] = { acertos, erros, branco, liquido: projetoAnulatoria ? (acertos - erros) : acertos };
         } catch { statsObj[bat.id] = { acertos: 0, erros: 0, branco: 0, liquido: 0 }; }
       }));
       setStats(statsObj);
@@ -117,6 +119,7 @@ function Questoes() {
 
         // Stats
         const statsObj = {};
+        const projetoAnulatoria = localStorage.getItem('projetoAnulatoria') !== 'false';
         await Promise.all(lista.map(async (bat) => {
           try {
             const r = await api.get(`/respostas-bateria/${bat.id}`);
@@ -127,7 +130,7 @@ function Questoes() {
               else if (q.acertou) acertos++;
               else erros++;
             });
-            statsObj[bat.id] = { acertos, erros, branco, liquido: acertos - erros };
+            statsObj[bat.id] = { acertos, erros, branco, liquido: projetoAnulatoria ? (acertos - erros) : acertos };
           } catch { statsObj[bat.id] = { acertos: 0, erros: 0, branco: 0, liquido: 0 }; }
         }));
         setStats(statsObj);
@@ -151,7 +154,7 @@ function Questoes() {
         quanQuest: Number(inputQuanQuest),
         dataBat: inputDataBat,
         projetoId,
-        userId: user?.id
+        userId: user?.id,
       });
 
       setInputTitulo('');
@@ -231,7 +234,7 @@ function Questoes() {
                 setShowSelecao(false);
                 setSelectedId(null);
                 getBaterias();
-              }} />
+              }} tipo={localStorage.getItem('projetoTipo') || 'alternativas'} anulatoria={localStorage.getItem('projetoAnulatoria') !== 'false'} />
             </div>
           </div>
         ), document.body)}
@@ -251,6 +254,8 @@ function Questoes() {
             const stat = stats[bat.id] || { acertos: 0, erros: 0, branco: 0, liquido: 0 };
             const totalQuestoes = bat.quanQuest || 0;
             const porcentagem = totalQuestoes > 0 ? ((stat.liquido / totalQuestoes) * 100).toFixed(1) : '0.0';
+            const liquidoColor = stat.liquido > 0 ? '#22c55e' : stat.liquido < 0 ? '#ef4444' : 'var(--text-light)';
+            const liquidoBg = stat.liquido > 0 ? 'rgba(34,197,94,0.12)' : stat.liquido < 0 ? 'rgba(239,68,68,0.1)' : 'rgba(0,0,0,0.06)';
             return (
               <div key={bat.id} className="card-padrao2 fadein card-padrao-hover mb-2 w-100 fs-6 pointer py-2">
                 <div className="d-flex flex-row align-items-center justify-content-between gap-2">
@@ -269,20 +274,25 @@ function Questoes() {
                       </span>
                       <span className="badge bg-secondary rounded" style={{ fontSize: '0.78em' }}>{bat.quanQuest}q</span>
                     </div>
-                    <div className="stats d-flex align-items-center gap-2 fw-bold ms-auto" style={{ fontSize: '0.85em' }}>
-                      <span title="Acertos" className="text-success d-flex align-items-center gap-1" style={{ fontSize: '0.9em', minWidth: 32 }}>
-                        <Check size={12} /> {stat.acertos}
+                    <div className="d-flex align-items-center gap-2 ms-auto">
+                      <span title="Acertos" className="d-flex align-items-center gap-1" style={{ fontSize: '0.82em', color: '#22c55e' }}>
+                        <Check size={11} strokeWidth={2.5} />
+                        <span className="fw-semibold">{stat.acertos}</span>
                       </span>
-                      <span title="Erros" className="text-danger d-flex align-items-center gap-1" style={{ fontSize: '0.9em', minWidth: 32 }}>
-                        <X size={12} /> {stat.erros}
+                      <span style={{ color: 'var(--border)', lineHeight: 1 }}>·</span>
+                      <span title="Erros" className="d-flex align-items-center gap-1" style={{ fontSize: '0.82em', color: '#ef4444' }}>
+                        <X size={11} strokeWidth={2.5} />
+                        <span className="fw-semibold">{stat.erros}</span>
                       </span>
-                      <span title="Brancos" className="text-warning d-flex align-items-center gap-1" style={{ fontSize: '0.9em', minWidth: 32 }}>
-                        <File size={12} /> {stat.branco}
+                      <span style={{ color: 'var(--border)', lineHeight: 1 }}>·</span>
+                      <span title="Brancos" className="d-flex align-items-center gap-1" style={{ fontSize: '0.82em', color: '#f59e0b' }}>
+                        <File size={11} />
+                        <span className="fw-semibold">{stat.branco}</span>
                       </span>
-                      <span title="Líquido" className="badge bg-primary-primary4 text-primary-primary5 rounded d-flex align-items-center gap-1" style={{ fontSize: '0.85em', minWidth: 32 }}>
-                        <Hash size={12} /> {stat.liquido}
-                      </span>
-                      <span title="Percentual Líquido" className="badge bg-info text-dark rounded d-flex align-items-center gap-1" style={{ fontSize: '0.8em', minWidth: 45 }}>
+                      {projetoAnulatoria && <span className="badge rounded-pill px-2 py-1 ms-1" style={{ background: liquidoBg, color: liquidoColor, fontSize: '0.78em', fontWeight: 700 }} title="Nota Líquida">
+                        Líq. {stat.liquido > 0 ? '+' : ''}{stat.liquido}
+                      </span>}
+                      <span className="badge rounded-pill px-2 py-1" style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontSize: '0.78em', fontWeight: 600 }} title={projetoAnulatoria ? 'Percentual Líquido' : 'Percentual de Acertos'}>
                         {porcentagem}%
                       </span>
                     </div>

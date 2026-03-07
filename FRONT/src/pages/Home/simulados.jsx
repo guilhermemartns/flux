@@ -16,8 +16,7 @@ import { SkeletonSimulados } from '../../components/Skeleton';
 import { CSSTransition } from 'react-transition-group';
 import './simuladoCollapse.css';
 import Swal from 'sweetalert2';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import { usePageTitle } from '../../components/PageTitleContext';
 
 const pdfUrl = url => {
@@ -54,6 +53,7 @@ function Home() {
   const { setTitle, setTitleExtra } = usePageTitle();
   const toastShownRef = useRef(false);
   const [delays, setDelays] = useState([]);
+  const projetoAnulatoria = localStorage.getItem('projetoAnulatoria') !== 'false';
 
   useEffect(() => {
     // Cria delays sequenciais para efeito cascata (simulados + card vazio)
@@ -113,9 +113,10 @@ function Home() {
         setSimulados(simuladosFromApi.data.filter(sim => sim.projetoId === projetoSelecionado));
         
         // Buscar estatísticas de cada simulado EM PARALELO
+        const projetoAnulatoria = localStorage.getItem('projetoAnulatoria') !== 'false';
         const statsPromises = simuladosFromApi.data.map(async (sim) => {
           if (sim.id) {
-            const stats = await getSimuladoStats(sim.id, user?.id, projetoSelecionado);
+            const stats = await getSimuladoStats(sim.id, user?.id, projetoSelecionado, projetoAnulatoria);
             return { id: sim.id, stats };
           }
           return null;
@@ -156,7 +157,7 @@ function Home() {
         quanQuest: inputQuanQuest,
         dataSim: inputDataSim,
         projetoId: projetoSelecionado,
-        userId: user?.id
+        userId: user?.id,
       });
       // Buscar estatísticas de cada simulado EM PARALELO
       const statsPromises = simuladosFromApi.data.map(async (sim) => {
@@ -465,7 +466,7 @@ function Home() {
                   setShowSelecao(false);
                   setSelectedId(null);
                   getSimulados();
-                }} />
+                }} tipo={localStorage.getItem('projetoTipo') || 'alternativas'} anulatoria={localStorage.getItem('projetoAnulatoria') !== 'false'} />
               </div>
             </div>
           );
@@ -504,26 +505,33 @@ function Home() {
                         })()}
                       </span>
                     </div>
-                    <div className="stats d-flex align-items-center gap-2 fw-bold ms-auto" style={{ fontSize: '0.85em' }}>
+                    <div className="d-flex align-items-center gap-2 ms-auto">
                       {(() => {
                         const stat = stats[simulado.id] || { acertos: 0, erros: 0, branco: 0, liquido: 0 };
                         const totalQuestoes = simulado.quanQuest || simulado.qtdQuestoes || simulado.qtd_questoes || 0;
                         const porcentagem = totalQuestoes > 0 ? ((stat.liquido / totalQuestoes) * 100).toFixed(1) : '0.0';
+                        const liquidoColor = stat.liquido > 0 ? '#22c55e' : stat.liquido < 0 ? '#ef4444' : 'var(--text-light)';
+                        const liquidoBg   = stat.liquido > 0 ? 'rgba(34,197,94,0.12)' : stat.liquido < 0 ? 'rgba(239,68,68,0.1)' : 'rgba(0,0,0,0.06)';
                         return (
                           <>
-                            <span title="Acertos" className="text-success d-flex align-items-center gap-1" style={{ fontSize: '0.9em', minWidth: 32 }}>
-                              <Check size={12} /> {stat.acertos}
+                            <span title="Acertos" className="d-flex align-items-center gap-1" style={{ fontSize: '0.82em', color: '#22c55e' }}>
+                              <Check size={11} strokeWidth={2.5} />
+                              <span className="fw-semibold">{stat.acertos}</span>
                             </span>
-                            <span title="Erros" className="text-danger d-flex align-items-center gap-1" style={{ fontSize: '0.9em', minWidth: 32 }}>
-                              <X size={12} /> {stat.erros}
+                            <span style={{ color: 'var(--border)', lineHeight: 1 }}>·</span>
+                            <span title="Erros" className="d-flex align-items-center gap-1" style={{ fontSize: '0.82em', color: '#ef4444' }}>
+                              <X size={11} strokeWidth={2.5} />
+                              <span className="fw-semibold">{stat.erros}</span>
                             </span>
-                            <span title="Brancos" className="text-warning d-flex align-items-center gap-1" style={{ fontSize: '0.9em', minWidth: 32 }}>
-                              <File size={12} /> {stat.branco}
+                            <span style={{ color: 'var(--border)', lineHeight: 1 }}>·</span>
+                            <span title="Brancos" className="d-flex align-items-center gap-1" style={{ fontSize: '0.82em', color: '#f59e0b' }}>
+                              <File size={11} />
+                              <span className="fw-semibold">{stat.branco}</span>
                             </span>
-                            <span title="Líquido" className="badge bg-primary-primary4 text-primary-primary5 rounded d-flex align-items-center gap-1" style={{ fontSize: '0.85em', minWidth: 32 }}>
-                              <Hash size={12} /> {stat.liquido}
-                            </span>
-                            <span title="Percentual Líquido" className="badge bg-info text-dark rounded d-flex align-items-center gap-1" style={{ fontSize: '0.8em', minWidth: 45 }}>
+                            {projetoAnulatoria && <span className="badge rounded-pill px-2 py-1 ms-1" style={{ background: liquidoBg, color: liquidoColor, fontSize: '0.78em', fontWeight: 700 }} title="Nota Líquida">
+                              Líq. {stat.liquido > 0 ? '+' : ''}{stat.liquido}
+                            </span>}
+                            <span className="badge rounded-pill px-2 py-1" style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontSize: '0.78em', fontWeight: 600 }} title={projetoAnulatoria ? 'Percentual Líquido' : 'Percentual de Acertos'}>
                               {porcentagem}%
                             </span>
                           </>
@@ -582,18 +590,18 @@ function Home() {
                   }}
                 >
                   <div ref={el => contentRefs.current[simulado.id] = el}>
-                    <div className="p-2">
-                      <div className="p-2">
-                        <table className="w-100 border-0 align-middle">
+                    <div style={{ paddingTop: 4 }}>
+                      <div>
+                        <table className="w-100 border-0 align-middle" style={{ borderCollapse: 'collapse' }}>
                           <thead>
                             <tr>
-                              <th className="text-center" style={{ width: 'auto' }}><span title="Matéria">Matéria</span></th>
-                              <th className="text-center" title="Quantidade de Questões" style={{ width: '100px' }}><FileText size={14} /></th>
-                              <th className="text-center" title="Acertos" style={{ width: '32px' }}><Check size={14} className="text-success" /></th>
-                              <th className="text-center" title="Erros" style={{ width: '32px' }}><X size={14} className="text-danger" /></th>
-                              <th className="text-center" title="Brancos" style={{ width: '32px' }}><File size={14} className="text-warning" /></th>
-                              <th className="text-center" title="Líquido" style={{ width: '32px' }}><Hash size={14} className="text-primary-primary5" /></th>
-                              <th className="text-center" title="Percentual Líquido" style={{ width: '48px' }}><span className='badge bg-info text-dark rounded-pill align-items-center'>%</span></th>
+                              <th className="text-start pb-2 ps-1" style={{ fontWeight: 600, fontSize: '0.73em', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)' }}>Matéria</th>
+                              <th className="text-center pb-2" style={{ width: 52, fontWeight: 600, fontSize: '0.73em', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)' }}>Total</th>
+                              <th className="text-center pb-2" style={{ width: 64, fontWeight: 600, fontSize: '0.73em', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#22c55e' }}>Acertos</th>
+                              <th className="text-center pb-2" style={{ width: 60, fontWeight: 600, fontSize: '0.73em', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#ef4444' }}>Erros</th>
+                              <th className="text-center pb-2" style={{ width: 64, fontWeight: 600, fontSize: '0.73em', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#f59e0b' }}>Brancos</th>
+                              {projetoAnulatoria && <th className="text-center pb-2" style={{ width: 72, fontWeight: 600, fontSize: '0.73em', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)' }}>Líquido</th>}
+                              <th className="text-center pb-2 pe-1" style={{ width: 130, fontWeight: 600, fontSize: '0.73em', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)' }}>Desempenho</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -618,9 +626,9 @@ function Home() {
                               // Cores para degradê
                               const colorMin = { r: 136, g: 52, b: 62 }; // vermelho
                               const colorMax = { r: 113, g: 221, b: 140 }; // verde
-                              const liquidos = Object.values(materiasResumo).map(dados => dados.liquido);
-                              const minLiquido = Math.min(...liquidos);
-                              const maxLiquido = Math.max(...liquidos);
+                              const valores = Object.values(materiasResumo).map(dados => projetoAnulatoria ? dados.liquido : dados.acertos);
+                              const minLiquido = Math.min(...valores);
+                              const maxLiquido = Math.max(...valores);
                               function getGradientColor(val) {
                                 if (maxLiquido === minLiquido) {
                                   // Se todos iguais, retorna verde
@@ -632,20 +640,34 @@ function Home() {
                                 const b = Math.round(colorMin.b + (colorMax.b - colorMin.b) * t);
                                 return `rgb(${r},${g},${b})`;
                               }
-                              return Object.entries(materiasResumo).map(([materia, dados], idx) => {
-                                const perc = dados.total > 0 ? (dados.liquido / dados.total) * 100 : 0;
+                              const entries = Object.entries(materiasResumo);
+                              return entries.map(([materia, dados], idx) => {
+                                const valorDesemp = projetoAnulatoria ? dados.liquido : dados.acertos;
+                                const perc = dados.total > 0 ? (valorDesemp / dados.total) * 100 : 0;
                                 let percStr = dados.total > 0 ? perc % 1 === 0 ? perc.toFixed(0) : perc.toFixed(1).replace(/\.0$/, '') : '0';
-                                const altBgStyle = idx % 2 !== 0 ? { backgroundColor: '#f8f9fa' } : {};
-                                const bgColor = getGradientColor(dados.liquido);
+                                const bgColor = getGradientColor(valorDesemp);
+                                const liquidoColor = dados.liquido > 0 ? '#22c55e' : dados.liquido < 0 ? '#ef4444' : 'var(--text-light)';
+                                const liquidoBg   = dados.liquido > 0 ? 'rgba(34,197,94,0.12)' : dados.liquido < 0 ? 'rgba(239,68,68,0.1)' : 'rgba(0,0,0,0.05)';
                                 return (
-                                  <tr key={materia} style={{ ...altBgStyle }}>
-                                    <td className="text-start">{materia}</td>
-                                    <td className="text-center"><span className="badge p-1 bg-secondary">{dados.total}</span></td>
-                                    <td className="text-center text-success"><span style={{ fontSize: '0.95em', minWidth: 32, display: 'inline-block', textAlign: 'center' }}>{dados.acertos}</span></td>
-                                    <td className="text-center text-danger"><span style={{ fontSize: '0.95em', minWidth: 32, display: 'inline-block', textAlign: 'center' }}>{dados.erros}</span></td>
-                                    <td className="text-center"><span style={{ fontSize: '0.95em', minWidth: 32, display: 'inline-block', textAlign: 'center', color: '#ffc107' }}>{dados.branco}</span></td>
-                                    <td className="text-center text-primary-primary5"><span className="badge p-1 bg-primary-primary4 text-primary-primary5" >{dados.liquido}</span></td>
-                                    <td className="text-center" style={{ background: bgColor, width: 48 }}><span style={{ fontSize: '0.85em', minWidth: 28, display: 'inline-block', textAlign: 'center', color: '#fff' }}>{percStr + '%'}</span></td>
+                                  <tr key={materia} style={{ borderBottom: idx < entries.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                                    <td className="py-2 ps-1 text-start" style={{ fontSize: '0.85em', fontWeight: 500 }}>{materia}</td>
+                                    <td className="text-center py-2" style={{ fontSize: '0.82em', color: 'var(--text-light)' }}>{dados.total}</td>
+                                    <td className="text-center py-2" style={{ fontSize: '0.85em', color: '#22c55e', fontWeight: 600 }}>{dados.acertos}</td>
+                                    <td className="text-center py-2" style={{ fontSize: '0.85em', color: '#ef4444', fontWeight: 600 }}>{dados.erros}</td>
+                                    <td className="text-center py-2" style={{ fontSize: '0.85em', color: '#f59e0b', fontWeight: 600 }}>{dados.branco}</td>
+                                    {projetoAnulatoria && <td className="text-center py-2">
+                                      <span className="badge rounded-pill px-2" style={{ background: liquidoBg, color: liquidoColor, fontWeight: 700, fontSize: '0.8em' }}>
+                                        {dados.liquido > 0 ? '+' : ''}{dados.liquido}
+                                      </span>
+                                    </td>}
+                                    <td className="py-2 pe-1">
+                                      <div className="d-flex align-items-center gap-2">
+                                        <div style={{ flex: 1, height: 5, borderRadius: 99, background: 'var(--border)', overflow: 'hidden' }}>
+                                          <div style={{ height: '100%', width: `${Math.max(0, Math.min(100, perc))}%`, borderRadius: 99, background: bgColor }} />
+                                        </div>
+                                        <span style={{ fontSize: '0.74em', fontWeight: 600, color: 'var(--text-light)', minWidth: 30, textAlign: 'right' }}>{percStr}%</span>
+                                      </div>
+                                    </td>
                                   </tr>
                                 );
                               });

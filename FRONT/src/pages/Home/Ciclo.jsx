@@ -6,8 +6,7 @@ import { faTrash, faClone, faPenToSquare, faCheck, faArrowUp, faArrowDown, faFac
 import { faOtter } from '@fortawesome/free-solid-svg-icons';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart, ArcElement, Tooltip, Legend } from 'chart.js';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { usePageTitle } from '../../components/PageTitleContext';
 import Spinner from 'react-bootstrap/Spinner';

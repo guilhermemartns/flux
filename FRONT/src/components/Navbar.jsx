@@ -8,8 +8,7 @@ import { User } from 'react-feather';
 import Dropdown from 'react-bootstrap/Dropdown';
 import Modal from 'react-bootstrap/Modal';
 import { usePageTitle } from './PageTitleContext';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 const Navbar = () => {
   const { user } = useAuth();

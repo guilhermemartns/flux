@@ -14,7 +14,7 @@ const pdfUrl = url => {
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
+const SelecaoBateria = forwardRef(({ id: bateriaId, onClose, tipo = 'alternativas', anulatoria = true }, ref) => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -106,27 +106,25 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
 
-  function handleAlternativaChange(e, index) {
-    const value = e.target.value.toUpperCase();
+  function handleAlternativaClick(val, index) {
     const updated = [...respostas];
-    updated[index] = value;
+    updated[index] = updated[index] === val ? '' : val;
     setRespostas(updated);
     setIsDirty(true);
-    if (value.length === 1) {
-      const nextInput = document.getElementById(`bat-alt-${index + 1}`);
-      if (nextInput) nextInput.focus();
+    if (updated[index]) {
+      const next = document.getElementById(`bat-resp-${index + 1}`);
+      if (next) next.focus();
     }
   }
 
-  function handleGabaritoChange(e, index) {
-    const value = e.target.value.toUpperCase();
+  function handleGabaritoClick(val, index) {
     const updated = [...gabaritos];
-    updated[index] = value;
+    updated[index] = updated[index] === val ? '' : val;
     setGabaritos(updated);
     setIsDirty(true);
-    if (value.length === 1) {
-      const nextInput = document.getElementById(`bat-gab-${index + 1}`);
-      if (nextInput) nextInput.focus();
+    if (updated[index]) {
+      const next = document.getElementById(`bat-gab-${index + 1}`);
+      if (next) next.focus();
     }
   }
 
@@ -172,6 +170,8 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
     let formValido = true;
     for (let i = 0; i < respostas.length; i++) {
       if (!respostas[i] || !gabaritos[i] || !materias[i] || !editalItens[i]) { formValido = false; break; }
+      const itemsDisponiveis = materiasEdital[materias[i]] || [];
+      if (itemsDisponiveis.length > 0 && !itemsDisponiveis.includes(editalItens[i])) { formValido = false; break; }
     }
     if (!formValido) {
       const form = document.querySelector('.needs-validation-bat');
@@ -383,13 +383,22 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
               </div>
             </div>
 
+            {/* Datalists para autocompletar itens do edital */}
+            {materiasCadastradas.map(m => (
+              <datalist key={m.id} id={`edital-list-${m.id || m.nome}`}>
+                {(materiasEdital[m.nome] || []).map((item, idx) => (
+                  <option key={idx} value={item} />
+                ))}
+              </datalist>
+            ))}
+
             {/* TABELA SCROLLÁVEL */}
             <div className="overflow-auto" style={{ flex: 1, minHeight: 0, maxHeight: '50vh' }}>
-              <table className="align-middle" style={{ minWidth: 900 }}>
+              <table className="align-middle" style={{ minWidth: 950, width: '100%', tableLayout: 'fixed' }}>
                 <thead style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--background-l-light)' }}>
                   <tr>
-                    <th className="text-center p-1">#</th>
-                    <th className="text-center p-1" style={{ minWidth: 140 }}>
+                    <th className="text-center p-1" style={{ width: 36 }}>#</th>
+                    <th className="text-center p-1" style={{ width: 160 }}>
                       <span className="d-inline-flex align-items-center gap-1">
                         Matéria
                         <span
@@ -403,12 +412,12 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
                         </span>
                       </span>
                     </th>
-                    <th className="text-center p-1" style={{ minWidth: 180 }}>Item do Edital (Tópico)</th>
-                    <th className="text-center p-1" style={{ minWidth: 40 }}>Resp.</th>
-                    <th className="text-center p-1" style={{ minWidth: 40 }}>Gab.</th>
-                    <th className="text-center p-1" style={{ minWidth: 36 }}>Chute?</th>
-                    <th className="text-center p-1" style={{ minWidth: 36 }}>Anulada?</th>
-                    <th className="text-center p-1" style={{ minWidth: 120 }}>Motivo do Erro</th>
+                    <th className="text-center p-1" style={{ width: 220 }}>Item do Edital (Tópico)</th>
+                    <th className="text-center p-1" style={{ width: tipo === 'certo_errado' ? 72 : 120 }}>Resp.</th>
+                    <th className="text-center p-1" style={{ width: tipo === 'certo_errado' ? 60 : 100 }}>Gab.</th>
+                    <th className="text-center p-1" style={{ width: 52 }}>Chute?</th>
+                    <th className="text-center p-1" style={{ width: 64 }}>Anulada?</th>
+                    <th className="text-center p-1" style={{ width: 160 }}>Motivo do Erro</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -423,8 +432,8 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
                     const cardClass = anulada ? 'card-anulada' : (isFilled && !isBlank ? (r === g ? 'linha-correta' : 'linha-incorreta') : '');
                     return (
                       <tr key={index} className={cardClass + ' fadein-cascade'} style={{ animationDelay: `${index * 0.06}s` }}>
-                        <td className="text-center fw-bold p-1 border">{index + 1}</td>
-                        <td className="p-1 border" style={{ minWidth: 140 }}>
+                        <td className="text-center fw-bold p-1 border" style={{ width: 36 }}>{index + 1}</td>
+                        <td className="p-1 border" style={{ width: 160, overflow: 'hidden' }}>
                           <select
                             value={materias[index]}
                             onChange={e => handleMateriaChange(e, index)}
@@ -439,60 +448,98 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
                             ))}
                           </select>
                         </td>
-                        <td className="p-1 border" style={{ minWidth: 180 }}>
-                          <select
-                            value={editalItens[index] || ''}
-                            onChange={e => { const arr = [...editalItens]; arr[index] = e.target.value; setEditalItens(arr); }}
-                            id={`bat-edital-${index}`}
-                            className="form-select form-select-sm"
-                            required
-                            disabled={!materias[index] || !(materiasEdital[materias[index]]?.length > 0)}
-                            style={{ fontSize: '0.88em' }}
-                          >
-                            <option value="">
-                              {!materias[index] ? 'Selecione uma matéria' :
-                                (materiasEdital[materias[index]]?.length > 0 ? 'Item do edital' : 'Não há edital inserido')}
-                            </option>
-                            {(materiasEdital[materias[index]] || []).map((item, idx) => (
-                              <option key={`${idx}-${item}`} value={item}>{item}</option>
-                            ))}
-                          </select>
+                        <td className="p-1 border" style={{ width: 220, overflow: 'hidden' }}>
+                          {(() => {
+                            const itemsDisponiveis = materiasEdital[materias[index]] || [];
+                            const isInvalid = !!(editalItens[index] && itemsDisponiveis.length > 0 && !itemsDisponiveis.includes(editalItens[index]));
+                            return (
+                              <input
+                                type="text"
+                                value={editalItens[index] || ''}
+                                onChange={e => { const arr = [...editalItens]; arr[index] = e.target.value; setEditalItens(arr); setIsDirty(true); }}
+                                onBlur={e => {
+                                  const items = materiasEdital[materias[index]] || [];
+                                  if (items.length > 0 && e.target.value && !items.includes(e.target.value)) {
+                                    const arr = [...editalItens]; arr[index] = ''; setEditalItens(arr);
+                                  }
+                                }}
+                                id={`bat-edital-${index}`}
+                                className={`form-control form-control-sm${isInvalid ? ' is-invalid' : ''}`}
+                                placeholder={!materias[index] ? 'Selecione uma matéria' : 'Digite para filtrar...'}
+                                disabled={!materias[index]}
+                                list={materias[index] ? `edital-list-${materiasCadastradas.find(m => m.nome === materias[index])?.id || materias[index]}` : undefined}
+                                required={itemsDisponiveis.length > 0}
+                                style={{ fontSize: '0.88em' }}
+                                autoComplete="off"
+                              />
+                            );
+                          })()}
                         </td>
-                        <td className="p-1 text-center border" style={{ minWidth: 40 }}>
-                          <input
-                            type="text"
-                            maxLength={1}
-                            value={respostas[index]}
-                            onChange={e => handleAlternativaChange(e, index)}
-                            className="form-control form-control-sm text-uppercase text-center"
-                            id={`bat-alt-${index}`}
-                            style={{ fontSize: '0.88em' }}
-                          />
+                        <td className="p-1 text-center border" style={{ width: tipo === 'certo_errado' ? 72 : 120 }}>
+                          <div className="d-flex gap-1 justify-content-center">
+                            {(tipo === 'certo_errado' ? ['C','E','–'] : ['A','B','C','D','E','–']).map((opt) => {
+                              const val = opt === '–' ? 'S' : opt;
+                              const sel = respostas[index] === val;
+                              return (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  id={opt === (tipo === 'certo_errado' ? 'C' : 'A') ? `bat-resp-${index}` : undefined}
+                                  onClick={() => handleAlternativaClick(val, index)}
+                                  style={{
+                                    width: 17, height: 22, padding: 0,
+                                    fontSize: '0.7em', fontWeight: 700, lineHeight: 1,
+                                    borderRadius: 3,
+                                    border: `1px solid ${sel ? 'transparent' : 'var(--border)'}`,
+                                    background: sel ? (opt === '–' ? 'rgba(107,114,128,0.5)' : '#3b82f6') : 'transparent',
+                                    color: sel ? '#fff' : 'var(--text-light)',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {opt}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </td>
-                        <td className="p-1 text-center border" style={{ minWidth: 40 }}>
-                          <input
-                            type="text"
-                            maxLength={1}
-                            id={`bat-gab-${index}`}
-                            required
-                            value={gabaritos[index]}
-                            onChange={e => handleGabaritoChange(e, index)}
-                            className="form-control form-control-sm text-uppercase text-center"
-                            style={{ fontSize: '0.88em' }}
-                          />
+                        <td className="p-1 text-center border" style={{ width: tipo === 'certo_errado' ? 60 : 100 }}>
+                          <div className="d-flex gap-1 justify-content-center">
+                            {(tipo === 'certo_errado' ? ['C','E'] : ['A','B','C','D','E']).map((opt) => {
+                              const sel = gabaritos[index] === opt;
+                              return (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  id={opt === (tipo === 'certo_errado' ? 'C' : 'A') ? `bat-gab-${index}` : undefined}
+                                  onClick={() => handleGabaritoClick(opt, index)}
+                                  style={{
+                                    width: 17, height: 22, padding: 0,
+                                    fontSize: '0.7em', fontWeight: 700, lineHeight: 1,
+                                    borderRadius: 3,
+                                    border: `1px solid ${sel ? 'transparent' : 'var(--border)'}`,
+                                    background: sel ? '#3b82f6' : 'transparent',
+                                    color: sel ? '#fff' : 'var(--text-light)',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {opt}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </td>
-                        <td className="p-1 text-center border pointer" style={{ minWidth: 36 }} onClick={() => handleChuteChange(index)}>
+                        <td className="p-1 text-center border pointer" style={{ width: 52 }} onClick={() => handleChuteChange(index)}>
                           <div className="form-check d-flex justify-content-center align-items-center" style={{ height: '28px', paddingLeft: 0 }}>
                             <input className="pointer form-check-input" type="checkbox" checked={chute} onChange={() => handleChuteChange(index)} style={{ margin: 0, width: '18px', height: '18px' }} />
                           </div>
                         </td>
-                        <td className="p-1 text-center border pointer" style={{ minWidth: 36 }} onClick={() => handleAnuladaChange(index)}>
+                        <td className="p-1 text-center border pointer" style={{ width: 64 }} onClick={() => handleAnuladaChange(index)}>
                           <div className="form-check d-flex justify-content-center align-items-center" style={{ height: '28px', paddingLeft: 0 }}>
                             <input className="pointer form-check-input" type="checkbox" checked={anulada} onChange={() => handleAnuladaChange(index)} style={{ margin: 0, width: '18px', height: '18px' }} />
                             <span style={{ marginLeft: '0.4em', color: '#6c757d', fontSize: '1.05em', cursor: 'pointer' }} title="Quando anulada, é contabilizada como acerto.">ⓘ</span>
                           </div>
                         </td>
-                        <td className="p-1 border" style={{ minWidth: 180 }}>
+                        <td className="p-1 border" style={{ width: 160 }}>
                           {!(anulada || !respostas[index] || !gabaritos[index] || respostas[index]?.trim().toUpperCase() === gabaritos[index]?.trim().toUpperCase()) && (
                             <select
                               className="form-select form-select-sm"

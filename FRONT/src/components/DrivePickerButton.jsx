@@ -27,43 +27,50 @@ export default function DrivePickerButton({ onPick, label = 'Google Drive', clas
     let cancelled = false;
 
     async function init() {
-      // 1. Carrega gapi
-      await appendScript('https://apis.google.com/js/api.js', 'data-gapi');
-      // 2. Carrega o módulo picker dentro do gapi
-      await new Promise((resolve) => {
-        if (window.google?.picker) { resolve(); return; }
-        window.gapi.load('picker', resolve);
-      });
-      // 3. Carrega GIS
-      await appendScript('https://accounts.google.com/gsi/client', 'data-gis');
-      // 4. Aguarda google.accounts.oauth2 estar disponível
-      await new Promise((resolve) => {
-        if (window.google?.accounts?.oauth2) { resolve(); return; }
-        const id = setInterval(() => {
-          if (window.google?.accounts?.oauth2) { clearInterval(id); resolve(); }
-        }, 50);
-        setTimeout(() => { clearInterval(id); resolve(); }, 5000);
-      });
+      try {
+        // 1. Carrega gapi
+        await appendScript('https://apis.google.com/js/api.js', 'data-gapi');
+        // 2. Carrega o módulo picker dentro do gapi
+        await new Promise((resolve) => {
+          if (window.google?.picker) { resolve(); return; }
+          if (!window.gapi) { resolve(); return; }
+          window.gapi.load('picker', resolve);
+        });
+        // 3. Carrega GIS
+        await appendScript('https://accounts.google.com/gsi/client', 'data-gis');
+        // 4. Aguarda google.accounts.oauth2 estar disponível
+        await new Promise((resolve) => {
+          if (window.google?.accounts?.oauth2) { resolve(); return; }
+          const id = setInterval(() => {
+            if (window.google?.accounts?.oauth2) { clearInterval(id); resolve(); }
+          }, 50);
+          setTimeout(() => { clearInterval(id); resolve(); }, 5000);
+        });
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/drive.readonly',
-        callback: (response) => {
-          if (response.error) { console.error('OAuth error:', response); return; }
-          if (response.access_token) {
-            cachedToken = response.access_token;
-            tokenExpiry = Date.now() + (response.expires_in ?? 3600) * 1000 - 60000;
-            showPicker(response.access_token);
-          }
-        },
-      });
-
-      setReady(true);
+        if (window.google?.accounts?.oauth2) {
+          tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/drive.readonly',
+            callback: (response) => {
+              if (response.error) { console.error('OAuth error:', response); return; }
+              if (response.access_token) {
+                cachedToken = response.access_token;
+                tokenExpiry = Date.now() + (response.expires_in ?? 3600) * 1000 - 60000;
+                showPicker(response.access_token);
+              }
+            },
+          });
+        }
+      } catch (err) {
+        console.error('DrivePickerButton init error:', err);
+      } finally {
+        if (!cancelled) setReady(true);
+      }
     }
 
-    init().catch(console.error);
+    init();
     return () => { cancelled = true; };
   }, []);
 

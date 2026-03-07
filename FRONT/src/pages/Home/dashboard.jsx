@@ -5,7 +5,6 @@ import { Line, Bar, Pie } from 'react-chartjs-2';
 import { Chart, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Legend, Tooltip, Title, Filler, ArcElement } from 'chart.js';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Check, X, Circle, Hash, Calendar, TrendingUp, Folder, Frown, AlertTriangle, ChevronDown, ChevronRight, HelpCircle } from 'react-feather';
-import Navbar from '../../components/Navbar';
 import { usePageTitle } from '../../components/PageTitleContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -42,35 +41,6 @@ const Dashboard = () => {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const { setTitle, setTitleExtra } = usePageTitle();
 
-  // CSS para estabilizar layout com tooltips do Bootstrap
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .tooltip {
-        pointer-events: none !important;
-      }
-      .tooltip-inner {
-        font-size: 11px !important;
-        padding: 4px 8px !important;
-        border-radius: 4px !important;
-      }
-      .card-padrao {
-        will-change: auto !important;
-        transform: translateZ(0) !important;
-      }
-      .resumo-scroll {
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-      }
-      .resumo-scroll::-webkit-scrollbar {
-        display: none;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
   useEffect(() => {
     setTitle('Dashboard');
     document.title = 'FLUX | Dashboard';
@@ -258,6 +228,7 @@ const Dashboard = () => {
 
   // Calcula médias
   const total = simuladosParaMedia.length || 1;
+  const projetoAnulatoria = localStorage.getItem('projetoAnulatoria') !== 'false';
   const mediaAcertos = (simuladosParaMedia.reduce((sum, sim) => sum + (resumos[sim.id]?.acertos ?? 0), 0) / total).toFixed(2);
   const mediaErros = (simuladosParaMedia.reduce((sum, sim) => sum + (resumos[sim.id]?.erros ?? 0), 0) / total).toFixed(2);
   const mediaBrancos = (simuladosParaMedia.reduce((sum, sim) => sum + (resumos[sim.id]?.brancos ?? 0), 0) / total).toFixed(2);
@@ -339,25 +310,27 @@ const Dashboard = () => {
         fill: false,
         tension: 0.2,
       },
-      {
-        label: 'Líquido',
-        data: liquidoData,
-        borderColor: '#1b59f9',
-        backgroundColor: '#1b59f933',
-        fill: false,
-        tension: 0.2,
-      },
-      {
-        label: 'Tendência Líquida',
-        data: tendenciaLiquida,
-        borderColor: '#ff9800',
-        backgroundColor: 'rgba(255,152,0,0.1)',
-        borderDash: [6, 6],
-        pointRadius: 0,
-        fill: false,
-        tension: 0,
-        order: 10
-      }
+      ...(projetoAnulatoria ? [
+        {
+          label: 'Líquido',
+          data: liquidoData,
+          borderColor: '#1b59f9',
+          backgroundColor: '#1b59f933',
+          fill: false,
+          tension: 0.2,
+        },
+        {
+          label: 'Tendência Líquida',
+          data: tendenciaLiquida,
+          borderColor: '#ff9800',
+          backgroundColor: 'rgba(255,152,0,0.1)',
+          borderDash: [6, 6],
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+          order: 10
+        }
+      ] : [])
     ],
   };
 
@@ -378,7 +351,7 @@ const Dashboard = () => {
     simuladosMateria.forEach(sim => {
       const mat = (resumos[sim.id]?.materias ?? []).find(m => m.nome === materiaNome);
       if (mat) {
-        liquidoTotal += (mat.acertos - mat.erros);
+        liquidoTotal += projetoAnulatoria ? (mat.acertos - mat.erros) : mat.acertos;
         totalQuestoes += (mat.acertos + mat.erros + mat.brancos);
       }
     });
@@ -429,7 +402,7 @@ const Dashboard = () => {
     labels: materiasPorcentagem.map(m => m.nome),
     datasets: [
       {
-        label: '% Líquido',
+        label: projetoAnulatoria ? '% Líquido' : '% Acertos',
         data: pontuacoes,
         borderColor: barrasCores,
         backgroundColor: barrasCores,
@@ -485,7 +458,8 @@ const Dashboard = () => {
   const bPorcentagens = bMateriasNomes.map(nome => {
     const m = bConsolidado[nome];
     const total = m.acertos + m.erros + m.brancos;
-    return total > 0 ? ((m.acertos - m.erros) / total * 100) : 0;
+    const val = projetoAnulatoria ? (m.acertos - m.erros) : m.acertos;
+    return total > 0 ? (val / total * 100) : 0;
   });
   const bMin = bPorcentagens.length ? Math.min(...bPorcentagens) : 0;
   const bMax = bPorcentagens.length ? Math.max(...bPorcentagens) : 0;
@@ -498,7 +472,7 @@ const Dashboard = () => {
   });
   const bMateriaChartData = {
     labels: bMateriasNomes,
-    datasets: [{ label: '% Líquido', data: bPorcentagens, backgroundColor: bBarrasCores, borderColor: bBarrasCores }],
+    datasets: [{ label: projetoAnulatoria ? '% Líquido' : '% Acertos', data: bPorcentagens, backgroundColor: bBarrasCores, borderColor: bBarrasCores }],
   };
 
   return (
@@ -551,7 +525,7 @@ const Dashboard = () => {
                           <th style={{ padding: '8px 12px', fontWeight: 600, color: '#34C759', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.06)' }}><span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}><Check size={13} /> Acertos</span></th>
                           <th style={{ padding: '8px 12px', fontWeight: 600, color: '#FF2D55', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.06)' }}><span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}><X size={13} /> Erros</span></th>
                           <th style={{ padding: '8px 12px', fontWeight: 600, color: '#FF9500', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.06)' }}><span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}><Circle size={13} /> Brancos</span></th>
-                          <th style={{ padding: '8px 12px', fontWeight: 600, color: '#1b59f9', textAlign: 'center' }}><span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}><TrendingUp size={13} /> Líquido</span></th>
+                          {projetoAnulatoria && <th style={{ padding: '8px 12px', fontWeight: 600, color: '#1b59f9', textAlign: 'center' }}><span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}><TrendingUp size={13} /> Líquido</span></th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -573,7 +547,7 @@ const Dashboard = () => {
                                 <td style={{ padding: '7px 12px', verticalAlign: 'middle', textAlign: 'center', fontWeight: 700, color: sim ? '#34C759' : 'var(--text-light-light)', ...sep }}>{acertos}</td>
                                 <td style={{ padding: '7px 12px', verticalAlign: 'middle', textAlign: 'center', fontWeight: 700, color: sim ? '#FF2D55' : 'var(--text-light-light)', ...sep }}>{erros}</td>
                                 <td style={{ padding: '7px 12px', verticalAlign: 'middle', textAlign: 'center', fontWeight: 700, color: sim ? '#FF9500' : 'var(--text-light-light)', ...sep }}>{brancos}</td>
-                                <td style={{ padding: '7px 12px', verticalAlign: 'middle', textAlign: 'center', fontWeight: 700, color: sim ? '#1b59f9' : 'var(--text-light-light)' }}>{liquido}</td>
+                                {projetoAnulatoria && <td style={{ padding: '7px 12px', verticalAlign: 'middle', textAlign: 'center', fontWeight: 700, color: sim ? '#1b59f9' : 'var(--text-light-light)' }}>{liquido}</td>}
                               </tr>
                             );
                           });
@@ -596,7 +570,7 @@ const Dashboard = () => {
                   <div style={{ paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-light-light)', marginBottom: '0.5rem', fontWeight: 600 }}>Médias</div>
                     <div style={{ display: 'flex', justifyContent: 'space-around', gap: '0.5rem' }}>
-                      {[{ label: 'Líquido', val: mediaLiquido, color: '#1b59f9' }, { label: 'Acertos', val: mediaAcertos, color: '#34C759' }, { label: 'Erros', val: mediaErros, color: '#FF2D55' }, { label: 'Brancos', val: mediaBrancos, color: '#FF9500' }].map(({ label, val, color }) => (
+                      {[...(projetoAnulatoria ? [{ label: 'Líquido', val: mediaLiquido, color: '#1b59f9' }] : []), { label: 'Acertos', val: mediaAcertos, color: '#34C759' }, { label: 'Erros', val: mediaErros, color: '#FF2D55' }, { label: 'Brancos', val: mediaBrancos, color: '#FF9500' }].map(({ label, val, color }) => (
                         <div key={label} style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-light-light)', marginBottom: '0.25rem' }}>{label}</div>
                           <span className='badge' style={{ backgroundColor: color, color: '#fff', fontWeight: 600, fontSize: '0.75rem' }}>{val}</span>
@@ -610,7 +584,7 @@ const Dashboard = () => {
 
             {/* Comparação + Pontuação acumulada */}
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'stretch', marginTop: '1.5rem' }}>
-              <div className="card-padrao2 fadein" style={{ animationDelay: '0.35s', padding: '1rem', position: 'relative', flex: 1 }}>
+              {projetoAnulatoria && <div className="card-padrao2 fadein" style={{ animationDelay: '0.35s', padding: '1rem', position: 'relative', flex: 1 }}>
                 <div className="card-title-padrao">Comparação das Notas Líquidas por Matéria</div>
                 <div className="card-content">
                   <div className="resumo-scroll" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '280px', scrollbarWidth: 'none', msOverflowStyle: 'none', marginBottom: '1rem', borderRadius: '0.5rem', overflow: 'hidden' }}>
@@ -671,7 +645,7 @@ const Dashboard = () => {
                     )}
                   </div>
                 </div>
-              </div>
+              </div>}
 
               <div className="card-padrao2 fadein" style={{ animationDelay: '0.4s', padding: '1rem', position: 'relative', flex: 1 }}>
                 <div className="card-title-padrao">Pontuação Acumulada</div>
@@ -750,7 +724,7 @@ const Dashboard = () => {
                           { label: 'Acertos', pct: desemp.pctAcertos, count: desemp.acertos, color: '#34C759', bg: 'rgba(52,199,89,0.1)' },
                           { label: 'Erros', pct: desemp.total > 0 ? Math.round(desemp.erros / desemp.total * 100) : 0, count: desemp.erros, color: '#FF2D55', bg: 'rgba(255,45,85,0.1)' },
                           { label: 'Brancos', pct: desemp.total > 0 ? Math.round(desemp.brancos / desemp.total * 100) : 0, count: desemp.brancos, color: '#FF9500', bg: 'rgba(255,149,0,0.1)' },
-                          { label: 'Líquido', pct: desemp.pctLiquido, count: desemp.total, color: '#1b59f9', bg: 'rgba(27,89,249,0.1)', suffix: ' totais' },
+                          ...(projetoAnulatoria ? [{ label: 'Líquido', pct: desemp.pctLiquido, count: desemp.total, color: '#1b59f9', bg: 'rgba(27,89,249,0.1)', suffix: ' totais' }] : []),
                         ].map(({ label, pct, count, color, bg, suffix = ' q.' }) => (
                           <div key={label} style={{ flex: '1 1 70px', display: 'flex', alignItems: 'center', gap: 8, background: bg, borderRadius: 8, padding: '6px 10px' }}>
                             <div style={{ fontWeight: 700, color, fontSize: '1.1rem', lineHeight: 1 }}>{pct}%</div>
@@ -766,7 +740,7 @@ const Dashboard = () => {
                     {/* Gráficos */}
                     <div className="d-flex gap-3 flex-wrap align-items-stretch">
                       {/* Evolução % Líquido */}
-                      <div className="card-padrao2" style={{ flex: '1 1 0', minWidth: 220, height: 300, padding: '1rem', display: 'flex', flexDirection: 'column' }}>
+                      {projetoAnulatoria && <div className="card-padrao2" style={{ flex: '1 1 0', minWidth: 220, height: 300, padding: '1rem', display: 'flex', flexDirection: 'column' }}>
                         <div className="card-title-padrao">Evolução % Líquido</div>
                         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {evolucao.filter(e => e.pctLiquido !== null).length < 2 ? (
@@ -778,7 +752,7 @@ const Dashboard = () => {
                             </div>
                           )}
                         </div>
-                      </div>
+                      </div>}
 
                       {/* Top Edital Erros */}
                       <div className="card-padrao2" style={{ flex: '1 1 0', minWidth: 220, height: 300, padding: '1rem', display: 'flex', flexDirection: 'column' }}>
@@ -921,7 +895,7 @@ const Dashboard = () => {
                     { label: 'Acertos', value: bTotal.acertos, color: '#34C759', bg: 'rgba(52,199,89,0.1)' },
                     { label: 'Erros', value: bTotal.erros, color: '#FF2D55', bg: 'rgba(255,45,85,0.1)' },
                     { label: 'Brancos', value: bTotal.brancos, color: '#FF9500', bg: 'rgba(255,149,0,0.1)' },
-                    { label: 'Líquido', value: bLiquido, color: '#1b59f9', bg: 'rgba(27,89,249,0.1)' },
+                    ...(projetoAnulatoria ? [{ label: 'Líquido', value: bLiquido, color: '#1b59f9', bg: 'rgba(27,89,249,0.1)' }] : []),
                   ].map(({ label, value, color, bg }) => (
                     <div key={label} style={{ flex: '1 1 80px', background: bg, borderRadius: 10, padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <div style={{ fontSize: '0.65rem', color: 'var(--text-light)', fontWeight: 600 }}>{label}</div>
@@ -931,7 +905,7 @@ const Dashboard = () => {
                 </div>
                 <div className="d-flex gap-3 align-items-stretch flex-wrap">
                   <div className="card-padrao2" style={{ flex: 2, minWidth: 240, padding: '1rem', position: 'relative' }}>
-                    <div className="card-title-padrao">% Líquido por Matéria</div>
+                    <div className="card-title-padrao">{projetoAnulatoria ? '% Líquido por Matéria' : '% Acertos por Matéria'}</div>
                     <div style={{ height: 200 }}>
                       <Bar data={bMateriaChartData} options={{ maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1) + '%' } } }, scales: { x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#aaa', font: { size: 10 }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }} />
                     </div>
@@ -946,7 +920,7 @@ const Dashboard = () => {
                             <th style={{ padding: '6px 8px', color: '#34C759', textAlign: 'center' }}>✓</th>
                             <th style={{ padding: '6px 8px', color: '#FF2D55', textAlign: 'center' }}>✗</th>
                             <th style={{ padding: '6px 8px', color: '#FF9500', textAlign: 'center' }}>○</th>
-                            <th style={{ padding: '6px 8px', color: '#1b59f9', textAlign: 'center' }}>Líq.</th>
+                            {projetoAnulatoria && <th style={{ padding: '6px 8px', color: '#1b59f9', textAlign: 'center' }}>Líq.</th>}
                           </tr>
                         </thead>
                         <tbody>
@@ -959,7 +933,7 @@ const Dashboard = () => {
                                 <td style={{ padding: '6px 8px', textAlign: 'center', color: '#34C759', fontWeight: 700 }}>{a}</td>
                                 <td style={{ padding: '6px 8px', textAlign: 'center', color: '#FF2D55', fontWeight: 700 }}>{e}</td>
                                 <td style={{ padding: '6px 8px', textAlign: 'center', color: '#FF9500', fontWeight: 700 }}>{b3}</td>
-                                <td style={{ padding: '6px 8px', textAlign: 'center', color: '#1b59f9', fontWeight: 700 }}>{a - e}</td>
+                                {projetoAnulatoria && <td style={{ padding: '6px 8px', textAlign: 'center', color: '#1b59f9', fontWeight: 700 }}>{a - e}</td>}
                               </tr>
                             );
                           })}
@@ -982,15 +956,15 @@ const Dashboard = () => {
                       <th style={{ padding: '8px 12px', color: '#34C759', textAlign: 'center' }}>Acertos</th>
                       <th style={{ padding: '8px 12px', color: '#FF2D55', textAlign: 'center' }}>Erros</th>
                       <th style={{ padding: '8px 12px', color: '#FF9500', textAlign: 'center' }}>Brancos</th>
-                      <th style={{ padding: '8px 12px', color: '#1b59f9', textAlign: 'center' }}>Líquido</th>
-                      <th style={{ padding: '8px 12px', color: 'var(--text-light)', textAlign: 'center' }}>% Líq.</th>
+                      {projetoAnulatoria && <th style={{ padding: '8px 12px', color: '#1b59f9', textAlign: 'center' }}>Líquido</th>}
+                      <th style={{ padding: '8px 12px', color: 'var(--text-light)', textAlign: 'center' }}>{projetoAnulatoria ? '% Líq.' : '% Acertos'}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {bMateriasNomes.map(nome => {
                       const m = bConsolidado[nome];
                       const total = m.acertos + m.erros + m.brancos;
-                      const pct = total > 0 ? ((m.acertos - m.erros) / total * 100).toFixed(1) : '0.0';
+                      const pct = total > 0 ? ((projetoAnulatoria ? (m.acertos - m.erros) : m.acertos) / total * 100).toFixed(1) : '0.0';
                       const isExp = !!expandedBatMateria[nome];
                       const hasTopicos = Object.keys(m.topicos || {}).length > 0;
                       return (
@@ -1003,19 +977,19 @@ const Dashboard = () => {
                             <td style={{ padding: '8px 12px', textAlign: 'center', color: '#34C759', fontWeight: 700 }}>{m.acertos}</td>
                             <td style={{ padding: '8px 12px', textAlign: 'center', color: '#FF2D55', fontWeight: 700 }}>{m.erros}</td>
                             <td style={{ padding: '8px 12px', textAlign: 'center', color: '#FF9500', fontWeight: 700 }}>{m.brancos}</td>
-                            <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1b59f9', fontWeight: 700 }}>{m.acertos - m.erros}</td>
+                            {projetoAnulatoria && <td style={{ padding: '8px 12px', textAlign: 'center', color: '#1b59f9', fontWeight: 700 }}>{m.acertos - m.erros}</td>}
                             <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: parseFloat(pct) >= 0 ? '#34C759' : '#FF2D55' }}>{pct}%</td>
                           </tr>
                           {isExp && Object.entries(m.topicos || {}).map(([topico, ts]) => {
                             const tTotal = ts.acertos + ts.erros + ts.brancos;
-                            const tPct = tTotal > 0 ? ((ts.acertos - ts.erros) / tTotal * 100).toFixed(1) : '0.0';
+                            const tPct = tTotal > 0 ? ((projetoAnulatoria ? (ts.acertos - ts.erros) : ts.acertos) / tTotal * 100).toFixed(1) : '0.0';
                             return (
                               <tr key={topico} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', backgroundColor: 'rgba(0,0,0,0.06)' }}>
                                 <td style={{ padding: '6px 12px 6px 28px', color: 'var(--text-light)', fontSize: '0.78rem' }}>{topico}</td>
                                 <td style={{ padding: '6px 12px', textAlign: 'center', color: '#34C759', fontSize: '0.78rem' }}>{ts.acertos}</td>
                                 <td style={{ padding: '6px 12px', textAlign: 'center', color: '#FF2D55', fontSize: '0.78rem' }}>{ts.erros}</td>
                                 <td style={{ padding: '6px 12px', textAlign: 'center', color: '#FF9500', fontSize: '0.78rem' }}>{ts.brancos}</td>
-                                <td style={{ padding: '6px 12px', textAlign: 'center', color: '#1b59f9', fontSize: '0.78rem' }}>{ts.acertos - ts.erros}</td>
+                                {projetoAnulatoria && <td style={{ padding: '6px 12px', textAlign: 'center', color: '#1b59f9', fontSize: '0.78rem' }}>{ts.acertos - ts.erros}</td>}
                                 <td style={{ padding: '6px 12px', textAlign: 'center', fontSize: '0.78rem', color: parseFloat(tPct) >= 0 ? '#34C759' : '#FF2D55' }}>{tPct}%</td>
                               </tr>
                             );

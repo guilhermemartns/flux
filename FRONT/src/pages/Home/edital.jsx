@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import { SkeletonEdital } from '../../components/Skeleton';
-import Sidebar from './components/sidebar.jsx';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -10,7 +9,6 @@ import { Trash, Eye, EyeOff, BookOpen, Edit2, Check, X, Circle, Folder } from 'r
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
-import Navbar from '../../components/Navbar.jsx';
 import { usePageTitle } from '../../components/PageTitleContext';
 // (deve vir depois dos imports)
 

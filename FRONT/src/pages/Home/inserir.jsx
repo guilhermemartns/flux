@@ -33,6 +33,8 @@ const Inserir = () => {
   const [materiasProjeto, setMateriasProjeto] = useState([]);
   const [anoProjetoPadrao, setAnoProjetoPadrao] = useState('');
   const [cargoProjetoPadrao, setCargoProjetoPadrao] = useState('');
+  const [tipoProjeto, setTipoProjeto] = useState('alternativas');
+  const [anulatoriaProjeto, setAnulatoriaProjeto] = useState(true);
   const [imagemProjetoPadrao, setImagemProjetoPadrao] = useState(null);
   const [uploadingImagem, setUploadingImagem] = useState(false);
   // Estado para edição de edital de matéria
@@ -110,7 +112,7 @@ const Inserir = () => {
       }));
       const carreiraId = carreiraSelecionadaModal ? carreiraSelecionadaModal : null;
       let imagemNome = '';
-      let payload = { nome: nomeProjetoPadrao, descricao: descricaoProjetoPadrao, materias: materiasCorrigidas, carreiraId };
+      let payload = { nome: nomeProjetoPadrao, descricao: descricaoProjetoPadrao, materias: materiasCorrigidas, carreiraId, tipo: tipoProjeto, anulatoria: anulatoriaProjeto };
       if (anoProjetoPadrao) payload.ano = anoProjetoPadrao;
       if (cargoProjetoPadrao) payload.cargo = cargoProjetoPadrao;
 
@@ -267,6 +269,8 @@ const Inserir = () => {
                                 })));
                                 setAnoProjetoPadrao(projeto.ano || '');
                                 setCargoProjetoPadrao(projeto.cargo || '');
+                                setTipoProjeto(projeto.tipo || 'alternativas');
+                                setAnulatoriaProjeto(projeto.anulatoria !== false);
                                 if (projeto.carreiraId) setCarreiraSelecionadaModal(projeto.carreiraId);
                               } catch (err) {
                                 setNomeProjetoPadrao(p.nome);
@@ -274,6 +278,8 @@ const Inserir = () => {
                                 setMateriasProjeto((p.materias || []).map(m => typeof m === 'object' ? m : { nome: m, cor: '#71dd8c', edital: [] }));
                                 setAnoProjetoPadrao(p.ano || '');
                                 setCargoProjetoPadrao(p.cargo || '');
+                                setTipoProjeto(p.tipo || 'alternativas');
+                                setAnulatoriaProjeto(p.anulatoria !== false);
                                 if (p.carreiraId) setCarreiraSelecionadaModal(p.carreiraId);
                               }
                               setShowModal(true);
@@ -301,6 +307,8 @@ const Inserir = () => {
                         setMateriasProjeto([]);
                         setImagemProjetoPadrao(null);
                         setCarreiraSelecionadaModal('');
+                        setTipoProjeto('alternativas');
+                        setAnulatoriaProjeto(true);
                       }}
                       onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.09)'}
                       onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
@@ -328,8 +336,20 @@ const Inserir = () => {
                 <Form.Control size="sm" className="linha" style={{ flex: '2 1 140px' }} type="text" value={descricaoProjetoPadrao} onChange={e => setDescricaoProjetoPadrao(e.target.value)} placeholder="Descrição" />
               </div>
 
-              {/* ── Linha 2: carreira + imagem ── */}
+              {/* ── Linha 2: tipo + anulatoria + carreira + imagem ── */}
               <div className="d-flex gap-2 mb-3 align-items-center flex-wrap">
+                <div className="d-flex gap-1 align-items-center" style={{ flex: '0 0 auto' }}>
+                  {[['alternativas', 'Alternativas'], ['certo_errado', 'C/E']].map(([val, label]) => (
+                    <button key={val} type="button" onClick={() => setTipoProjeto(val)}
+                      className="btn btn-sm"
+                      style={{ border: `1px solid ${tipoProjeto === val ? '#3b82f6' : 'var(--border)'}`, background: tipoProjeto === val ? '#3b82f6' : 'transparent', color: tipoProjeto === val ? '#fff' : 'var(--text-light)', fontWeight: 600, fontSize: '0.78em' }}
+                    >{label}</button>
+                  ))}
+                </div>
+                <div className="d-flex align-items-center gap-1" style={{ flex: '0 0 auto' }}>
+                  <input type="checkbox" className="form-check-input" id="anulatoriaInserir" checked={anulatoriaProjeto} onChange={e => setAnulatoriaProjeto(e.target.checked)} style={{ width: 15, height: 15 }} />
+                  <label htmlFor="anulatoriaInserir" className="form-check-label" style={{ fontSize: '0.8em', color: 'var(--text-light)', cursor: 'pointer', whiteSpace: 'nowrap' }}>Anulatória</label>
+                </div>
                 <div style={{ position: 'relative', flex: '1 1 160px' }} ref={dropdownRef}>
                   <button type="button" className="form-select form-select-sm linha text-start w-100" onClick={() => setShowCarreiraDropdown(v => !v)}>
                     {carreiras.find(c => c.id === carreiraSelecionadaModal)?.nome || <span className="text-muted">Carreira</span>}
@@ -466,6 +486,7 @@ const Inserir = () => {
               <button className="btn btn-outline-primary-primary btn-sm" onClick={() => {
                 setShowModal(false); setEditProjetoIdx(null); setNomeProjetoPadrao(''); setDescricaoProjetoPadrao('');
                 setMaterias([]); setMateriasProjeto([]); setCarreiraSelecionadaModal('');
+                setTipoProjeto('alternativas'); setAnulatoriaProjeto(true);
               }}>Cancelar</button>
               <button className="btn btn-primary-primary btn-sm px-4" onClick={handleSalvarProjetoPadrao} disabled={uploadingImagem}>
                 {uploadingImagem ? 'Salvando...' : (editProjetoIdx !== null ? 'Salvar Alterações' : 'Criar Projeto')}

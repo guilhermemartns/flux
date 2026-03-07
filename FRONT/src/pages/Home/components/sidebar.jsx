@@ -20,6 +20,13 @@ const ICONES_CATEGORIA = [
 ];
 
 const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // Pequeno delay para garantir que o DOM está pronto antes de animar
+    const t = setTimeout(() => setMounted(true), 20);
+    return () => clearTimeout(t);
+  }, []);
+
   // Expande sidebar automaticamente se sinalizado ao entrar na página
   useEffect(() => {
     if (localStorage.getItem('sidebarExpandNext') === '1') {
@@ -136,17 +143,23 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
             const projeto = res.data.find(p => p.id === projetoSelecionadoId);
             if (projeto) {
               localStorage.setItem('projetoSelecionadoNome', projeto.nome);
+              localStorage.setItem('projetoTipo', projeto.tipo || 'alternativas');
+              localStorage.setItem('projetoAnulatoria', String(projeto.anulatoria !== false));
               setProjetoNome(projeto.nome);
             } else {
               // Projeto selecionado não existe mais
               localStorage.removeItem('projetoSelecionado');
               localStorage.removeItem('projetoSelecionadoNome');
+              localStorage.removeItem('projetoTipo');
+              localStorage.removeItem('projetoAnulatoria');
               setProjetoNome('');
             }
           } else if (res.data.length > 0) {
             // Seleciona automaticamente o primeiro projeto se houver projetos
             localStorage.setItem('projetoSelecionado', res.data[0].id);
             localStorage.setItem('projetoSelecionadoNome', res.data[0].nome);
+            localStorage.setItem('projetoTipo', res.data[0].tipo || 'alternativas');
+            localStorage.setItem('projetoAnulatoria', String(res.data[0].anulatoria !== false));
             setProjetoNome(res.data[0].nome);
           } else {
             // Nenhum projeto selecionado e nenhum projeto existente
@@ -183,6 +196,8 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
     localStorage.removeItem('user');
     localStorage.removeItem('projetoSelecionado');
     localStorage.removeItem('projetoSelecionadoNome');
+    localStorage.removeItem('projetoTipo');
+    localStorage.removeItem('projetoAnulatoria');
     window.location.href = '/login';
   }
 
@@ -311,9 +326,10 @@ const Sidebar = ({ collapsed, setCollapsed, transition = false }) => {
           width: 280,
           minWidth: 250,
           overflow: 'hidden',
-          transition: 'transform 0.4s cubic-bezier(.77,0,.18,1)',
+          transition: mounted ? 'transform 0.4s cubic-bezier(.77,0,.18,1)' : 'none',
           zIndex: 100,
-          transform: collapsed ? 'translateX(-100%)' : 'translateX(0)',
+          transform: (!mounted || collapsed) ? 'translateX(-100%)' : 'translateX(0)',
+          animation: mounted && !collapsed ? 'sidebarSlideIn 0.4s cubic-bezier(.77,0,.18,1) both' : undefined,
         }}
       >
         <div className="logo d-flex align-items-center w-100" style={{ minHeight: 50, position: 'relative', gap: 12 }}>

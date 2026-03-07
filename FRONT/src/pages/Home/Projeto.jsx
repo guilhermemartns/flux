@@ -4,8 +4,7 @@ import api from '../../services/api';
 import { Edit2, Archive, Folder, Trash } from 'react-feather';
 import { useAuth } from '../../auth.jsx';
 import Swal from 'sweetalert2';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { usePageTitle } from '../../components/PageTitleContext';
 import { SkeletonProjeto } from '../../components/Skeleton';
@@ -25,6 +24,10 @@ const Projeto = () => {
   const [novoProjeto, setNovoProjeto] = useState('');
   const [editandoId, setEditandoId] = useState(null);
   const [novoNomeProjeto, setNovoNomeProjeto] = useState('');
+  const [editTipo, setEditTipo] = useState('alternativas');
+  const [editAnulatoria, setEditAnulatoria] = useState(true);
+  const [newTipo, setNewTipo] = useState('alternativas');
+  const [newAnulatoria, setNewAnulatoria] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showNovoProjetoForm, setShowNovoProjetoForm] = useState(false);
@@ -71,6 +74,8 @@ const Projeto = () => {
       setProjetoSelecionado(res.data.id);
       localStorage.setItem('projetoSelecionado', res.data.id);
       localStorage.setItem('projetoSelecionadoNome', res.data.nome);
+      localStorage.setItem('projetoTipo', res.data.tipo || 'alternativas');
+      localStorage.setItem('projetoAnulatoria', String(res.data.anulatoria !== false));
       setProjetoSelecionadoNome(res.data.nome);
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('projetosAtualizados'));
@@ -101,6 +106,9 @@ const Projeto = () => {
   async function handleEditarProjeto(id, nomeAtual) {
     setEditandoId(id);
     setNovoNomeProjeto(nomeAtual);
+    const projeto = projetos.find(p => p.id === id);
+    setEditTipo(projeto?.tipo || 'alternativas');
+    setEditAnulatoria(projeto?.anulatoria !== false);
     setShowEditModal(true);
   }
 
@@ -111,18 +119,20 @@ const Projeto = () => {
       return;
     }
     try {
-      await api.put(`/projetos/${id}`, { nome: novoNomeProjeto });
+      await api.put(`/projetos/${id}`, { nome: novoNomeProjeto, tipo: editTipo, anulatoria: editAnulatoria });
       setEditandoId(null);
       setNovoNomeProjeto('');
       setShowEditModal(false);
       const res = await api.get('/projetos', { params: { userId: user.id } });
       setProjetos(res.data);
       window.projetosSidebar = res.data;
-      // Atualiza nome do projeto selecionado se necessário
+      // Atualiza nome e configurações do projeto selecionado se necessário
       if (projetoSelecionado === id) {
         localStorage.setItem('projetoSelecionadoNome', novoNomeProjeto);
+        localStorage.setItem('projetoTipo', editTipo);
+        localStorage.setItem('projetoAnulatoria', String(editAnulatoria));
         setProjetoSelecionadoNome(novoNomeProjeto);
-        setProjetoSelecionado(id); // força re-render
+        setProjetoSelecionado(id);
         window.dispatchEvent(new Event('projetoNomeAtualizado'));
       }
     } catch (err) {}
@@ -184,13 +194,17 @@ const Projeto = () => {
     }
     setLoadingCriarProjeto(true);
     try {
-      const res = await api.post('/projetos', { nome: novoProjeto, userId: user.id });
+      const res = await api.post('/projetos', { nome: novoProjeto, userId: user.id, tipo: newTipo, anulatoria: newAnulatoria });
       setNovoProjeto('');
+      setNewTipo('alternativas');
+      setNewAnulatoria(true);
       // Seleciona automaticamente o projeto recém-criado
       if (res.data && res.data.id) {
         setProjetoSelecionado(res.data.id);
         localStorage.setItem('projetoSelecionado', res.data.id);
         localStorage.setItem('projetoSelecionadoNome', res.data.nome);
+        localStorage.setItem('projetoTipo', res.data.tipo || 'alternativas');
+        localStorage.setItem('projetoAnulatoria', String(res.data.anulatoria !== false));
         setProjetoSelecionadoNome(res.data.nome);
         window.projetosSidebar = [...(window.projetosSidebar || []), res.data];
         window.dispatchEvent(new Event('storage'));
@@ -211,14 +225,33 @@ const Projeto = () => {
     if (!window.confirm('Deseja apagar este projeto? Todos os dados relacionados serão perdidos.')) return;
     try {
       await api.delete(`/projetos/${id}`);
-      await fetchProjetos();
+      const res = await api.get('/projetos', { params: { userId: user.id } });
+      const remaining = res.data;
+      setProjetos(remaining);
+      window.projetosSidebar = remaining;
       if (projetoSelecionado === id) {
-        setProjetoSelecionado('');
-        localStorage.removeItem('projetoSelecionado');
+        const next = remaining[0];
+        if (next) {
+          setProjetoSelecionado(next.id);
+          setProjetoSelecionadoNome(next.nome);
+          localStorage.setItem('projetoSelecionado', next.id);
+          localStorage.setItem('projetoSelecionadoNome', next.nome);
+          localStorage.setItem('concursoSelecionado', next.nome);
+          localStorage.setItem('projetoTipo', next.tipo || 'alternativas');
+          localStorage.setItem('projetoAnulatoria', String(next.anulatoria !== false));
+        } else {
+          setProjetoSelecionado('');
+          setProjetoSelecionadoNome('');
+          localStorage.removeItem('projetoSelecionado');
+          localStorage.removeItem('projetoSelecionadoNome');
+          localStorage.removeItem('concursoSelecionado');
+          localStorage.removeItem('projetoTipo');
+          localStorage.removeItem('projetoAnulatoria');
+        }
         window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('projetoNomeAtualizado'));
       }
       window.dispatchEvent(new Event('projetosSidebarAtualizar'));
-      window.dispatchEvent(new Event('projetoNomeAtualizado'));
     } catch (err) {
       toast.error('Erro ao apagar projeto: ' + (err?.response?.data?.error || err?.message || 'Erro desconhecido'));
     }
@@ -231,10 +264,14 @@ const Projeto = () => {
     if (projeto && projeto.nome) {
       localStorage.setItem('concursoSelecionado', projeto.nome);
       localStorage.setItem('projetoSelecionadoNome', projeto.nome);
+      localStorage.setItem('projetoTipo', projeto.tipo || 'alternativas');
+      localStorage.setItem('projetoAnulatoria', String(projeto.anulatoria !== false));
       window.dispatchEvent(new Event('projetoNomeAtualizado'));
     } else {
       localStorage.removeItem('concursoSelecionado');
       localStorage.removeItem('projetoSelecionadoNome');
+      localStorage.removeItem('projetoTipo');
+      localStorage.removeItem('projetoAnulatoria');
       window.dispatchEvent(new Event('projetoNomeAtualizado'));
     }
     window.dispatchEvent(new Event('storage'));
@@ -417,8 +454,11 @@ const Projeto = () => {
                         return;
                       }
                       if (projetosPadraoSelecionados.length === 0) return;
+                      const padrao = projetosPadraoSelecionados[0];
+                      setNewTipo(padrao.tipo || 'alternativas');
+                      setNewAnulatoria(padrao.anulatoria !== false);
                       setShowMergeModal(true);
-                      setNomeProjetoMesclado(projetosPadraoSelecionados[0].nome);
+                      setNomeProjetoMesclado(padrao.nome);
                     }}
                   >Prosseguir</button>
 
@@ -441,7 +481,7 @@ const Projeto = () => {
             setLoadingCriarMesclado(true);
             try {
               const projetoPadraoId = projetosPadraoSelecionados[0].id;
-              const res = await api.post('/projetos', { nome: nomeProjetoMesclado.trim(), userId: user.id });
+              const res = await api.post('/projetos', { nome: nomeProjetoMesclado.trim(), userId: user.id, tipo: newTipo, anulatoria: newAnulatoria });
               if (!res.data || !res.data.id) {
                 toast.error('Erro ao criar novo projeto.');
                 return;
@@ -452,6 +492,8 @@ const Projeto = () => {
               setProjetoSelecionado(res.data.id);
               localStorage.setItem('projetoSelecionado', res.data.id);
               localStorage.setItem('projetoSelecionadoNome', nomeProjetoMesclado.trim());
+              localStorage.setItem('projetoTipo', res.data.tipo || 'alternativas');
+              localStorage.setItem('projetoAnulatoria', String(res.data.anulatoria !== false));
               setProjetoSelecionadoNome(nomeProjetoMesclado.trim());
               window.dispatchEvent(new Event('storage'));
               window.dispatchEvent(new Event('projetosAtualizados'));
@@ -472,6 +514,10 @@ const Projeto = () => {
               className="form-control linha mb-2"
               required
             />
+            <div className="mt-3 mb-2 d-flex align-items-center gap-3" style={{ fontSize: '0.82em', color: 'var(--text-light)' }}>
+              <span><b>Tipo:</b> {newTipo === 'certo_errado' ? 'Certo/Errado (C/E)' : 'Alternativas (A–E)'}</span>
+              <span>{newAnulatoria ? '✔ Anulatória' : '✘ Não anulatória'}</span>
+            </div>
             <div className="d-flex justify-content-end gap-2 mt-3">
               <button type="button" className="btn btn-outline-primary-primary3" onClick={() => setShowMergeModal(false)}>Cancelar</button>
               <button type="submit" className="btn btn-primary-primary3" disabled={loadingCriarMesclado}>
@@ -631,7 +677,11 @@ const Projeto = () => {
                   }}
                   className="card-padrao-vazio p-3 d-flex flex-column justify-content-center align-items-center  position-relative"
                   onClick={() => {
-                    if (projetos.length < 3) setShowNovoProjetoForm(true);
+                    if (projetos.length < 3) {
+                      setNewTipo('alternativas');
+                      setNewAnulatoria(true);
+                      setShowNovoProjetoForm(true);
+                    }
                   }}
                 >
                   <span className="fw-bold fs-6 text-secondary text-center"> + Adicionar Novo Projeto</span>
@@ -650,7 +700,7 @@ const Projeto = () => {
           <div className="d-flex justify-content-between align-items-center mb-1">
             <Modal.Title className='fw-bold fs-5 m-0'>Editar Projeto</Modal.Title>
           </div>
-          <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>Altere o nome de identificação do projeto. Use iniciais ou siglas curtas (máx. 7 caracteres).</p>
+          <p className="text-secondary mb-4" style={{ fontSize: '0.8em' }}>Altere o nome e configurações do projeto.</p>
           <form className="needs-validation" noValidate onSubmit={async e => {
             e.preventDefault();
             if (!novoNomeProjeto.trim() || projetos.some(p => p.nome === novoNomeProjeto && p.id !== editandoId)) {
@@ -672,6 +722,21 @@ const Projeto = () => {
             {novoNomeProjeto && projetos.some(p => p.nome === novoNomeProjeto && p.id !== editandoId) && (
               <div className="text-danger small mb-2">Já existe um projeto com esse nome.</div>
             )}
+            <div className="mt-3 mb-2">
+              <label className="form-label fw-semibold d-block" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Tipo de questão</label>
+              <div className="d-flex gap-2">
+                {[['alternativas', 'Alternativas (A–E)'], ['certo_errado', 'Certo/Errado (C/E)']].map(([val, label]) => (
+                  <button key={val} type="button" onClick={() => setEditTipo(val)}
+                    className="btn btn-sm"
+                    style={{ border: `1px solid ${editTipo === val ? '#3b82f6' : 'var(--border)'}`, background: editTipo === val ? '#3b82f6' : 'transparent', color: editTipo === val ? '#fff' : 'var(--text-light)', fontWeight: 600, fontSize: '0.8em' }}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
+            <div className="d-flex align-items-center gap-2 mb-3">
+              <input type="checkbox" className="form-check-input" id="editAnulatoria" checked={editAnulatoria} onChange={e => setEditAnulatoria(e.target.checked)} style={{ width: 16, height: 16 }} />
+              <label htmlFor="editAnulatoria" className="form-check-label" style={{ fontSize: '0.82em', color: 'var(--text-light)', cursor: 'pointer' }}>Anulatória — erros descontam acertos</label>
+            </div>
             <div className="d-flex justify-content-end gap-2 mt-3">
               <button type="button" onClick={() => setShowEditModal(false)} className="btn btn-outline-primary-primary3">
                 Cancelar
@@ -704,6 +769,21 @@ const Projeto = () => {
             {novoProjeto && projetos.some(p => p.nome === novoProjeto) && (
               <div className="text-danger small mb-2">Já existe um projeto com esse nome.</div>
             )}
+            <div className="mt-3 mb-2">
+              <label className="form-label fw-semibold d-block" style={{ fontSize: '0.78em', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)' }}>Tipo de questão</label>
+              <div className="d-flex gap-2">
+                {[['alternativas', 'Alternativas (A–E)'], ['certo_errado', 'Certo/Errado (C/E)']].map(([val, label]) => (
+                  <button key={val} type="button" onClick={() => setNewTipo(val)}
+                    className="btn btn-sm"
+                    style={{ border: `1px solid ${newTipo === val ? '#3b82f6' : 'var(--border)'}`, background: newTipo === val ? '#3b82f6' : 'transparent', color: newTipo === val ? '#fff' : 'var(--text-light)', fontWeight: 600, fontSize: '0.8em' }}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
+            <div className="d-flex align-items-center gap-2 mb-3">
+              <input type="checkbox" className="form-check-input" id="addAnulatoria" checked={newAnulatoria} onChange={e => setNewAnulatoria(e.target.checked)} style={{ width: 16, height: 16 }} />
+              <label htmlFor="addAnulatoria" className="form-check-label" style={{ fontSize: '0.82em', color: 'var(--text-light)', cursor: 'pointer' }}>Anulatória — erros descontam acertos</label>
+            </div>
             <div className="d-flex justify-content-end gap-2 mt-3">
               <button type="button" className="btn btn-outline-primary-primary3" onClick={() => setShowAddModal(false)}>Cancelar</button>
               <button type="submit" className="btn btn-primary-primary3" disabled={loadingCriarProjeto || projetos.some(p => p.nome === novoProjeto)}>

@@ -1,90 +1,97 @@
-import { StrictMode, useState, useEffect } from 'react';
+import { StrictMode, lazy, Suspense, useState, useEffect } from 'react';
 import { StudyTimerProvider } from './components/StudyTimerContext';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './index.css';
 import './style2.css';
-import Home from './pages/Home';
-import Inserir from './pages/Home/inserir.jsx';
-import Usuarios from './pages/Home/Usuarios.jsx';
-function AdminRoute({ children }) {
-  const { user } = useAuth();
-  return user && user.role === 'admin' ? children : <Navigate to="/" />;
-}
-import Login from './pages/Home/Login.jsx';
-import Cadastro from './pages/Home/Cadastro.jsx';
-import Projeto from './pages/Home/Projeto';
-import Simulados from './pages/Home/simulados'; 
-import Dashboard from './pages/Home/dashboard';
-import Selecao from './pages/Home/selecao';
-import EditalWithBoundary from './pages/Home/edital';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'sweetalert2/dist/sweetalert2.min.css';
-import Sidebar from './pages/Home/components/sidebar.jsx';
-import StudySessionForm from './components/StudySessionForm';
+import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider, useAuth } from './auth.jsx';
-import Perfil from './pages/Home/Perfil.jsx';
-import MateriaDetalhe from './pages/Home/MateriaDetalhe.jsx';
-import MateriaOverview from './pages/Home/MateriaOverview.jsx';
-import Ciclo from './pages/Home/Ciclo';
-import FilaRevisao from './pages/Home/FilaRevisao';
-import Questoes from './pages/Home/questoes';
-import Navbar from './components/Navbar.jsx';
 import { PageTitleProvider } from './components/PageTitleContext';
 import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+// Componentes do layout global (sempre carregados)
+import Sidebar from './pages/Home/components/sidebar.jsx';
+import Navbar from './components/Navbar.jsx';
+import StudySessionForm from './components/StudySessionForm';
+import Perfil from './pages/Home/Perfil.jsx';
+
+// Páginas carregadas sob demanda (code splitting)
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Home/Login.jsx'));
+const Cadastro = lazy(() => import('./pages/Home/Cadastro.jsx'));
+const Inserir = lazy(() => import('./pages/Home/inserir.jsx'));
+const Usuarios = lazy(() => import('./pages/Home/Usuarios.jsx'));
+const Projeto = lazy(() => import('./pages/Home/Projeto'));
+const Simulados = lazy(() => import('./pages/Home/simulados'));
+const Dashboard = lazy(() => import('./pages/Home/dashboard'));
+const Selecao = lazy(() => import('./pages/Home/selecao'));
+const EditalWithBoundary = lazy(() => import('./pages/Home/edital'));
+const MateriaDetalhe = lazy(() => import('./pages/Home/MateriaDetalhe.jsx'));
+const MateriaOverview = lazy(() => import('./pages/Home/MateriaOverview.jsx'));
+const Ciclo = lazy(() => import('./pages/Home/Ciclo'));
+const FilaRevisao = lazy(() => import('./pages/Home/FilaRevisao'));
+const Questoes = lazy(() => import('./pages/Home/questoes'));
+
+const PageLoader = () => (
+  <div className="d-flex justify-content-center align-items-center" style={{ flex: 1, minHeight: '40vh' }}>
+    <div className="spinner-border text-secondary" role="status" style={{ width: '2rem', height: '2rem' }}>
+      <span className="visually-hidden">Carregando...</span>
+    </div>
+  </div>
+);
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
   return user ? children : <Navigate to="/login" />;
 }
 
+function AdminRoute({ children }) {
+  const { user } = useAuth();
+  return user && user.role === 'admin' ? children : <Navigate to="/" />;
+}
+
+function getSidebarCollapsed() {
+  const val = localStorage.getItem('sidebarCollapsed');
+  if (val === null) return true;
+  return val === '1';
+}
+
 function AppLayout() {
   const location = useLocation();
   const { user } = useAuth();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/cadastro';
-  
-  // Garante que o tema claro seja sempre aplicado
+
   useEffect(() => {
     document.body.classList.add('light-theme');
   }, []);
-  
-  // Função para ler o estado inicial da sidebar do localStorage
-  const getSidebarCollapsed = () => {
-    const val = localStorage.getItem('sidebarCollapsed');
-    // Se não existe valor (primeira visita), retorna true (colapsada)
-    if (val === null) return true;
-    return val === '1';
-  };
-  
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getSidebarCollapsed);
   const sidebarWidth = 300;
-  
+
   useEffect(() => {
     function handleExpandSidebar() {
-      setTimeout(() => {
-        setSidebarCollapsed(false);
-      }, 1200); // mesmo delay do setTimeout do botão
+      setTimeout(() => setSidebarCollapsed(false), 1200);
     }
     window.addEventListener('expandSidebar', handleExpandSidebar);
     return () => window.removeEventListener('expandSidebar', handleExpandSidebar);
   }, []);
 
-  // Salva o estado da sidebar no localStorage sempre que mudar
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', sidebarCollapsed ? '1' : '0');
   }, [sidebarCollapsed]);
 
   if (isAuthPage) {
     return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/cadastro" element={<Cadastro />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/cadastro" element={<Cadastro />} />
+        </Routes>
+      </Suspense>
     );
   }
 
-  // Evita flash da tela de login e da logo: não renderiza o layout completo se não estiver logado
   if (!user) {
     return <Navigate to="/login" />;
   }
@@ -101,25 +108,27 @@ function AppLayout() {
         }}
       >
         <Navbar /><hr/>
-        <div key={location.key} style={{ animation: 'pageFadeIn 0.18s ease both', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Routes>
-          <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
-          <Route path="/simulados" element={<PrivateRoute><Simulados /></PrivateRoute>} />
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/selecao/:id" element={<PrivateRoute><Selecao /></PrivateRoute>} />
-          <Route path="/edital" element={<PrivateRoute><EditalWithBoundary /></PrivateRoute>} />
-          <Route path="/materia/:id" element={<PrivateRoute><MateriaDetalhe /></PrivateRoute>} />
-          <Route path="/dashboard/materia/:id/overview" element={<PrivateRoute><MateriaOverview /></PrivateRoute>} />
-          <Route path="/projeto" element={<PrivateRoute><Projeto /></PrivateRoute>} />
-          <Route path="/ciclo" element={<PrivateRoute><Ciclo /></PrivateRoute>} />
-          <Route path="/fila-revisao" element={<PrivateRoute><FilaRevisao /></PrivateRoute>} />
-          <Route path="/questoes" element={<PrivateRoute><Questoes /></PrivateRoute>} />
-          <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
-          <Route path="/inserir" element={<AdminRoute><Inserir /></AdminRoute>} />
-        </Routes>
-        </div>
+        <Suspense fallback={<PageLoader />}>
+          <div key={location.key} style={{ animation: 'pageFadeIn 0.18s ease both', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Routes>
+              <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
+              <Route path="/simulados" element={<PrivateRoute><Simulados /></PrivateRoute>} />
+              <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="/selecao/:id" element={<PrivateRoute><Selecao /></PrivateRoute>} />
+              <Route path="/edital" element={<PrivateRoute><EditalWithBoundary /></PrivateRoute>} />
+              <Route path="/materia/:id" element={<PrivateRoute><MateriaDetalhe /></PrivateRoute>} />
+              <Route path="/dashboard/materia/:id/overview" element={<PrivateRoute><MateriaOverview /></PrivateRoute>} />
+              <Route path="/projeto" element={<PrivateRoute><Projeto /></PrivateRoute>} />
+              <Route path="/ciclo" element={<PrivateRoute><Ciclo /></PrivateRoute>} />
+              <Route path="/fila-revisao" element={<PrivateRoute><FilaRevisao /></PrivateRoute>} />
+              <Route path="/questoes" element={<PrivateRoute><Questoes /></PrivateRoute>} />
+              <Route path="/usuarios" element={<AdminRoute><Usuarios /></AdminRoute>} />
+              <Route path="/inserir" element={<AdminRoute><Inserir /></AdminRoute>} />
+            </Routes>
+          </div>
+        </Suspense>
       </div>
-      
+
       {/* Modal de registro de sessão de estudo - renderizado sobre toda a aplicação */}
       <StudySessionForm />
     </div>

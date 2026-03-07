@@ -295,6 +295,8 @@ app.get('/projetos-padrao/:id', async (req, res) => {
     ano: projeto.ano || '',
     cargo: projeto.cargo || '',
     carreiraId: projeto.carreiraId || '',
+    tipo: projeto.tipo || 'alternativas',
+    anulatoria: projeto.anulatoria !== false,
     materias
   });
   } catch (error) {
@@ -533,7 +535,7 @@ app.post('/usuarios/:userId/copiar-projeto-padrao/:projetoPadraoId', async (req,
 app.put('/projetos-padrao/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    let { nome, descricao, carreiraId, imagem, ano, cargo, materias } = req.body;
+    let { nome, descricao, carreiraId, imagem, ano, cargo, materias, tipo, anulatoria } = req.body;
     // Type-cast ano to int if present and not empty
     if (ano !== undefined && ano !== null && ano !== "") {
       ano = parseInt(ano);
@@ -554,7 +556,9 @@ app.put('/projetos-padrao/:id', async (req, res) => {
         carreiraId, // always update carreiraId, can be null
         ...(imagem !== undefined && { imagem }),
         ...(ano !== undefined && { ano }),
-        ...(cargo !== undefined && { cargo })
+        ...(cargo !== undefined && { cargo }),
+        ...(tipo !== undefined && { tipo }),
+        ...(anulatoria !== undefined && { anulatoria: anulatoria !== false && anulatoria !== 'false' })
       }
     });
     // Se matérias vieram, atualiza matérias
@@ -582,7 +586,7 @@ app.put('/projetos-padrao/:id', async (req, res) => {
 });
 app.post('/projetos-padrao', async (req, res) => {
   try {
-    let { nome, descricao, materias, carreiraId, imagem, ano, cargo } = req.body;
+    let { nome, descricao, materias, carreiraId, imagem, ano, cargo, tipo, anulatoria } = req.body;
     if (!nome || !Array.isArray(materias) || materias.length === 0) {
       return res.status(400).json({ error: 'Nome e matérias são obrigatórios.' });
     }
@@ -598,7 +602,7 @@ app.post('/projetos-padrao', async (req, res) => {
       imagem = imagem.length > 0 ? imagem[0] : null;
     }
     // Cria projeto padrão com carreiraId se fornecido
-    const projetoPadrao = await prisma.projetoPadrao.create({ data: { nome, descricao: descricao || '', carreiraId: carreiraId || null, imagem: imagem || null, ano: ano, cargo: cargo || null } });
+    const projetoPadrao = await prisma.projetoPadrao.create({ data: { nome, descricao: descricao || '', carreiraId: carreiraId || null, imagem: imagem || null, ano: ano, cargo: cargo || null, tipo: tipo || 'alternativas', anulatoria: anulatoria !== false && anulatoria !== 'false' } });
     // Cria matérias padrão associadas
     for (const mat of materias) {
       await prisma.materiaPadrao.create({
@@ -771,11 +775,15 @@ app.get('/projetos', async (req, res) => {
 // ROTA PUT - Atualizar nome do projeto
 app.put('/projetos/:id', async (req, res) => {
   try {
-    const { nome } = req.body;
+    const { nome, tipo, anulatoria } = req.body;
     if (!nome) return res.status(400).json({ error: 'Nome obrigatório' });
     const projetoAtualizado = await prisma.projeto.update({
       where: { id: req.params.id },
-      data: { nome }
+      data: {
+        nome,
+        ...(tipo !== undefined && { tipo }),
+        ...(typeof anulatoria === 'boolean' && { anulatoria }),
+      }
     });
     res.status(200).json(projetoAtualizado);
   } catch (error) {
@@ -784,9 +792,15 @@ app.put('/projetos/:id', async (req, res) => {
 });
 app.post('/projetos', async (req, res) => {
   try {
-    const { nome, descricao, userId } = req.body;
+    const { nome, descricao, userId, tipo, anulatoria } = req.body;
     if (!nome || !userId) return res.status(400).json({ error: 'Nome e userId obrigatórios' });
-    const projeto = await prisma.projeto.create({ data: { nome, descricao, userId } });
+    const projeto = await prisma.projeto.create({
+      data: {
+        nome, descricao, userId,
+        ...(tipo !== undefined && { tipo }),
+        ...(typeof anulatoria === 'boolean' && { anulatoria }),
+      }
+    });
     res.status(201).json(projeto);
   } catch (error) {
     console.error('Erro ao criar projeto:', error);
@@ -1401,7 +1415,7 @@ app.post('/simulados', async (req, res) => {
         numSim: parseInt(numSim),
         dataSim: new Date(dataSim+ 'T00:00:00.000Z').toISOString(),
         projetoId,
-        userId
+        userId,
       }
     });
     res.status(201).json(simulado);
@@ -1445,7 +1459,7 @@ app.put('/simulados/:id', async (req, res) => {
       dataSim: new Date(dataSim).toISOString(),
       quanQuest: quanQuest ? Number(quanQuest) : undefined,
       projeto,
-      userId
+      userId,
     }
   });
   res.status(200).json(atualizado);
@@ -1503,7 +1517,7 @@ app.post('/baterias', async (req, res) => {
         quanQuest: parseInt(quanQuest),
         dataBat: new Date(dataBat + 'T00:00:00.000Z').toISOString(),
         projetoId,
-        userId
+        userId,
       }
     });
     res.status(201).json(bateria);
