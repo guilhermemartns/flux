@@ -1,3 +1,7 @@
+/* Google Picker — aparecer acima de modais Bootstrap (z-index 1055) */
+.picker-dialog-bg { z-index: 2000 !important; }
+.picker-dialog    { z-index: 2001 !important; }
+
 /* Fade de transição entre páginas */
 @keyframes pageFadeIn {
   from { opacity: 0; transform: translateY(6px); }

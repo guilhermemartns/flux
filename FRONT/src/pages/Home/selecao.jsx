@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import DrivePickerButton from '../../components/DrivePickerButton';
 import api from '../../services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -8,10 +9,19 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const pdfUrl = url => {
+  if (!url) return url;
+  if (url.includes('drive.google.com')) return url;
+  return `${API_URL}/pdf-view?url=${encodeURIComponent(url)}`;
+};
 
 const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
   const [pdfSimulado, setPdfSimulado] = useState(null);
   const [pdfGabarito, setPdfGabarito] = useState(null);
+  const [driveSimuladoUrl, setDriveSimuladoUrl] = useState(null);
+  const [driveSimuladoNome, setDriveSimuladoNome] = useState(null);
+  const [driveGabaritoUrl, setDriveGabaritoUrl] = useState(null);
+  const [driveGabaritoNome, setDriveGabaritoNome] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true); // Adicionar estado de loading
@@ -29,6 +39,7 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
   const [motivosErro, setMotivosErro] = useState([]);
   const [materiasCadastradas, setMateriasCadastradas] = useState([]);
   const [preenchimentoRapido, setPreenchimentoRapido] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     async function loadSimulado() {
@@ -114,11 +125,19 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
     loadMaterias();
   }, []);
 
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
   function handleAlternativaChange(e, index) {
     const value = e.target.value.toUpperCase();
     const updated = [...respostas];
     updated[index] = value;
     setRespostas(updated);
+    setIsDirty(true);
 
     if (value.length === 1) {
       const nextIndex = index + 1;
@@ -137,6 +156,7 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
     const updated = [...gabaritos];
     updated[index] = value;
     setGabaritos(updated);
+    setIsDirty(true);
 
     if (value.length === 1) {
       const nextIndex = index + 1;
@@ -149,6 +169,7 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
 
   function handleMateriaChange(e, index) {
     const value = e.target.value;
+    setIsDirty(true);
     if (preenchimentoRapido) {
       const novasMaterias = [...materias];
       for (let i = index; i < novasMaterias.length; i++) {
@@ -175,6 +196,7 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
   }
 
   function handleAnuladaChange(index) {
+      setIsDirty(true);
       const updated = [...anuladas];
       updated[index] = !updated[index];
       setAnuladas(updated);
@@ -194,6 +216,7 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
   }
 
   function handleChuteChange(index) {
+    setIsDirty(true);
     const updated = [...chutes];
     updated[index] = !updated[index];
     setChutes(updated);
@@ -201,6 +224,7 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
 
   function handleMotivoErroChange(e, index) {
     const value = e.target.value;
+    setIsDirty(true);
     const updated = [...motivosErro];
     updated[index] = value;
     setMotivosErro(updated);
@@ -305,11 +329,20 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
         });
         setUploading(false);
       }
+      // Salvar URLs do Google Drive
+      if (driveSimuladoUrl || driveGabaritoUrl) {
+        await api.post('/update-pdf-url', {
+          simuladoId: simulado.id,
+          ...(driveSimuladoUrl && { simuladoUrl: driveSimuladoUrl }),
+          ...(driveGabaritoUrl && { gabaritoUrl: driveGabaritoUrl }),
+        });
+      }
 
       // Atualiza dashboard imediatamente
       localStorage.setItem('atualizaDashboard', Date.now());
 
       setSaving(false);
+      setIsDirty(false);
       // Fecha o popup/modal após salvar
       setTimeout(() => {
         handleCloseSilent();
@@ -383,134 +416,115 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
         <main className="conteudo" style={{ display: 'flex', flexDirection: 'column', height: 'auto', minHeight: 500 }}>
         <form className="needs-validation" noValidate onSubmit={e => { e.preventDefault(); salvarDados(); }} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           {/* HEADER FIXO */}
-          <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--background-l-light)', paddingBottom: 8 }}>
-            <div className="d-flex justify-content-between align-items-center mb-3">
+          <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--background-l-light)', paddingBottom: 12 }}>
+            {/* Barra de título */}
+            <div className="d-flex justify-content-between align-items-center pb-3 mb-3" style={{ borderBottom: '1px solid var(--border)' }}>
               <div className="d-flex align-items-center gap-2">
-                <h5 className="mb-0" style={{ color: 'var(--text-dark)' }}>Simulado #{simulado.numSim}</h5>
+                <span style={{ width: 4, height: 22, borderRadius: 4, background: 'var(--primary)', display: 'inline-block', flexShrink: 0 }} />
+                <span className="fw-bold" style={{ fontSize: '1.05rem', color: 'var(--text-dark)', letterSpacing: '-0.01em' }}>
+                  Simulado <span style={{ color: 'var(--primary)' }}>#{simulado.numSim}</span>
+                </span>
+                <span className="badge rounded-pill ms-1" style={{ background: 'var(--bg-card)', color: 'var(--text-light)', fontWeight: 500, fontSize: '0.72rem', border: '1px solid var(--border)' }}>
+                  {simulado.quanQuest} questões
+                </span>
+              </div>
+              <div className="d-flex align-items-center gap-2">
                 <button
                   type="button"
-                  className="btn btn-warning btn-sm ms-2"
+                  className="btn btn-sm"
                   onClick={preencherAleatorio}
-                  style={{ fontWeight: 600 }}
+                  style={{ fontSize: '0.75rem', color: 'var(--text-light)', border: '1px solid var(--border)', background: 'transparent', padding: '2px 10px' }}
                   title="Preencher Aleatório (Teste)"
                 >
-                  Preencher Aleatório
+                  Aleatório
                 </button>
+                <button type="button" className="btn-close" onClick={handleCloseWithConfirm} title="Fechar" style={{ fontSize: '0.8rem' }} />
               </div>
-              <button type="button" className="btn-close" onClick={handleCloseWithConfirm} title="Fechar"/>
             </div>
-            <hr/>
-            <div className="info-simulado mt-3 p-3 rounded-3 border text-dark" >
-              <div className="d-flex flex-wrap align-items-end gap-3">
-                {/* Número do simulado */}
-                <div className="d-flex flex-column">
-                  <label className="form-label fw-semibold  small">Número:</label>
-                  <input
-                    className='form-control form-control-sm '
-                    type="number"
-                    min={1}
-                    value={simulado.numSim}
-                    onChange={async (e) => {
-                      const novoNumSim = Number(e.target.value);
-                      if (!isNaN(novoNumSim) && novoNumSim > 0) {
-                        try {
-                          await api.put(`/simulados/${simulado.id}`, {
-                            quanQuest: simulado.quanQuest,
-                            numSim: novoNumSim,
-                            dataSim: simulado.dataSim,
-                            projeto: simulado.projeto,
-                            userId: simulado.userId
-                          });
-                          setSimulado({ ...simulado, numSim: novoNumSim });
-                          localStorage.setItem('atualizaDashboard', Date.now());
-                        } catch (err) {
-                          console.error("Erro ao atualizar número:", err);
-                        }
-                      }
-                    }}
-                    style={{ width: '60px' }}
-                  />
-                </div>
-                
-                {/* Data */}
-                <div className="d-flex flex-column">
-                  <label className="form-label fw-semibold small">Data:</label>
-                  <input
-                    className='form-control form-control-sm '
-                    type="date"
-                    value={simulado.dataSim ? new Date(simulado.dataSim).toISOString().slice(0, 10) : ''}
-                    onChange={async (e) => {
-                      const dataUtc = new Date(e.target.value).toISOString();
+
+            {/* Card de Info */}
+            <div className="rounded-3 px-3 py-2 d-flex align-items-center flex-wrap gap-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+
+              {/* Número */}
+              <div className="d-flex align-items-center gap-2">
+                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)', fontWeight: 600, whiteSpace: 'nowrap' }}>Nº</span>
+                <input
+                  className='form-control form-control-sm text-center'
+                  type="number" min={1}
+                  value={simulado.numSim}
+                  onChange={async (e) => {
+                    const novoNumSim = Number(e.target.value);
+                    if (!isNaN(novoNumSim) && novoNumSim > 0) {
                       try {
-                        await api.put(`/simulados/${simulado.id}`, {
-                          quanQuest: simulado.quanQuest,
-                          numSim: simulado.numSim,
-                          dataSim: dataUtc,
-                          projeto: simulado.projeto,
-                          userId: simulado.userId
-                        });
-                        setSimulado({ ...simulado, dataSim: dataUtc });
+                        await api.put(`/simulados/${simulado.id}`, { quanQuest: simulado.quanQuest, numSim: novoNumSim, dataSim: simulado.dataSim, projeto: simulado.projeto, userId: simulado.userId });
+                        setSimulado({ ...simulado, numSim: novoNumSim });
                         localStorage.setItem('atualizaDashboard', Date.now());
-                      } catch (err) {
-                        console.error("Erro ao atualizar data:", err);
-                      }
-                    }}
-                    style={{ width: '120px' }}
-                  />
-                </div>
-
-                {/* PDF Simulado */}
-                <div className="d-flex flex-column">
-                  <label className="form-label fw-semibold  small d-flex align-items-center gap-1">
-                    <FontAwesomeIcon icon={faFilePdf} className="text-primary" />
-                    PDF Simulado:
-                  </label>
-                  <div className="d-flex align-items-center gap-2">
-                    <input 
-                      type="file" 
-                      accept="application/pdf" 
-                      onChange={e => setPdfSimulado(e.target.files[0])} 
-                      className="form-control form-control-sm"
-                      style={{ width: '300px' }}
-                    />
-                    {simulado.simulado && !pdfSimulado && (
-                      <a href={simulado.simulado} target="_blank" rel="noopener noreferrer" className="text-primary" style={{ fontSize: '1.2em' }} title="Abrir PDF">
-                        <FontAwesomeIcon icon={faFilePdf} />
-                      </a>
-                    )}
-                  </div>
-                  <span className="text-muted" style={{ fontSize: '0.72rem', marginTop: 2 }}>Tamanho máximo recomendado: 8 MB</span>
-                </div>
-
-                {/* PDF Gabarito */}
-                <div className="d-flex flex-column">
-                  <label className="form-label fw-semibold small d-flex align-items-center gap-1">
-                    <FontAwesomeIcon icon={faFilePdf} className="text-danger" />
-                    PDF Gabarito:
-                  </label>
-                  <div className="d-flex align-items-center gap-2">
-                    <input 
-                      type="file" 
-                      accept="application/pdf" 
-                      onChange={e => setPdfGabarito(e.target.files[0])} 
-                      className="form-control form-control-sm"
-                      style={{ width: '300px' }}
-                    />
-                    {simulado.gabarito && !pdfGabarito && (
-                      <a href={simulado.gabarito} target="_blank" rel="noopener noreferrer" className="text-danger" style={{ fontSize: '1.2em' }} title="Abrir Gabarito">
-                        <FontAwesomeIcon icon={faFilePdf} />
-                      </a>
-                    )}
-                  </div>
-                </div>
+                      } catch (err) { console.error(err); }
+                    }
+                  }}
+                  style={{ width: '56px' }}
+                />
               </div>
-              
-              {uploading && (
-                <div className="mt-3 p-2 bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center gap-2">
-                  <div className="spinner-border spinner-border-sm" role="status"></div>
-                  <span>Enviando arquivos...</span>
-                </div>
-              )}
+
+              <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />
+
+              {/* Data */}
+              <div className="d-flex align-items-center gap-2">
+                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)', fontWeight: 600, whiteSpace: 'nowrap' }}>Data</span>
+                <input
+                  className='form-control form-control-sm'
+                  type="date"
+                  value={simulado.dataSim ? new Date(simulado.dataSim).toISOString().slice(0, 10) : ''}
+                  onChange={async (e) => {
+                    const dataUtc = new Date(e.target.value).toISOString();
+                    try {
+                      await api.put(`/simulados/${simulado.id}`, { quanQuest: simulado.quanQuest, numSim: simulado.numSim, dataSim: dataUtc, projeto: simulado.projeto, userId: simulado.userId });
+                      setSimulado({ ...simulado, dataSim: dataUtc });
+                      localStorage.setItem('atualizaDashboard', Date.now());
+                    } catch (err) { console.error(err); }
+                  }}
+                  style={{ width: '128px' }}
+                />
+              </div>
+
+              <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />
+
+              {/* PDF Simulado */}
+              <div className="d-flex align-items-center gap-2">
+                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  <FontAwesomeIcon icon={faFilePdf} style={{ color: '#3b82f6', marginRight: 4 }} />PDF
+                </span>
+                <DrivePickerButton
+                  className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
+                  label={<><svg width="13" height="13" viewBox="0 0 87.3 78" style={{verticalAlign:'middle', flexShrink:0}}><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 49.35A9.07 9.07 0 0 0 0 53.8h27.45z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85l5.87 11.2z" fill="#ea4335"/><path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="M59.85 53.8H27.45L13.7 77.6c1.35.8 2.9 1.2 4.5 1.2h50.9c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="M73.4 26.95l-12.65-21.9C59.95 3.65 58.8 2.55 57.4 1.75L43.65 25 59.85 53.8h27.4c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg><span>{driveSimuladoNome ? '✓ '+driveSimuladoNome.slice(0,18)+(driveSimuladoNome.length>18?'…':'') : simulado.simulado ? 'Trocar' : 'Selecionar'}</span></>}
+                  onPick={(url, nome) => { setDriveSimuladoUrl(url); setDriveSimuladoNome(nome); }}
+                />
+                {(simulado.simulado || driveSimuladoUrl) && (
+                  <a href={pdfUrl(driveSimuladoUrl || simulado.simulado)} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', fontSize: '1.15em', lineHeight: 1 }} title="Abrir PDF">
+                    <FontAwesomeIcon icon={faFilePdf} />
+                  </a>
+                )}
+              </div>
+
+              <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />
+
+              {/* PDF Gabarito */}
+              <div className="d-flex align-items-center gap-2">
+                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  <FontAwesomeIcon icon={faFilePdf} style={{ color: '#ef4444', marginRight: 4 }} />Gabarito
+                </span>
+                <DrivePickerButton
+                  className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
+                  label={<><svg width="13" height="13" viewBox="0 0 87.3 78" style={{verticalAlign:'middle', flexShrink:0}}><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 49.35A9.07 9.07 0 0 0 0 53.8h27.45z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85l5.87 11.2z" fill="#ea4335"/><path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="M59.85 53.8H27.45L13.7 77.6c1.35.8 2.9 1.2 4.5 1.2h50.9c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="M73.4 26.95l-12.65-21.9C59.95 3.65 58.8 2.55 57.4 1.75L43.65 25 59.85 53.8h27.4c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg><span>{driveGabaritoNome ? '✓ '+driveGabaritoNome.slice(0,18)+(driveGabaritoNome.length>18?'…':'') : simulado.gabarito ? 'Trocar' : 'Selecionar'}</span></>}
+                  onPick={(url, nome) => { setDriveGabaritoUrl(url); setDriveGabaritoNome(nome); }}
+                />
+                {(simulado.gabarito || driveGabaritoUrl) && (
+                  <a href={pdfUrl(driveGabaritoUrl || simulado.gabarito)} target="_blank" rel="noopener noreferrer" style={{ color: '#ef4444', fontSize: '1.15em', lineHeight: 1 }} title="Abrir Gabarito">
+                    <FontAwesomeIcon icon={faFilePdf} />
+                  </a>
+                )}
+              </div>
+
             </div>
           </div>
           {/* CONTEÚDO SCROLLÁVEL */}
@@ -678,8 +692,8 @@ const Selecao = forwardRef(({ id: propId, onClose }, ref) => {
           {/* FOOTER FIXO */}
           <div style={{ position: 'sticky', bottom: 0, zIndex: 10, background: 'var(--background-l-light)', paddingTop: 2, paddingBottom: 2 }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.7em', marginTop: '0.7em', marginBottom: '0.2em' }}>
-              <button type="button" className="btn btn-outline-primary-primary" style={{ padding: '4px 14px', fontSize: '0.97em' }} onClick={handleCloseSilent}>Cancelar</button>
-              <button type="submit" className="btn btn-primary-primary" style={{ padding: '4px 14px', fontSize: '0.97em' }} disabled={saving}>
+              <button type="button" className="btn btn-outline-primary-primary3" onClick={handleCloseSilent}>Cancelar</button>
+              <button type="submit" className="btn btn-primary-primary3" disabled={saving}>
                 {saving ? <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Salvando...</> : 'Salvar Dados'}
               </button>
             </div>

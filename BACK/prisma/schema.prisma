@@ -198,6 +198,18 @@ model CicloFinalizado {
   dataFim    DateTime @default(now())
 }
 
+model ErroSimulado {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String    @db.ObjectId
+  materiaId     String    @db.ObjectId
+  simuladoId    String    @db.ObjectId
+  dataSim       DateTime?
+  numeroQuestao Int
+  motivoErro    String?
+  editalItem    String?
+  createdAt     DateTime  @default(now())
+}
+
 model FraseDiaria {
   id    String   @id @default(auto()) @map("_id") @db.ObjectId
   frase String

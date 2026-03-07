@@ -3,8 +3,14 @@ import api from '../../services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBolt, faFilePdf } from '@fortawesome/free-solid-svg-icons';
+import DrivePickerButton from '../../components/DrivePickerButton';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const pdfUrl = url => {
+  if (!url) return url;
+  if (url.includes('drive.google.com')) return url;
+  return `${API_URL}/pdf-view?url=${encodeURIComponent(url)}`;
+};
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -15,6 +21,10 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
   const [bateria, setBateria] = useState(null);
   const [pdfBateria, setPdfBateria] = useState(null);
   const [pdfGabarito, setPdfGabarito] = useState(null);
+  const [driveBateriaUrl, setDriveBateriaUrl] = useState(null);
+  const [driveBateriaNome, setDriveBateriaNome] = useState(null);
+  const [driveGabaritoUrl, setDriveGabaritoUrl] = useState(null);
+  const [driveGabaritoNome, setDriveGabaritoNome] = useState(null);
   const [respostas, setRespostas] = useState([]);
   const [gabaritos, setGabaritos] = useState([]);
   const [materias, setMaterias] = useState([]);
@@ -25,6 +35,7 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
   const [motivosErro, setMotivosErro] = useState([]);
   const [materiasCadastradas, setMateriasCadastradas] = useState([]);
   const [preenchimentoRapido, setPreenchimentoRapido] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     async function loadBateria() {
@@ -88,11 +99,19 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
     loadMaterias();
   }, []);
 
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
+
   function handleAlternativaChange(e, index) {
     const value = e.target.value.toUpperCase();
     const updated = [...respostas];
     updated[index] = value;
     setRespostas(updated);
+    setIsDirty(true);
     if (value.length === 1) {
       const nextInput = document.getElementById(`bat-alt-${index + 1}`);
       if (nextInput) nextInput.focus();
@@ -104,6 +123,7 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
     const updated = [...gabaritos];
     updated[index] = value;
     setGabaritos(updated);
+    setIsDirty(true);
     if (value.length === 1) {
       const nextInput = document.getElementById(`bat-gab-${index + 1}`);
       if (nextInput) nextInput.focus();
@@ -112,6 +132,7 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
 
   function handleMateriaChange(e, index) {
     const value = e.target.value;
+    setIsDirty(true);
     if (preenchimentoRapido) {
       const novas = [...materias];
       for (let i = index; i < novas.length; i++) novas[i] = value;
@@ -126,6 +147,7 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
   }
 
   function handleAnuladaChange(index) {
+    setIsDirty(true);
     const updated = [...anuladas];
     updated[index] = !updated[index];
     setAnuladas(updated);
@@ -137,10 +159,12 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
   }
 
   function handleChuteChange(index) {
+    setIsDirty(true);
     const updated = [...chutes]; updated[index] = !updated[index]; setChutes(updated);
   }
 
   function handleMotivoErroChange(e, index) {
+    setIsDirty(true);
     const updated = [...motivosErro]; updated[index] = e.target.value; setMotivosErro(updated);
   }
 
@@ -199,6 +223,14 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
         await api.post('/upload-pdf', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         setUploading(false);
       }
+      // Salvar URLs do Google Drive
+      if (driveBateriaUrl || driveGabaritoUrl) {
+        await api.post('/update-pdf-url', {
+          bateriaId,
+          ...(driveBateriaUrl && { simuladoUrl: driveBateriaUrl }),
+          ...(driveGabaritoUrl && { gabaritoUrl: driveGabaritoUrl }),
+        });
+      }
 
       // Sync fila de revisão
       try {
@@ -223,6 +255,7 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
 
       localStorage.setItem('atualizaDashboard', Date.now());
       setSaving(false);
+      setIsDirty(false);
       setTimeout(() => { if (typeof onClose === 'function') onClose(); }, 300);
     } catch (err) {
       setSaving(false);
@@ -250,95 +283,103 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
       <div className="p-4">
         <main className="conteudo" style={{ display: 'flex', flexDirection: 'column', height: 'auto', minHeight: 500 }}>
           <form className="needs-validation-bat" noValidate onSubmit={e => { e.preventDefault(); salvarDados(); }} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* HEADER */}
-            <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--background-l-light)', paddingBottom: 8 }}>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5 className="mb-0" style={{ color: 'var(--text-dark)' }}>{bateria.titulo}</h5>
-                <button type="button" className="btn-close" onClick={handleCloseWithConfirm} title="Fechar" />
-              </div>
-              <hr />
-              <div className="info-simulado mt-3 p-3 rounded-3 border text-dark">
-                <div className="d-flex flex-wrap align-items-end gap-3">
-                  <div className="d-flex flex-column">
-                    <label className="form-label fw-semibold small">Título:</label>
-                    <input
-                      className="form-control form-control-sm"
-                      type="text"
-                      value={bateria.titulo}
-                      onChange={async e => {
-                        const novoTitulo = e.target.value;
-                        setBateria(prev => ({ ...prev, titulo: novoTitulo }));
-                        try {
-                          await api.put(`/baterias/${bateriaId}`, { titulo: novoTitulo, quanQuest: bateria.quanQuest, dataBat: bateria.dataBat });
-                        } catch {}
-                      }}
-                      style={{ width: '280px' }}
-                    />
-                  </div>
-                  <div className="d-flex flex-column">
-                    <label className="form-label fw-semibold small">Data:</label>
-                    <input
-                      className="form-control form-control-sm"
-                      type="date"
-                      value={bateria.dataBat ? new Date(bateria.dataBat).toISOString().slice(0, 10) : ''}
-                      onChange={async e => {
-                        const dataUtc = new Date(e.target.value).toISOString();
-                        setBateria(prev => ({ ...prev, dataBat: dataUtc }));
-                        try {
-                          await api.put(`/baterias/${bateriaId}`, { titulo: bateria.titulo, quanQuest: bateria.quanQuest, dataBat: dataUtc });
-                        } catch {}
-                      }}
-                      style={{ width: '140px' }}
-                    />
-                  </div>
-                  <div className="d-flex flex-column">
-                    <label className="form-label fw-semibold small d-flex align-items-center gap-1">
-                      <FontAwesomeIcon icon={faFilePdf} className="text-primary" />
-                      PDF da Bateria:
-                    </label>
-                    <div className="d-flex align-items-center gap-2">
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={e => setPdfBateria(e.target.files[0])}
-                        className="form-control form-control-sm"
-                        style={{ width: '260px' }}
-                      />
-                      {bateria.pdf && !pdfBateria && (
-                        <a href={bateria.pdf} target="_blank" rel="noopener noreferrer" className="text-primary" style={{ fontSize: '1.2em' }} title="Abrir PDF">
-                          <FontAwesomeIcon icon={faFilePdf} />
-                        </a>
-                      )}
-                    </div>
-                    <span className="text-muted" style={{ fontSize: '0.72rem', marginTop: 2 }}>Tamanho máximo recomendado: 8 MB</span>
-                  </div>
-                  <div className="d-flex flex-column">
-                    <label className="form-label fw-semibold small d-flex align-items-center gap-1">
-                      <FontAwesomeIcon icon={faFilePdf} className="text-danger" />
-                      PDF Gabarito:
-                    </label>
-                    <div className="d-flex align-items-center gap-2">
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={e => setPdfGabarito(e.target.files[0])}
-                        className="form-control form-control-sm"
-                        style={{ width: '260px' }}
-                      />
-                      {bateria.gabarito && !pdfGabarito && (
-                        <a href={bateria.gabarito} target="_blank" rel="noopener noreferrer" className="text-danger" style={{ fontSize: '1.2em' }} title="Abrir Gabarito">
-                          <FontAwesomeIcon icon={faFilePdf} />
-                        </a>
-                      )}
-                    </div>
-                  </div>
+            {/* HEADER FIXO */}
+            <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--background-l-light)', paddingBottom: 12 }}>
+              {/* Barra de título */}
+              <div className="d-flex justify-content-between align-items-center pb-3 mb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div className="d-flex align-items-center gap-2">
+                  <span style={{ width: 4, height: 22, borderRadius: 4, background: 'var(--primary)', display: 'inline-block', flexShrink: 0 }} />
+                  <span className="fw-bold" style={{ fontSize: '1.05rem', color: 'var(--text-dark)', letterSpacing: '-0.01em' }}>
+                    {bateria.titulo}
+                  </span>
+                  <span className="badge rounded-pill ms-1" style={{ background: 'var(--bg-card)', color: 'var(--text-light)', fontWeight: 500, fontSize: '0.72rem', border: '1px solid var(--border)' }}>
+                    {bateria.quanQuest} questões
+                  </span>
                 </div>
-                {uploading && (
-                  <div className="mt-3 p-2 bg-success bg-opacity-10 text-success rounded-2 d-flex align-items-center gap-2">
-                    <div className="spinner-border spinner-border-sm" role="status"></div>
-                    <span>Enviando arquivos...</span>
-                  </div>
-                )}
+                <div className="d-flex align-items-center gap-2">
+                  <button type="button" className="btn-close" onClick={handleCloseWithConfirm} title="Fechar" style={{ fontSize: '0.8rem' }} />
+                </div>
+              </div>
+
+              {/* Card de Info */}
+              <div className="rounded-3 px-3 py-2 d-flex align-items-center flex-wrap gap-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+
+                {/* Título */}
+                <div className="d-flex align-items-center gap-2">
+                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)', fontWeight: 600, whiteSpace: 'nowrap' }}>Título</span>
+                  <input
+                    className='form-control form-control-sm'
+                    type="text"
+                    value={bateria.titulo}
+                    onChange={async e => {
+                      const novoTitulo = e.target.value;
+                      setBateria(prev => ({ ...prev, titulo: novoTitulo }));
+                      try {
+                        await api.put(`/baterias/${bateriaId}`, { titulo: novoTitulo, quanQuest: bateria.quanQuest, dataBat: bateria.dataBat });
+                      } catch {}
+                    }}
+                    style={{ width: '200px' }}
+                  />
+                </div>
+
+                <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />
+
+                {/* Data */}
+                <div className="d-flex align-items-center gap-2">
+                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)', fontWeight: 600, whiteSpace: 'nowrap' }}>Data</span>
+                  <input
+                    className='form-control form-control-sm'
+                    type="date"
+                    value={bateria.dataBat ? new Date(bateria.dataBat).toISOString().slice(0, 10) : ''}
+                    onChange={async e => {
+                      const dataUtc = new Date(e.target.value).toISOString();
+                      setBateria(prev => ({ ...prev, dataBat: dataUtc }));
+                      try {
+                        await api.put(`/baterias/${bateriaId}`, { titulo: bateria.titulo, quanQuest: bateria.quanQuest, dataBat: dataUtc });
+                      } catch {}
+                    }}
+                    style={{ width: '128px' }}
+                  />
+                </div>
+
+                <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />
+
+                {/* PDF Bateria */}
+                <div className="d-flex align-items-center gap-2">
+                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    <FontAwesomeIcon icon={faFilePdf} style={{ color: '#3b82f6', marginRight: 4 }} />PDF
+                  </span>
+                  <DrivePickerButton
+                    className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
+                    label={<><svg width="13" height="13" viewBox="0 0 87.3 78" style={{verticalAlign:'middle', flexShrink:0}}><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 49.35A9.07 9.07 0 0 0 0 53.8h27.45z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85l5.87 11.2z" fill="#ea4335"/><path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="M59.85 53.8H27.45L13.7 77.6c1.35.8 2.9 1.2 4.5 1.2h50.9c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="M73.4 26.95l-12.65-21.9C59.95 3.65 58.8 2.55 57.4 1.75L43.65 25 59.85 53.8h27.4c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg><span>{driveBateriaNome ? '✓ '+driveBateriaNome.slice(0,18)+(driveBateriaNome.length>18?'…':'') : bateria.pdf ? 'Trocar' : 'Selecionar'}</span></>}
+                    onPick={(url, nome) => { setDriveBateriaUrl(url); setDriveBateriaNome(nome); setPdfBateria(null); }}
+                  />
+                  {(bateria.pdf || driveBateriaUrl) && (
+                    <a href={pdfUrl(driveBateriaUrl || bateria.pdf)} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', fontSize: '1.15em', lineHeight: 1 }} title="Abrir PDF">
+                      <FontAwesomeIcon icon={faFilePdf} />
+                    </a>
+                  )}
+                </div>
+
+                <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />
+
+                {/* PDF Gabarito */}
+                <div className="d-flex align-items-center gap-2">
+                  <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-light)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    <FontAwesomeIcon icon={faFilePdf} style={{ color: '#ef4444', marginRight: 4 }} />Gabarito
+                  </span>
+                  <DrivePickerButton
+                    className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"
+                    label={<><svg width="13" height="13" viewBox="0 0 87.3 78" style={{verticalAlign:'middle', flexShrink:0}}><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 49.35A9.07 9.07 0 0 0 0 53.8h27.45z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85l5.87 11.2z" fill="#ea4335"/><path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="M59.85 53.8H27.45L13.7 77.6c1.35.8 2.9 1.2 4.5 1.2h50.9c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="M73.4 26.95l-12.65-21.9C59.95 3.65 58.8 2.55 57.4 1.75L43.65 25 59.85 53.8h27.4c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg><span>{driveGabaritoNome ? '✓ '+driveGabaritoNome.slice(0,18)+(driveGabaritoNome.length>18?'…':'') : bateria.gabarito ? 'Trocar' : 'Selecionar'}</span></>}
+                    onPick={(url, nome) => { setDriveGabaritoUrl(url); setDriveGabaritoNome(nome); setPdfGabarito(null); }}
+                  />
+                  {(bateria.gabarito || driveGabaritoUrl) && (
+                    <a href={pdfUrl(driveGabaritoUrl || bateria.gabarito)} target="_blank" rel="noopener noreferrer" style={{ color: '#ef4444', fontSize: '1.15em', lineHeight: 1 }} title="Abrir Gabarito">
+                      <FontAwesomeIcon icon={faFilePdf} />
+                    </a>
+                  )}
+                </div>
+
               </div>
             </div>
 
@@ -478,8 +519,8 @@ const SelecaoBateria = forwardRef(({ id: bateriaId, onClose }, ref) => {
             {/* FOOTER */}
             <div style={{ position: 'sticky', bottom: 0, zIndex: 10, background: 'var(--background-l-light)', paddingTop: 2, paddingBottom: 2 }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.7em', marginTop: '0.7em', marginBottom: '0.2em' }}>
-                <button type="button" className="btn btn-outline-primary-primary" style={{ padding: '4px 14px', fontSize: '0.97em' }} onClick={handleCloseWithConfirm}>Cancelar</button>
-                <button type="submit" className="btn btn-primary-primary" style={{ padding: '4px 14px', fontSize: '0.97em' }} disabled={saving}>
+                <button type="button" className="btn btn-outline-primary-primary3" onClick={handleCloseWithConfirm}>Cancelar</button>
+                <button type="submit" className="btn btn-primary-primary3" disabled={saving}>
                   {saving ? <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Salvando...</> : 'Salvar Dados'}
                 </button>
               </div>

@@ -684,14 +684,55 @@ app.post('/upload-pdf', upload.fields([
   }
 });
 
-// ROTA PARA SERVIR ARQUIVOS PDF DOS SIMULADOS E GABARITOS
-app.get('/pdf/:filename', (req, res) => {
-  const { filename } = req.params;
-  const filePath = path.join(uploadsDir, filename);
-  if (fs.existsSync(filePath)) {
-    res.sendFile(filename, { root: uploadsDir });
-  } else {
-    res.status(404).json({ error: 'Arquivo não encontrado.' });
+// ROTA PARA SALVAR URL DE PDF DO GOOGLE DRIVE (ou qualquer URL externa) DIRETO NO BANCO
+app.post('/update-pdf-url', async (req, res) => {
+  try {
+    const { simuladoId, bateriaId, simuladoUrl, gabaritoUrl } = req.body;
+    if (simuladoId) {
+      await prisma.simulado.update({
+        where: { id: simuladoId },
+        data: {
+          ...(simuladoUrl !== undefined && { simulado: simuladoUrl }),
+          ...(gabaritoUrl !== undefined && { gabarito: gabaritoUrl }),
+        }
+      });
+    }
+    if (bateriaId) {
+      await prisma.bateria.update({
+        where: { id: bateriaId },
+        data: {
+          ...(simuladoUrl !== undefined && { pdf: simuladoUrl }),
+          ...(gabaritoUrl !== undefined && { gabarito: gabaritoUrl }),
+        }
+      });
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Erro ao atualizar URL PDF:', e);
+    res.status(500).json({ error: 'Erro ao atualizar URL.' });
+  }
+});
+
+// ROTA PROXY PARA SERVIR PDFs DO CLOUDINARY COM Content-Disposition: inline
+app.get('/pdf-view', async (req, res) => {
+  let { url } = req.query;
+  if (!url || !url.includes('res.cloudinary.com')) {
+    return res.status(400).json({ error: 'URL inválida.' });
+  }
+  // Limpa fl_inline residual que pode ter sido salvo no banco
+  url = url.replace('/upload/fl_inline/', '/upload/');
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'Erro ao buscar PDF do Cloudinary.' });
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="documento.pdf"');
+    const arrayBuffer = await response.arrayBuffer();
+    res.send(Buffer.from(arrayBuffer));
+  } catch (e) {
+    console.error('Erro proxy PDF:', e);
+    res.status(500).json({ error: 'Erro ao buscar PDF.' });
   }
 });
 

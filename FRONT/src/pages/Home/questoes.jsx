@@ -12,6 +12,12 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { usePageTitle } from '../../components/PageTitleContext';
 
+const pdfUrl = url => {
+  if (!url) return url;
+  if (url.includes('drive.google.com')) return url;
+  return `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/pdf-view?url=${encodeURIComponent(url)}`;
+};
+
 function Questoes() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -233,7 +239,8 @@ function Questoes() {
         <div className="users-list mt-2">
           {/* Card para nova bateria */}
           <div
-            className="pointer card-padrao-vazio fadein d-flex flex-row align-items-center justify-content-center mb-2 p-3 fs-5 cursor-pointer position-relative gap-2"
+            className="pointer card-padrao-vazio fadein d-flex flex-row align-items-center justify-content-center mb-2 fs-6 cursor-pointer position-relative gap-2"
+            style={{ padding: '0.9em 0.9em 0.9em 1.5em' }}
             onClick={() => setShowAddModal(true)}
           >
             <span className="fw-bold fs-6 text-secondary">+ Nova Bateria de Questões</span>
@@ -284,7 +291,7 @@ function Questoes() {
                     {bat.pdf && (
                       <span
                         className="d-flex align-items-center cursor-pointer"
-                        onClick={e => { e.stopPropagation(); window.open(bat.pdf, '_blank'); }}
+                        onClick={e => { e.stopPropagation(); window.open(pdfUrl(bat.pdf), '_blank'); }}
                         title="Abrir PDF da Bateria"
                       >
                         <FileText size={16} className="btn-icon p-0 text-primary-primary" />
@@ -293,7 +300,7 @@ function Questoes() {
                     {bat.gabarito && (
                       <span
                         className="d-flex align-items-center cursor-pointer"
-                        onClick={e => { e.stopPropagation(); window.open(bat.gabarito, '_blank'); }}
+                        onClick={e => { e.stopPropagation(); window.open(pdfUrl(bat.gabarito), '_blank'); }}
                         title="Abrir PDF do Gabarito"
                       >
                         <FileText size={16} className="btn-icon p-0" />

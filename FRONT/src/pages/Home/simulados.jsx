@@ -20,6 +20,11 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { usePageTitle } from '../../components/PageTitleContext';
 
+const pdfUrl = url => {
+  if (!url) return url;
+  if (url.includes('drive.google.com')) return url;
+  return `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/pdf-view?url=${encodeURIComponent(url)}`;
+};
 
 function Home() {
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -469,8 +474,8 @@ function Home() {
         <div className="users-list mt-2">
           {/* Card vazio para adicionar novo simulado */}
           <div
-            className="pointer card-padrao-vazio fadein d-flex flex-row align-items-center justify-content-center mb-2 p-3 fs-5 cursor-pointer position-relative gap-2"
-            style={{ animationDelay: '0s' }}
+            className="pointer card-padrao-vazio fadein d-flex flex-row align-items-center justify-content-center mb-2 fs-6 cursor-pointer position-relative gap-2"
+            style={{ animationDelay: '0s', padding: '0.9em 0.9em 0.9em 1.5em' }}
             onClick={() => setShowAddModal(true)}
           >
             <span className="fw-bold fs-6 text-secondary">+ Corrigir Novo Simulado</span>
@@ -530,7 +535,7 @@ function Home() {
                     {simulado.simulado && (
                       <span
                         className="d-flex align-items-center cursor-pointer"
-                        onClick={e => { e.stopPropagation(); window.open(simulado.simulado, '_blank'); }}
+                        onClick={e => { e.stopPropagation(); window.open(pdfUrl(simulado.simulado), '_blank'); }}
                         title="Abrir PDF do Simulado"
                       >
                         <FileText size={16} className="btn-icon p-0 text-primary-primary" title="PDF do Simulado" />
@@ -539,7 +544,7 @@ function Home() {
                     {simulado.gabarito && (
                       <span
                         className="d-flex align-items-center cursor-pointer"
-                        onClick={e => { e.stopPropagation(); window.open(simulado.gabarito, '_blank'); }}
+                        onClick={e => { e.stopPropagation(); window.open(pdfUrl(simulado.gabarito), '_blank'); }}
                         title="Abrir PDF do Gabarito"
                       >
                         <FileText size={16} className="btn-icon p-0" title="PDF do Gabarito" />
